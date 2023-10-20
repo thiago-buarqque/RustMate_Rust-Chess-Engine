@@ -1,7 +1,7 @@
 from ai_engine import BoardWrapper
 
-from game.dto.BoardPieceDTO import BoardPieceDTO
-from game.dto.DTO import DTO
+from dto.BoardPieceDTO import BoardPieceDTO
+from dto.DTO import DTO
 
 
 class BoardDTO(DTO):

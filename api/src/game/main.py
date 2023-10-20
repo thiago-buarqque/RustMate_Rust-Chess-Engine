@@ -8,8 +8,8 @@ from flask_app import app, to_json_response
 
 from ai_engine.ai_engine import BoardWrapper, PieceMoveDTO
 
-from game.dto.BoardDTO import BoardDTO
-from game.dto.MoveDTO import MoveDTO
+from dto.BoardDTO import BoardDTO
+from dto.MoveDTO import MoveDTO
 
 module_path = os.path.abspath(os.path.join("../../"))
 
@@ -42,21 +42,11 @@ def get_move_count():
 def move_piece():
     board.move_piece(MoveDTO.from_dict_piece_moveDTO(request.json))
 
-    # Evaluated 55593 states
-    # Time elapsed is: 1.940869201s
-    # Elapsed time: 1.9409072399139404
-    # -72.0, (1, 18)
-
-    # Evaluated 84521 states
-    # Time elapsed is: 3.140024914s
-    # Elapsed time: 3.1400742530822754
-    # -101.80000305175781, (12, 20)
-
     # Ai move
     if board.get_winner_fen() == "-":
         start = time.time()
         move_value, move = \
-            board.get_ai_move(5)
+            board.get_ai_move(4)
 
         end = time.time()
         print(f"Elapsed time: {(end - start)}")

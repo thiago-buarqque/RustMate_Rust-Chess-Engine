@@ -2,8 +2,8 @@ from typing import Union
 
 from ai_engine.ai_engine import PieceDTO
 
-from game.dto.MoveDTO import MoveDTO
-from game.dto.DTO import DTO
+from dto.MoveDTO import MoveDTO
+from dto.DTO import DTO
 
 
 class BoardPieceDTO(DTO):

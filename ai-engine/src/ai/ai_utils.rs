@@ -28,11 +28,7 @@ pub fn get_sorted_moves(board: &Board, max: bool, pieces: &[BoardPiece]) -> Vec<
 
         // Capturing move
         if _move.is_capture() {
-            _move.set_move_worth(get_piece_worth(target_piece) - get_piece_worth(moving_piece));
-
-            if get_piece_type(target_piece) == PieceType::King {
-                _move.sum_to_move_worth(KING_WORTH as i32)
-            }
+            _move.set_move_worth((10 * get_piece_worth(target_piece)) - get_piece_worth(moving_piece));
         }
 
         if _move.is_promotion() {
@@ -44,12 +40,12 @@ pub fn get_sorted_moves(board: &Board, max: bool, pieces: &[BoardPiece]) -> Vec<
             _move.sum_to_move_worth(get_piece_worth(moving_piece))
         }
 
-        _move.sum_to_move_worth(get_pst_value(
-            _move.get_to_position(),
-            _move.get_piece_value(),
-            end_game,
-            is_white_piece(_move.get_piece_value()),
-        ) as i32);
+        // _move.sum_to_move_worth(get_pst_value(
+        //     _move.get_to_position(),
+        //     _move.get_piece_value(),
+        //     end_game,
+        //     is_white_piece(_move.get_piece_value()),
+        // ) as i32);
     }
 
     // TODO order also based on the hashmap with previous generated states

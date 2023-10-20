@@ -1,6 +1,6 @@
 from ai_engine.ai_engine import PieceMoveDTO
 
-from game.dto.DTO import DTO
+from dto.DTO import DTO
 
 
 class MoveDTO(DTO):
