@@ -1,0 +1,142 @@
+div#board {
+  width: 100%;
+
+  max-height: 800px;
+  max-width: 800px;
+
+  display: grid;
+  grid-template-rows: repeat(8, 1fr);
+  aspect-ratio: 1;
+
+  position: relative;
+
+  .captures {
+    width: 50%;
+    position: absolute;
+    left: 0;
+    height: 24px;
+
+    .captured_piece {
+      width: 24px;
+    }
+  }
+
+  .captures#black-captures {
+    top: -32px;
+  }
+
+  .captures#white-captures {
+    bottom: -32px;
+  }
+
+  .row {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+
+    &:nth-child(even) {
+      .cell:nth-child(even) {
+        background-color: #fff;
+      }
+      .cell:nth-child(odd) {
+        background-color: rgb(124, 148, 170);
+      }
+    }
+
+    &:nth-child(odd) {
+      .cell:nth-child(odd) {
+        background-color: #fff;
+      }
+      .cell:nth-child(even) {
+        background-color: rgb(124, 148, 170);
+      }
+    }
+
+    .cell {
+      height: 100%;
+      aspect-ratio: 1;
+
+      position: relative;
+
+      &.empty-receptor .move-dot {
+        opacity: 1;
+      }
+
+      .cell-index {
+        position: absolute;
+        right: 0;
+        top: 0;
+        font-size: 10px;
+        font-weight: 500;
+      }
+
+      .move-dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #d6d6d6;
+        opacity: 0;
+
+        position: absolute;
+        top: calc(50% - 10px);
+        left: calc(50% - 10px);
+        pointer-events: none;
+      }
+
+      &.capture-receptor {
+        background-color: rgba(255, 0, 0, 0.35) !important;
+      }
+
+      .row-index,
+      .column-index {
+        position: absolute;
+        left: 4px;
+
+        font-weight: bold;
+        pointer-events: none;
+      }
+      .row-index {
+        top: 4px;
+      }
+
+      .column-index {
+        bottom: 4px;
+      }
+
+      .row-index.white,
+      .column-index.white {
+        color: #fff;
+      }
+
+      .piece-button {
+        width: 100%;
+        height: 100%;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: none;
+        border: none;
+        outline: none;
+
+        &.disabled {
+          pointer-events: none;
+        }
+
+        .piece {
+          pointer-events: none;
+          width: 70%;
+          height: 70%;
+        }
+      }
+    }
+  }
+}
+
+#floating-forms {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+}
