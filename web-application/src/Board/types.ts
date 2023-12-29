@@ -18,7 +18,7 @@ export type TMove = {
   fromPosition: number;
   isEnPassant: boolean;
   piece_value: number;
-  promotionType: string;
+  promotionType: number;
   isPromotion: boolean;
   toPosition: number;
 };

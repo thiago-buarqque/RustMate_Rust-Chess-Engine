@@ -154,7 +154,7 @@ const Board = () => {
   };
 
   const movePiece = (pieceMove: TMove) => {
-    pieceMove.promotionType = "Q"
+    pieceMove.promotionType = 5
     
     http
       .post<TBoard>("/board/move/piece", pieceMove)
@@ -198,12 +198,12 @@ const Board = () => {
     let depth = Number((depthInput as HTMLInputElement).value);
 
     http
-      .post<{ moves: number }>("/board/moves/count", {
+      .post<{ moves: number, elapsedTime: number }>("/board/moves/count", {
         depth,
       })
       .then((response) => response.data)
       .then((data) => {
-        console.log("Moves from here (depth:):", data.moves);
+        console.log(`Evaluated ${data.moves} in ${data.elapsedTime}ms for a depth of ${depth}`);
       });
   };
 
@@ -217,8 +217,6 @@ const Board = () => {
   }, []);
 
   useEffect(() => {
-    console.log("Zobrit:", board.zobrit);
-
     if (board.winner !== "-") {
       if (board.winner === "d") {
         alert("Draw");
@@ -264,7 +262,7 @@ const Board = () => {
                 data-pos={i * 8 + j}
                 onClick={(e) => onMovePiece(e.currentTarget, i * 8 + j)}
               >
-                <span className="cell-index">{i * 8 + j}</span>
+                {/* <span className="cell-index">{i * 8 + j}</span> */}
                 {j === 0 && (
                   <span className={`row-index ${(i + 1) % 2 === 0 ? "white" : ""}`}>{8 - i}</span>
                 )}
@@ -282,9 +280,20 @@ const Board = () => {
             ))}
           </div>
         ))}
+        <span id="zobrit">{getZobritBinary(board.zobrit)}</span>
       </div>
     </>
   );
 };
+
+const getZobritBinary = (zobrit: number) => {
+  let binary = zobrit.toString(2)
+
+  while(binary.length < 64) {
+    binary = "0" + binary;
+  }
+
+  return binary.slice(0, 16) + " " + binary.slice(16, 32) + "\n" + binary.slice(32, 48) + " " + binary.slice(48, 64);
+}
 
 export default Board;
