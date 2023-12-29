@@ -97,7 +97,7 @@ impl AIPlayer {
         let pieces: Vec<BoardPiece> = board.get_pieces();
 
         if depth == 0 || board.is_game_finished() {
-            return (get_board_value(board, max, &pieces), 1)
+            return (get_board_value(board, max, &pieces), 1);
         }
 
         let mut moves_count = 0;

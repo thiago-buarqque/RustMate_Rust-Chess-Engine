@@ -1,6 +1,6 @@
 extern crate rand;
 
-use rand::Rng;
+use rand::{Rng, rngs::StdRng, SeedableRng};
 
 use crate::common::contants::EMPTY_PIECE;
 
@@ -20,7 +20,7 @@ pub struct Zobrist {
 }
 
 fn random_bitstring() -> u64 {
-    let mut rng = rand::thread_rng();
+    let mut rng = StdRng::seed_from_u64(222);
     rng.gen::<u64>()
 }
 

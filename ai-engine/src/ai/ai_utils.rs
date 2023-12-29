@@ -28,7 +28,9 @@ pub fn get_sorted_moves(board: &Board, max: bool, pieces: &[BoardPiece]) -> Vec<
 
         // Capturing move
         if _move.is_capture() {
-            _move.set_move_worth((10 * get_piece_worth(target_piece)) - get_piece_worth(moving_piece));
+            _move.set_move_worth(
+                (10 * get_piece_worth(target_piece)) - get_piece_worth(moving_piece),
+            );
         }
 
         if _move.is_promotion() {
