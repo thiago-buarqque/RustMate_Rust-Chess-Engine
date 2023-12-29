@@ -5,7 +5,7 @@ mod game;
 mod game_controller;
 mod global_state;
 
-use std::{env, sync::Mutex};
+use std::sync::Mutex;
 
 use actix_cors::Cors;
 use actix_web::{http::header, middleware::Logger, web, App, HttpServer};

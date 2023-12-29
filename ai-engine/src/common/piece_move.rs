@@ -1,7 +1,6 @@
-use crate::dto::piece_move_dto::PieceMoveDTO;
 use serde::{ser::{SerializeStruct, Serializer}, Deserialize, Serialize, Deserializer};
 
-use super::{contants::EMPTY_PIECE, piece_utils::piece_value_from_fen};
+use super::contants::EMPTY_PIECE;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PieceMove {
@@ -117,19 +116,6 @@ impl PieceMove {
             piece_value,
             promotion_type: EMPTY_PIECE,
             to_position: to,
-        }
-    }
-
-    pub fn from_dto(piece_move_dto: PieceMoveDTO) -> Self {
-        Self {
-            from_position: piece_move_dto.from_position,
-            capture: piece_move_dto.is_capture,
-            en_passant: piece_move_dto.is_en_passant,
-            promotion: piece_move_dto.is_promotion,
-            move_worth: 0,
-            piece_value: piece_move_dto.piece_value,
-            promotion_type: piece_value_from_fen(&piece_move_dto.promotion_type),
-            to_position: piece_move_dto.to_position,
         }
     }
 

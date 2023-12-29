@@ -1,11 +1,10 @@
-use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
-use serde::Deserialize;
+use actix_web::{get, post, web, HttpResponse, Responder};
 use serde_json::json;
 
 use crate::{
     common::{contants::EMPTY_PIECE, piece_move::PieceMove, piece_utils::get_promotion_options},
     game::board::Board,
-    global_state::GlobalState,
+    global_state::GlobalState, dto::dtos::{FenDTO, MovesCountDTO},
 };
 
 #[get("/board")]
@@ -13,10 +12,6 @@ pub async fn get_board(global_state: web::Data<Mutex<GlobalState>>) -> impl Resp
     get_board_response(global_state)
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct MovesCountDTO {
-    depth: usize
-}
 
 use std::{time::Instant, sync::Mutex};
 
@@ -40,9 +35,7 @@ pub async fn get_move_generation_count(
 #[post("/board/move/piece")]
 pub async fn move_piece(
     piece_move: web::Json<PieceMove>,
-    global_state: web::Data<Mutex<GlobalState>>,
-    req: HttpRequest,
-) -> impl Responder {
+    global_state: web::Data<Mutex<GlobalState>>) -> impl Responder {
     // println!("Req: {:?}", req);
     let mut _global_state = global_state.lock().unwrap();
     let board = &mut _global_state.board;
@@ -56,7 +49,7 @@ pub async fn move_piece(
     let (_, ai_move) = ai.get_move(&mut board_clone, 2);
 
     let board = &mut _global_state.board;
-    
+
     if ai_move.get_from_position() != -1 && ai_move.get_to_position() != -1 {
         let _ = board.make_move(&ai_move);
     }
@@ -64,11 +57,6 @@ pub async fn move_piece(
     drop(_global_state);
 
     get_board_response(global_state)
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct FenDTO {
-    fen: String,
 }
 
 #[post("/board/load/fen")]
