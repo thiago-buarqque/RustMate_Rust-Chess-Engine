@@ -28,7 +28,6 @@ the best approach. Soon the API in Pyton will be replace for a API in Rust (once
   - [ ] King safety;
   - [ ] Center control;
   - [ ] Unmoved pieces
-- [ ] Migrate API from Python to Rust (once I get more experienced in Rust crate to create Rest applications);
 - [ ] Provider better infos to create visuals on what the AI is thinking;
 
 
