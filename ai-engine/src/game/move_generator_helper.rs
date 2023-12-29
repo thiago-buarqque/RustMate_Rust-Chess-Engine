@@ -1,4 +1,4 @@
-use crate::common::{contants::EMPTY_PIECE, piece_move::PieceMove, board_piece::BoardPiece};
+use crate::common::{board_piece::BoardPiece, contants::EMPTY_PIECE, piece_move::PieceMove};
 
 use super::board_state::BoardState;
 
@@ -61,7 +61,8 @@ pub fn get_adjacent_position(current_position: i8, new_position: i8) -> i8 {
     if current_position % 8 == 0
         && (new_position == current_position - 1 // left
             || new_position == current_position - 9 // top left
-            || new_position == current_position + 7) // bottom left
+            || new_position == current_position + 7)
+    // bottom left
     {
         return -1;
     }
@@ -70,7 +71,8 @@ pub fn get_adjacent_position(current_position: i8, new_position: i8) -> i8 {
     if (current_position + 1) % 8 == 0
         && (new_position == current_position + 1 // right
             || new_position == current_position - 7 // top right
-            || new_position == current_position + 9) // bottom right
+            || new_position == current_position + 9)
+    // bottom right
     {
         return -1;
     }

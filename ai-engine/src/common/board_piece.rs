@@ -1,4 +1,6 @@
-use super::piece_move::PieceMove;
+use serde::{ser::{SerializeStruct, Serializer}, Serialize};
+
+use super::{piece_move::PieceMove, piece_utils::piece_fen_from_value};
 
 #[derive(Debug, Clone)]
 pub struct BoardPiece {
@@ -6,6 +8,21 @@ pub struct BoardPiece {
     position: i8,
     value: i8,
     white: bool,
+}
+
+impl Serialize for BoardPiece {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // 3 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("BoardPiece", 4)?;
+        state.serialize_field("moves", &self.moves)?;
+        state.serialize_field("position", &self.position)?;
+        state.serialize_field("fen", &piece_fen_from_value(self.value))?;
+        state.serialize_field("white", &self.white)?;
+        state.end()
+    }
 }
 
 impl BoardPiece {
