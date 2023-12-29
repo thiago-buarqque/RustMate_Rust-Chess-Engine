@@ -20,7 +20,7 @@ pub fn get_sorted_moves(board: &Board, max: bool, pieces: &[BoardPiece]) -> Vec<
 
     let board_state = board.get_state_reference();
 
-    let end_game = is_end_game(pieces);
+    // let end_game = is_end_game(pieces);
 
     for _move in moves.iter_mut() {
         let moving_piece = board_state.get_piece(_move.get_from_position());
