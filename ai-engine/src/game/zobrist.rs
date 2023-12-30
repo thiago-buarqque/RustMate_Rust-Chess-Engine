@@ -19,29 +19,31 @@ pub struct Zobrist {
     white_to_move: u64,
 }
 
-fn random_bitstring() -> u64 {
-    let mut rng = StdRng::seed_from_u64(222);
-    rng.gen::<u64>()
-}
+// fn random_bitstring() -> u64 {
+//     let mut rng = StdRng::seed_from_u64(222);
+//     rng.gen::<u64>()
+// }
 
 impl Zobrist {
     pub fn new() -> Self {
+        let mut rng = StdRng::seed_from_u64(222);
+
         let mut table = vec![vec![0u64; 12]; 64];
 
         for row in table.iter_mut() {
             for j in 0..row.len() {
-                row[j] = random_bitstring();
+                row[j] = rng.gen::<u64>();
             }
         }
 
-        let black_can_rook_castle = random_bitstring();
-        let black_can_queen_castle = random_bitstring();
-        let black_pawn_en_passant = random_bitstring();
+        let black_can_rook_castle = rng.gen::<u64>();
+        let black_can_queen_castle = rng.gen::<u64>();
+        let black_pawn_en_passant = rng.gen::<u64>();
 
-        let white_can_rook_castle = random_bitstring();
-        let white_can_queen_castle = random_bitstring();
-        let white_pawn_en_passant = random_bitstring();
-        let white_to_move = random_bitstring();
+        let white_can_rook_castle = rng.gen::<u64>();
+        let white_can_queen_castle = rng.gen::<u64>();
+        let white_pawn_en_passant = rng.gen::<u64>();
+        let white_to_move = rng.gen::<u64>();
 
         Self {
             black_can_rook_castle,
