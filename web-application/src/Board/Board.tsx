@@ -154,7 +154,7 @@ const Board = () => {
   };
 
   const movePiece = (pieceMove: TMove) => {
-    pieceMove.promotionType = 5
+    pieceMove.promotionType = 5 // Queen
     
     http
       .post<TBoard>("/board/move/piece", pieceMove)
@@ -258,7 +258,7 @@ const Board = () => {
             {LINES.map((j) => (
               <div
                 key={j}
-                className="cell"
+                className={`cell${selectedPiece?.position === (i * 8 + j) ? " selected" : ""}`}
                 data-pos={i * 8 + j}
                 onClick={(e) => onMovePiece(e.currentTarget, i * 8 + j)}
               >
