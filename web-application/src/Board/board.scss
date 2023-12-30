@@ -89,6 +89,10 @@ div#board {
         background-color: rgba(255, 0, 0, 0.35) !important;
       }
 
+      &.selected {
+        background-color: #d6d6d6 !important;
+      }
+
       .row-index,
       .column-index {
         position: absolute;
