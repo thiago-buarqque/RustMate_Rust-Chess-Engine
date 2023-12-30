@@ -10,17 +10,6 @@ use std::sync::Mutex;
 use actix_cors::Cors;
 use actix_web::{http::header, middleware::Logger, web, App, HttpServer};
 use global_state::GlobalState;
-// use pyo3::prelude::*;
-
-// #[pymodule]
-// fn ai_engine(_py: Python, m: &PyModule) -> PyResult<()> {
-//     env::set_var("RUST_BACKTRACE", "1");
-//     m.add_class::<PieceDTO>()?;
-//     m.add_class::<PieceMoveDTO>()?;
-//     m.add_class::<BoardWrapper>()?;
-
-//     Ok(())
-// }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

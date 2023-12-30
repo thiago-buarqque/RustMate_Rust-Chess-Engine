@@ -19,7 +19,6 @@ strip = true
 [dependencies]
 actix-cors = "0.6.4"
 actix-web = "4"
-# pyo3 = { version = "0.19.0", features = ["extension-module"] }
 rayon = "1.8.0"
 rand = "0.8.0"
 serde = { version = "1.0.152", features = ["derive"] }
