@@ -46,7 +46,7 @@ pub async fn move_piece(
 
     let ai = &mut _global_state.ai;
 
-    let (_, ai_move) = ai.get_move(&mut board_clone, 2);
+    let (_, ai_move) = ai.get_move(&mut board_clone, 5);
 
     let board = &mut _global_state.board;
 
