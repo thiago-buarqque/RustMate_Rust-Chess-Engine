@@ -4,7 +4,7 @@ use serde_json::json;
 use crate::{
     common::{contants::EMPTY_PIECE, piece_move::PieceMove, piece_utils::get_promotion_options},
     game::board::Board,
-    global_state::GlobalState, dto::dtos::{FenDTO, MovesCountDTO},
+    global_state::GlobalState, dto::dtos::{FenDTO, MovesCountDTO}, ai::ai_utils::get_board_value,
 };
 
 #[get("/board")]
@@ -78,17 +78,16 @@ pub fn get_board_response(global_state: web::Data<Mutex<GlobalState>>) -> impl R
     let mut _global_state = global_state.lock().unwrap();
     let board = &mut _global_state.board;
 
-    let board_state = board.get_state_reference();
+    let pieces = board.get_pieces();
 
     HttpResponse::Ok().json(json!({
-        "blackEnPassant": board_state.get_black_en_passant(),
         "blackCaptures": board.black_captures_to_fen(),
         "whiteCaptures": board.white_captures_to_fen(),
-        "whiteEnPassant": board_state.get_white_en_passant(),
         "whiteMove": board.is_white_move(),
         "winner": board.get_winner_fen(),
         "zobrit": board.get_zobrist_hash(),
-        "pieces": board.get_pieces(),
+        "pieces": pieces,
+        "boardEvaluation": get_board_value(board, board.is_white_move(), &pieces)
     }))
 }
 

@@ -58,6 +58,7 @@ const Board = () => {
   const [selectedPiece, setSelectedPiece] = useState<TPiece | null>(null);
   const [board, setBoard] = useState<TBoard>({
     blackCaptures: [],
+    boardEvaluation: 0,
     whiteCaptures: [],
     pieces: [],
     whiteMove: true,
@@ -161,6 +162,7 @@ const Board = () => {
       .then((response) => response.data)
       .then((data) => {
         setBoard(data);
+        playMoveAudio(false);
       });
   };
 
@@ -280,11 +282,26 @@ const Board = () => {
             ))}
           </div>
         ))}
-        <span id="zobrit">{getZobritBinary(board.zobrit)}</span>
+        <span id="winner-announcement">{getBoardEvaluationMessage(board.boardEvaluation) + ` (${board.boardEvaluation.toFixed(0)})`}</span>
+        {/* <span id="zobrit">{getZobritBinary(board.zobrit)}</span> */}
       </div>
     </>
   );
 };
+
+const getBoardEvaluationMessage = (boardEvaluation: number) => {
+  if(boardEvaluation === 0) {
+    return "No one is winning";
+  } else if(boardEvaluation < 0 && boardEvaluation >= -100) {
+    return "Black is slightly better"
+  } else if(boardEvaluation < -100) {
+    return "Black is winning"
+  } else if(boardEvaluation > 0 && boardEvaluation <= 100) {
+    return "White is slightly better"
+  } else {
+    return "White is winning"
+  }
+}
 
 const getZobritBinary = (zobrit: number) => {
   let binary = zobrit.toString(2)

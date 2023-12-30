@@ -19,11 +19,6 @@ pub struct Zobrist {
     white_to_move: u64,
 }
 
-// fn random_bitstring() -> u64 {
-//     let mut rng = StdRng::seed_from_u64(222);
-//     rng.gen::<u64>()
-// }
-
 impl Zobrist {
     pub fn new() -> Self {
         let mut rng = StdRng::seed_from_u64(222);
