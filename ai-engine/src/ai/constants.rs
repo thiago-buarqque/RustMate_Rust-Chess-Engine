@@ -66,7 +66,7 @@ pub const WHITE_PAWN_SQUARE_TABLE: [i32; 64] = [
 
 // TODO create a mirrored white version for BISHOP_SQUARE_TABLE.
 // If AI plays as white, this will not go so well.
-pub const KNIGHT_SQUARE_TABLE: [i32; 64] = [
+pub const BLACK_KNIGHT_SQUARE_TABLE: [i32; 64] = [
     -50,-40,-30,-30,-30,-30,-40,-50,
     -40,-20,  0,  0,  0,  0,-20,-40,
     -30,  0, 10, 15, 15, 10,  0,-30,
@@ -76,9 +76,21 @@ pub const KNIGHT_SQUARE_TABLE: [i32; 64] = [
     -40,-20,  0,  5,  5,  0,-20,-40,
     -50,-40,-30,-30,-30,-30,-40,-50,
 ];
+
+pub const WHITE_KNIGHT_SQUARE_TABLE: [i32; 64] = [
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50,
+];
+
 // TODO create a mirrored white version for BISHOP_SQUARE_TABLE.
 // If AI plays as white, this will not go well.
-pub const BISHOP_SQUARE_TABLE: [i32; 64] = [
+pub const BLACK_BISHOP_SQUARE_TABLE: [i32; 64] = [
     -20,-10,-10,-10,-10,-10,-10,-20,
     -10,  0,  0,  0,  0,  0,  0,-10,
     -10,  0,  5, 10, 10,  5,  0,-10,
@@ -89,9 +101,20 @@ pub const BISHOP_SQUARE_TABLE: [i32; 64] = [
     -20,-10,-10,-10,-10,-10,-10,-20,
 ];
 
+pub const WHITE_BISHOP_SQUARE_TABLE: [i32; 64] = [
+    -20,-10,-10,-10,-10,-10,-10,-20,
+    -10,  5,  0,  0,  0,  0,  5,-10,
+    -10, 10, 10, 10, 10, 10, 10,-10,
+    -10,  0, 10, 10, 10, 10,  0,-10,
+    -10,  5,  5, 10, 10,  5,  5,-10,
+    -10,  0,  5, 10, 10,  5,  0,-10,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -20,-10,-10,-10,-10,-10,-10,-20,
+];
+
 // TODO create a mirrored white version for ROOK_SQUARE_TABLE.
 // If AI plays as white, this will not go well.
-pub const ROOK_SQUARE_TABLE: [i32; 64] = [
+pub const BLACK_ROOK_SQUARE_TABLE: [i32; 64] = [
     0,  0,  0,  0,  0,  0,  0,  0,
     5, 10, 10, 10, 10, 10, 10,  5,
     -5,  0,  0,  0,  0,  0,  0, -5,
@@ -100,6 +123,17 @@ pub const ROOK_SQUARE_TABLE: [i32; 64] = [
     -5,  0,  0,  0,  0,  0,  0, -5,
     -5,  0,  0,  0,  0,  0,  0, -5,
     0,  0,  0,  5,  5,  0,  0,  0,
+];
+
+pub const WHITE_ROOK_SQUARE_TABLE: [i32; 64] = [
+    0,  0,  0,  5,  5,  0,  0,  0,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    5, 10, 10, 10, 10, 10, 10,  5,
+    0,  0,  0,  0,  0,  0,  0,  0,
 ];
 
 pub const QUEEN_SQUARE_TABLE: [i32; 64] = [
