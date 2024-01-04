@@ -10,9 +10,9 @@ use crate::{
 };
 
 use super::constants::{
-    BISHOP_SQUARE_TABLE, BLACK_KING_SQUARE_TABLE_END_GAME, BLACK_KING_SQUARE_TABLE_MIDDLE_GAME,
-    BLACK_PAWN_SQUARE_TABLE, KNIGHT_SQUARE_TABLE, QUEEN_SQUARE_TABLE, ROOK_SQUARE_TABLE,
-    WHITE_KING_SQUARE_TABLE_END_GAME, WHITE_KING_SQUARE_TABLE_MIDDLE_GAME, WHITE_PAWN_SQUARE_TABLE,
+    BLACK_BISHOP_SQUARE_TABLE, BLACK_KING_SQUARE_TABLE_END_GAME, BLACK_KING_SQUARE_TABLE_MIDDLE_GAME,
+    BLACK_PAWN_SQUARE_TABLE, BLACK_KNIGHT_SQUARE_TABLE, QUEEN_SQUARE_TABLE, BLACK_ROOK_SQUARE_TABLE,
+    WHITE_KING_SQUARE_TABLE_END_GAME, WHITE_KING_SQUARE_TABLE_MIDDLE_GAME, WHITE_PAWN_SQUARE_TABLE, WHITE_BISHOP_SQUARE_TABLE, WHITE_KNIGHT_SQUARE_TABLE, WHITE_ROOK_SQUARE_TABLE,
 };
 
 pub fn get_sorted_moves(board: &Board, max: bool, pieces: &[BoardPiece]) -> Vec<PieceMove> {
@@ -126,13 +126,23 @@ fn get_pst_value(position: i8, piece_value: i8, end_game: bool, white_piece: boo
         };
     }
 
-    (match piece_type {
-        PieceType::Bishop => BISHOP_SQUARE_TABLE[position as usize],
-        PieceType::Knight => KNIGHT_SQUARE_TABLE[position as usize],
-        PieceType::Queen => QUEEN_SQUARE_TABLE[position as usize],
-        PieceType::Rook => ROOK_SQUARE_TABLE[position as usize],
-        _ => 0,
-    }) as f32
+    if white_piece {
+        (match piece_type {
+            PieceType::Bishop => WHITE_BISHOP_SQUARE_TABLE[position as usize],
+            PieceType::Knight => WHITE_KNIGHT_SQUARE_TABLE[position as usize],
+            PieceType::Queen => QUEEN_SQUARE_TABLE[position as usize],
+            PieceType::Rook => WHITE_ROOK_SQUARE_TABLE[position as usize],
+            _ => 0,
+        }) as f32
+    } else {
+        (match piece_type {
+            PieceType::Bishop => BLACK_BISHOP_SQUARE_TABLE[position as usize],
+            PieceType::Knight => BLACK_KNIGHT_SQUARE_TABLE[position as usize],
+            PieceType::Queen => QUEEN_SQUARE_TABLE[position as usize],
+            PieceType::Rook => BLACK_ROOK_SQUARE_TABLE[position as usize],
+            _ => 0,
+        }) as f32
+    }
 }
 
 fn is_end_game(pieces: &[BoardPiece]) -> bool {
