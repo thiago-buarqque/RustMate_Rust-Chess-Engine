@@ -15,6 +15,7 @@ the best approach. Soon the API in Pyton will be replace for a API in Rust (once
 - [x] A simple AI is implemented using the Negamax algorithm and performs under 1 sec for a depth of 4.
   - [x] Move ordering and alpha beta pruning is implemented to short the number of states to be searched
 - [x] A heatmap is being used to give or remove points for a piece standing in square (example: usually, the king should not be in the middle of the board at the opening and mid game phases)
+- [x] Improve end games by pushing the opponent king to corners and using the friendly king to get near the opponent.
 
 
 #### Missing features I want to implement
