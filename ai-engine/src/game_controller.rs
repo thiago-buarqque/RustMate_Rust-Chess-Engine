@@ -2,7 +2,7 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 use serde_json::json;
 
 use crate::{
-    common::{contants::EMPTY_PIECE, piece_move::PieceMove, piece_utils::get_promotion_options},
+    common::{contants::EMPTY_PIECE, piece_move::PieceMove, piece_utils::{get_promotion_options, get_position_line_number, get_position_column_number}},
     game::board::Board,
     global_state::GlobalState, dto::dtos::{FenDTO, MovesCountDTO}, ai::ai_utils::get_board_value,
 };
@@ -87,7 +87,7 @@ pub fn get_board_response(global_state: web::Data<Mutex<GlobalState>>) -> impl R
         "winner": board.get_winner_fen(),
         "zobrit": board.get_zobrist_hash(),
         "pieces": pieces,
-        "boardEvaluation": get_board_value(board, board.is_white_move(), &pieces)
+        "boardEvaluation": get_board_value(board, board.is_white_move() && !board.is_game_finished(), &pieces)
     }))
 }
 
@@ -141,16 +141,6 @@ fn move_generation_count(board: &mut Board, depth: usize, track_moves: bool) -> 
     }
 
     num_positions
-}
-
-#[inline]
-fn get_position_line_number(position: i8) -> usize {
-    (8 - ((position - (position % 8)) / 8)) as usize
-}
-
-#[inline]
-fn get_position_column_number(position: i8) -> usize {
-    (position - (position - (position % 8))) as usize
 }
 
 fn get_position_string(position: i8, columns: &[char]) -> String {

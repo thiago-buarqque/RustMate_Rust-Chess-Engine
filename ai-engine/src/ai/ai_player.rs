@@ -1,6 +1,7 @@
 use std::{
     ops::Add,
     sync::{Arc, Mutex},
+    time::{Duration, Instant}
 };
 
 use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator};
@@ -20,6 +21,8 @@ impl AIPlayer {
     }
 
     pub fn get_move(&mut self, board: &mut Board, depth: u8) -> (f32, PieceMove) {
+        let now = Instant::now();
+
         let best_move = Arc::new(Mutex::new(PieceMove::new(-1, 0, -1)));
         let moves_count: Arc<Mutex<u64>> = Arc::new(Mutex::new(0));
         let value = Arc::new(Mutex::new(f32::MIN));
@@ -41,7 +44,7 @@ impl AIPlayer {
             );
         });
 
-        println!("Evaluated {} states", moves_count.lock().unwrap());
+        println!("Evaluated {} state in {}ms", moves_count.lock().unwrap(), now.elapsed().as_millis());
 
         let locked_value = value.lock().unwrap();
 
@@ -104,6 +107,7 @@ impl AIPlayer {
 
         let mut moves: Vec<PieceMove> = get_sorted_moves(board, max, &pieces);
 
+        let mut value = f32::MIN;
         'piece_move_loop: for _move in moves.iter_mut() {
             let _ = board.make_move(_move);
 
@@ -113,7 +117,9 @@ impl AIPlayer {
 
             moves_count += node_results.1;
 
-            alpha = alpha.max(-node_results.0);
+            value = value.max(-node_results.0);
+
+            alpha = alpha.max(value);
 
             if alpha >= beta {
                 break 'piece_move_loop;

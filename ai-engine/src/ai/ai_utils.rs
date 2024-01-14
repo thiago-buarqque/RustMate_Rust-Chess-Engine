@@ -4,7 +4,7 @@ use crate::{
         contants::{BISHOP_WORTH, EMPTY_PIECE, KING_WORTH, PAWN_WORTH, QUEEN_WORTH, ROOK_WORTH},
         enums::PieceType,
         piece_move::PieceMove,
-        piece_utils::{get_piece_type, get_piece_worth, get_promotion_options, is_white_piece},
+        piece_utils::{get_piece_type, get_piece_worth, get_promotion_options, is_white_piece, get_position_line_number, get_position_column_number},
     },
     game::{board::Board, board_state::BoardState, move_generator_helper::get_adjacent_position},
 };
@@ -12,7 +12,7 @@ use crate::{
 use super::constants::{
     BLACK_BISHOP_SQUARE_TABLE, BLACK_KING_SQUARE_TABLE_END_GAME, BLACK_KING_SQUARE_TABLE_MIDDLE_GAME,
     BLACK_PAWN_SQUARE_TABLE, BLACK_KNIGHT_SQUARE_TABLE, QUEEN_SQUARE_TABLE, BLACK_ROOK_SQUARE_TABLE,
-    WHITE_KING_SQUARE_TABLE_END_GAME, WHITE_KING_SQUARE_TABLE_MIDDLE_GAME, WHITE_PAWN_SQUARE_TABLE, WHITE_BISHOP_SQUARE_TABLE, WHITE_KNIGHT_SQUARE_TABLE, WHITE_ROOK_SQUARE_TABLE,
+    WHITE_KING_SQUARE_TABLE_END_GAME, WHITE_KING_SQUARE_TABLE_MIDDLE_GAME, WHITE_PAWN_SQUARE_TABLE, WHITE_BISHOP_SQUARE_TABLE, WHITE_KNIGHT_SQUARE_TABLE, WHITE_ROOK_SQUARE_TABLE, END_GAME_PIECES_THRESHOLD,
 };
 
 pub fn get_sorted_moves(board: &Board, max: bool, pieces: &[BoardPiece]) -> Vec<PieceMove> {
@@ -48,6 +48,10 @@ pub fn get_sorted_moves(board: &Board, max: bool, pieces: &[BoardPiece]) -> Vec<
             end_game,
             is_white_piece(_move.get_piece_value()),
         ) as i32);
+
+        if end_game {
+            _move.sum_to_move_worth(get_end_game_move_worth(board.clone(), max, _move));
+        }
     }
 
     // TODO order also based on the hashmap with previous generated states
@@ -59,6 +63,36 @@ pub fn get_sorted_moves(board: &Board, max: bool, pieces: &[BoardPiece]) -> Vec<
     }
 
     moves
+}
+
+fn get_end_game_move_worth(mut board: Board, max: bool, piece_move: &PieceMove) -> i32 {
+    let _ = board.make_move(piece_move);
+
+    let (friendly_king_position, opponent_king_position) = if is_white_piece(piece_move.get_piece_value()) {
+        (board.get_state_reference().get_white_king_position(), board.get_state_reference().get_black_king_position())
+    } else {
+        (board.get_state_reference().get_black_king_position(), board.get_state_reference().get_white_king_position())
+    };
+
+    let mut evaluation = 0.0_f32;
+
+    let opponent_king_rank = get_position_line_number(opponent_king_position);
+    let opponent_king_file = get_position_column_number(opponent_king_position);
+
+    let opponent_king_dst_to_center_file = (3 - opponent_king_file).max(opponent_king_file - 4);
+    let opponent_king_dst_to_center_rank = (3 - opponent_king_rank).max(opponent_king_rank - 4);
+    let opponent_king_dst_from_center = opponent_king_dst_to_center_file + opponent_king_dst_to_center_rank;
+    evaluation += opponent_king_dst_from_center as f32;
+
+    let friendly_king_rank = get_position_line_number(friendly_king_position);
+    let friendly_king_file = get_position_column_number(friendly_king_position);
+    
+    let dst_between_kings_file = (friendly_king_file).abs_diff(opponent_king_file);
+    let dst_between_kings_rank = (friendly_king_rank).abs_diff(opponent_king_rank);
+    let dst_between_kings = dst_between_kings_file + dst_between_kings_rank;
+    evaluation += 14.0 - dst_between_kings as f32; // times 5 to overcome the heat map table values during endgame
+
+    return ((evaluation * 10.0 * calculate_end_game_weight(&board.get_pieces())) * if max {1.0} else {-1.0}) as i32
 }
 
 fn get_friendly_moves_and_attacked_positions(
@@ -146,6 +180,10 @@ fn get_pst_value(position: i8, piece_value: i8, end_game: bool, white_piece: boo
 }
 
 fn is_end_game(pieces: &[BoardPiece]) -> bool {
+    calculate_end_game_weight(pieces) >= 1.0
+}
+
+fn calculate_end_game_weight(pieces: &[BoardPiece]) -> f32 {
     let mut black_pieces = 0;
     let mut white_pieces = 0;
 
@@ -159,13 +197,16 @@ fn is_end_game(pieces: &[BoardPiece]) -> bool {
         }
     });
 
-    black_pieces <= 3 || white_pieces <= 3
+    (END_GAME_PIECES_THRESHOLD / black_pieces as f32).max(END_GAME_PIECES_THRESHOLD / white_pieces as f32)
 }
 
 pub fn get_board_value(board: &mut Board, max: bool, pieces: &[BoardPiece]) -> f32 {
     if board.is_game_finished() && board.get_winner_fen() == 'd' {
         // Draw
         return 0.0;
+    } else if board.is_game_finished() {
+        // This works, but doesn't feel right, what if the AI is white?
+        return KING_WORTH * if max {1.0} else {-1.0};
     }
 
     // The evaluation
@@ -208,7 +249,7 @@ pub fn get_board_value(board: &mut Board, max: bool, pieces: &[BoardPiece]) -> f
         let pst_value = get_pst_value(
             piece.get_position(),
             piece.get_value(),
-            end_game, // TODO determine endgame
+            end_game,
             piece.is_white(),
         );
 
@@ -256,7 +297,7 @@ pub fn get_board_value(board: &mut Board, max: bool, pieces: &[BoardPiece]) -> f
         }
     }
 
-    let score = (KING_WORTH * k)
+    let score = (KING_WORTH * k) // King result is always 0
         + (QUEEN_WORTH * q)
         + (ROOK_WORTH * r)
         + (BISHOP_WORTH * (b + n))

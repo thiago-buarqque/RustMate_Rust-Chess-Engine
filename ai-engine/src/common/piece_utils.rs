@@ -89,6 +89,16 @@ pub fn get_piece_worth(piece_value: i8) -> i32 {
 }
 
 #[inline]
+pub fn get_position_line_number(position: i8) -> usize {
+    (8 - ((position - (position % 8)) / 8)) as usize
+}
+
+#[inline]
+pub fn get_position_column_number(position: i8) -> usize {
+    (position - (position - (position % 8))) as usize
+}
+
+#[inline]
 pub fn is_white_piece(piece_value: i8) -> bool {
     (WHITE_LOWER_BOUND..=WHITE_UPPER_BOUND).contains(&piece_value)
 }
