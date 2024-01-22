@@ -1,7 +1,7 @@
 use crate::common::{
     board_piece::BoardPiece,
     contants::EMPTY_PIECE,
-    enums::PieceType,
+    enums::{PieceType, PieceColor},
     piece_move::PieceMove,
     piece_utils::{get_piece_type, is_same_color, is_white_piece},
 };
@@ -63,7 +63,7 @@ impl MoveGenerator {
         let (black_moves, white_moves, mut pieces) = self.generate_pieces_moves(board);
 
         // Only the two kings on the board
-        if black_moves.is_empty() && white_moves.is_empty() {
+        if black_moves.is_empty() && white_moves.is_empty() && self.has_only_the_two_kings(&pieces) {
             // Game ends in draw
             board.set_winner(false, board.is_white_move());
         } else {
@@ -73,6 +73,10 @@ impl MoveGenerator {
         }
 
         pieces
+    }
+
+    fn has_only_the_two_kings(&self, pieces: &Vec<BoardPiece>) -> bool {
+        pieces.iter().map(|piece| piece.get_value()).sum::<i8>() == ((PieceColor::Black.value() | PieceType::King.value()) + (PieceColor::White.value() | PieceType::King.value()))
     }
 
     fn generate_pieces_moves(
@@ -309,7 +313,7 @@ impl MoveGenerator {
             let same_color = is_same_color(knight_piece, current_piece);
 
             if current_piece == EMPTY_PIECE || !same_color {
-                let mut _move = PieceMove::new(position, current_piece, new_position);
+                let mut _move = PieceMove::new(position, knight_piece, new_position);
 
                 _move.set_is_capture(!same_color);
 
@@ -377,7 +381,7 @@ impl MoveGenerator {
             // Is a pawn straight attacking the position?
             // The king can move in front of the pawn
             if get_piece_type(possible_pawn) == PieceType::Pawn {
-                moves.push(PieceMove::new(king_position, possible_pawn, position));
+                moves.push(PieceMove::new(king_position, king, position));
             }
         } else {
             let piece_value = self.board_state.get_piece(position);
@@ -385,7 +389,7 @@ impl MoveGenerator {
             let same_color = is_same_color(king, piece_value);
 
             if piece_value == EMPTY_PIECE || !same_color {
-                let mut _move = PieceMove::new(king_position, piece_value, position);
+                let mut _move = PieceMove::new(king_position, king, position);
 
                 _move.set_is_capture(!same_color);
 
@@ -574,9 +578,9 @@ impl MoveGenerator {
             let existing_piece = self.board_state.get_piece(new_position);
 
             if existing_piece == EMPTY_PIECE {
-                moves.push(PieceMove::new(position, existing_piece, new_position));
+                moves.push(PieceMove::new(position, piece, new_position));
             } else if !is_same_color(piece, existing_piece) {
-                let mut _move = PieceMove::new(position, existing_piece, new_position);
+                let mut _move = PieceMove::new(position, piece, new_position);
 
                 _move.set_is_capture(true);
 

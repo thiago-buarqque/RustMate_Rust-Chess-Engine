@@ -147,4 +147,4 @@ pub const QUEEN_SQUARE_TABLE: [i32; 64] = [
     -20,-10,-10, -5, -5,-10,-10,-20,
 ];
 
-pub const END_GAME_PIECES_THRESHOLD: f32 = 3.0;
+pub const END_GAME_PIECES_THRESHOLD: f32 = 4.0;

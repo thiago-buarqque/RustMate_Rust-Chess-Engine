@@ -21,23 +21,23 @@ pub fn get_piece_index(piece_value: i8) -> usize {
     let piece_type = get_piece_type(piece_value);
 
     if is_white_piece(piece_value) {
-        match piece_type.value() {
-            x if x == PieceType::Bishop.value() => WHITE_BISHOP,
-            x if x == PieceType::King.value() => WHITE_KING,
-            x if x == PieceType::Knight.value() => WHITE_KNIGHT,
-            x if x == PieceType::Pawn.value() => WHITE_PAWN,
-            x if x == PieceType::Queen.value() => WHITE_QUEEN,
-            x if x == PieceType::Rook.value() => WHITE_ROOK,
+        match piece_type {
+            PieceType::Bishop => WHITE_BISHOP,
+            PieceType::King => WHITE_KING,
+            PieceType::Knight => WHITE_KNIGHT,
+            PieceType::Pawn => WHITE_PAWN,
+            PieceType::Queen => WHITE_QUEEN,
+            PieceType::Rook => WHITE_ROOK,
             _ => 100,
         }
     } else {
-        match piece_type.value() {
-            x if x == PieceType::Bishop.value() => BLACK_BISHOP,
-            x if x == PieceType::King.value() => BLACK_KING,
-            x if x == PieceType::Knight.value() => BLACK_KNIGHT,
-            x if x == PieceType::Pawn.value() => BLACK_PAWN,
-            x if x == PieceType::Queen.value() => BLACK_QUEEN,
-            x if x == PieceType::Rook.value() => BLACK_ROOK,
+        match piece_type {
+            PieceType::Bishop => BLACK_BISHOP,
+            PieceType::King => BLACK_KING,
+            PieceType::Knight => BLACK_KNIGHT,
+            PieceType::Pawn => BLACK_PAWN,
+            PieceType::Queen => BLACK_QUEEN,
+            PieceType::Rook => BLACK_ROOK,
             _ => 100,
         }
     }

@@ -121,9 +121,9 @@ impl PieceMove {
 
     pub fn clone(&self) -> PieceMove {
         PieceMove {
-            from_position: self.from_position,
             capture: self.capture,
             en_passant: self.en_passant,
+            from_position: self.from_position,
             promotion: self.promotion,
             move_worth: self.move_worth,
             piece_value: self.piece_value,

@@ -4,7 +4,7 @@ use serde_json::json;
 use crate::{
     common::{contants::EMPTY_PIECE, piece_move::PieceMove, piece_utils::{get_promotion_options, get_position_line_number, get_position_column_number}},
     game::board::Board,
-    global_state::GlobalState, dto::dtos::{FenDTO, MovesCountDTO}, ai::ai_utils::get_board_value,
+    global_state::GlobalState, dto::dtos::{FenDTO, MovesCountDTO, AIDepthDTO}, ai::ai_utils::get_board_value,
 };
 
 #[get("/board")]
@@ -38,6 +38,9 @@ pub async fn move_piece(
     global_state: web::Data<Mutex<GlobalState>>) -> impl Responder {
     // println!("Req: {:?}", req);
     let mut _global_state = global_state.lock().unwrap();
+
+    let time_to_think = _global_state.time_to_think;
+
     let board = &mut _global_state.board;
     
     let _ = board.make_move(&piece_move);
@@ -46,7 +49,7 @@ pub async fn move_piece(
 
     let ai = &mut _global_state.ai;
 
-    let (_, ai_move) = ai.get_move(&mut board_clone, 5);
+    let (_, ai_move) = ai.get_move(&mut board_clone, time_to_think);
 
     let board = &mut _global_state.board;
 
@@ -72,6 +75,13 @@ pub async fn load_fen(
     drop(_global_state);
 
     get_board_response(global_state)
+}
+
+#[post("/ai/time_to_think")]
+pub async fn set_ai_depth(depth: web::Json<AIDepthDTO>, global_state: web::Data<Mutex<GlobalState>>,) -> impl Responder {
+    global_state.lock().unwrap().time_to_think = depth.time_to_think;
+
+    HttpResponse::Ok()
 }
 
 pub fn get_board_response(global_state: web::Data<Mutex<GlobalState>>) -> impl Responder {

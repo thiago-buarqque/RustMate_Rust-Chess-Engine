@@ -155,7 +155,7 @@ const Board = () => {
   };
 
   const movePiece = (pieceMove: TMove) => {
-    pieceMove.promotionType = 5 // Queen
+    pieceMove.promotionType = TPieceColor.White | 5 // Queen
     
     http
       .post<TBoard>("/board/move/piece", pieceMove)
@@ -191,7 +191,7 @@ const Board = () => {
 
   const fetchCountMoves = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    let depthInput = document.getElementById("in_depth");
+    let depthInput = document.getElementById("raw_search_depth");
 
     if (!depthInput) {
       return;
@@ -206,6 +206,22 @@ const Board = () => {
       .then((response) => response.data)
       .then((data) => {
         console.log(`Evaluated ${data.moves} in ${data.elapsedTime}ms for a depth of ${depth}`);
+      });
+  };
+
+  const setAITime = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    let aiTimeInput = document.getElementById("ai_time");
+
+    if (!aiTimeInput) {
+      return;
+    }
+
+    let time = Number((aiTimeInput as HTMLInputElement).value);
+
+    http
+      .post<{ moves: number, elapsedTime: number }>("/ai/time_to_think", {
+        time_to_think: time,
       });
   };
 
@@ -238,9 +254,15 @@ const Board = () => {
           </button>
         </form>
         <form method="post" onSubmit={fetchCountMoves}>
-          <input type="number" name="depth" id="in_depth" />
+          <input type="number" name="rawDepth" id="raw_search_depth" />
           <button type="submit" id="count_moves_btn">
             Count
+          </button>
+        </form>
+        <form method="post" onSubmit={setAITime}>
+          <input type="number" name="aiTime" id="ai_time" defaultValue={5}/>
+          <button type="submit" id="set_ai_time_btn">
+            Set
           </button>
         </form>
       </div>
@@ -264,7 +286,7 @@ const Board = () => {
                 data-pos={i * 8 + j}
                 onClick={(e) => onMovePiece(e.currentTarget, i * 8 + j)}
               >
-                {/* <span className="cell-index">{i * 8 + j}</span> */}
+                <span className="cell-index">{i * 8 + j}</span>
                 {j === 0 && (
                   <span className={`row-index ${(i + 1) % 2 === 0 ? "white" : ""}`}>{8 - i}</span>
                 )}
