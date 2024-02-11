@@ -9,7 +9,7 @@ use super::{
 pub fn pieces_to_fen(pieces: &[i8]) -> Vec<char> {
     pieces
         .iter()
-        .map(|&piece| piece_fen_from_value(piece))
+        .map(|&piece| get_piece_fen_from_value(piece))
         .collect()
 }
 
@@ -37,7 +37,7 @@ pub fn piece_value_from_fen(piece_fen: &char) -> i8 {
     (color.value()) | (piece_type.value())
 }
 
-pub fn piece_fen_from_value(piece_value: i8) -> char {
+pub fn get_piece_fen_from_value(piece_value: i8) -> char {
     match piece_value {
         17 => 'B',
         18 => 'K',
@@ -86,16 +86,6 @@ pub fn get_piece_worth(piece_value: i8) -> i32 {
         22 | 14 => ROOK_WORTH as i32,   // Rook
         _ => 0,
     }
-}
-
-#[inline]
-pub fn get_position_line_number(position: i8) -> usize {
-    (8 - ((position - (position % 8)) / 8)) as usize
-}
-
-#[inline]
-pub fn get_position_column_number(position: i8) -> usize {
-    (position - (position - (position % 8))) as usize
 }
 
 #[inline]

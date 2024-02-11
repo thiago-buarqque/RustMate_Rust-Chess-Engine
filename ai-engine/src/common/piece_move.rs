@@ -175,10 +175,6 @@ impl PieceMove {
         self.promotion
     }
 
-    pub fn set_from_position(&mut self, from_position: i8) {
-        self.from_position = from_position;
-    }
-
     pub fn set_is_capture(&mut self, is_capture: bool) {
         self.capture = is_capture;
     }
@@ -195,16 +191,8 @@ impl PieceMove {
         self.move_worth = move_worth;
     }
 
-    pub fn set_piece_value(&mut self, piece_value: i8) {
-        self.piece_value = piece_value;
-    }
-
     pub fn set_promotion_value(&mut self, promotion_type: i8) {
         self.promotion_type = promotion_type;
-    }
-
-    pub fn set_to_position(&mut self, to_position: i8) {
-        self.to_position = to_position;
     }
 
     pub fn sum_to_move_worth(&mut self, value: i32) {

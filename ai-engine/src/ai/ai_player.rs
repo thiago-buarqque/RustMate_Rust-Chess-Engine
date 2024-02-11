@@ -41,6 +41,8 @@ impl AIPlayer {
 
             let moves: Vec<PieceMove> = get_sorted_moves(&Some(best_move_guard.to_owned()), board, true, &pieces);
 
+            // print!("Sorted moves for: {}", board.get_state_reference().get);
+
             drop(best_move_guard);
 
             moves.par_iter().for_each(|_move| {
@@ -60,6 +62,8 @@ impl AIPlayer {
 
                     *best_move_guard = _move.clone();
                 }
+
+                drop(alpha_guard);
             });
 
             depth += 1;
@@ -140,7 +144,7 @@ impl AIPlayer {
         if depth == 0 || board.is_game_finished() {
             state_count.fetch_add(1, Ordering::SeqCst);
 
-            let value: f32 =  get_board_value(board, max, &pieces);
+            let value: f32 = get_board_value(board, max, &pieces);
 
             let mut _transposition_table = transposition_table.lock().unwrap();
 

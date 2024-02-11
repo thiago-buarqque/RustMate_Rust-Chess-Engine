@@ -1,6 +1,6 @@
 use serde::{ser::{SerializeStruct, Serializer}, Serialize};
 
-use super::{piece_move::PieceMove, piece_utils::piece_fen_from_value};
+use super::{piece_move::PieceMove, piece_utils::get_piece_fen_from_value};
 
 #[derive(Debug, Clone)]
 pub struct BoardPiece {
@@ -19,7 +19,7 @@ impl Serialize for BoardPiece {
         let mut state = serializer.serialize_struct("BoardPiece", 4)?;
         state.serialize_field("moves", &self.moves)?;
         state.serialize_field("position", &self.position)?;
-        state.serialize_field("fen", &piece_fen_from_value(self.value))?;
+        state.serialize_field("fen", &get_piece_fen_from_value(self.value))?;
         state.serialize_field("white", &self.white)?;
         state.end()
     }

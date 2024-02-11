@@ -4,11 +4,7 @@ use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 
 use crate::{
     common::{
-        board_piece::BoardPiece,
-        contants::{BISHOP_WORTH, EMPTY_PIECE, KING_WORTH, PAWN_WORTH, QUEEN_WORTH, ROOK_WORTH},
-        enums::PieceType,
-        piece_move::PieceMove,
-        piece_utils::{get_piece_type, get_piece_worth, get_promotion_options, is_white_piece, get_position_line_number, get_position_column_number},
+        board_piece::BoardPiece, board_utils::{get_position_column_number, get_position_line_number}, contants::{BISHOP_WORTH, EMPTY_PIECE, KING_WORTH, PAWN_WORTH, QUEEN_WORTH, ROOK_WORTH}, enums::PieceType, piece_move::PieceMove, piece_utils::{get_piece_type, get_piece_worth, get_promotion_options, is_white_piece}
     },
     game::{board::Board, board_state::BoardState, move_generator_helper::get_adjacent_position},
 };
@@ -227,8 +223,7 @@ pub fn get_board_value(board: &mut Board, max: bool, pieces: &[BoardPiece]) -> f
         // Draw
         return 0.0;
     } else if board.is_game_finished() {
-        // This will break if the AI is white
-        return if board.get_winner_fen() == 'b' {-100000.0} else {100000.0};
+        return if max {KING_WORTH * 10.0} else {-KING_WORTH * 10.0};
     }
 
     // The evaluation

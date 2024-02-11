@@ -2,9 +2,14 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 use serde_json::json;
 
 use crate::{
-    common::{contants::EMPTY_PIECE, piece_move::PieceMove, piece_utils::{get_promotion_options, get_position_line_number, get_position_column_number}},
+    ai::ai_utils::get_board_value,
+    common::{
+        board_utils::{get_move_notation, get_piece_position_fen}, contants::EMPTY_PIECE, piece_move::PieceMove,
+        piece_utils::get_promotion_options,
+    },
+    dto::dtos::{AIDepthDTO, FenDTO, MovesCountDTO},
     game::board::Board,
-    global_state::GlobalState, dto::dtos::{FenDTO, MovesCountDTO, AIDepthDTO}, ai::ai_utils::get_board_value,
+    global_state::GlobalState,
 };
 
 #[get("/board")]
@@ -12,8 +17,7 @@ pub async fn get_board(global_state: web::Data<Mutex<GlobalState>>) -> impl Resp
     get_board_response(global_state)
 }
 
-
-use std::{time::Instant, sync::Mutex};
+use std::{sync::Mutex, time::Instant};
 
 #[post("/board/moves/count")]
 pub async fn get_move_generation_count(
@@ -35,27 +39,28 @@ pub async fn get_move_generation_count(
 #[post("/board/move/piece")]
 pub async fn move_piece(
     piece_move: web::Json<PieceMove>,
-    global_state: web::Data<Mutex<GlobalState>>) -> impl Responder {
+    global_state: web::Data<Mutex<GlobalState>>,
+) -> impl Responder {
     // println!("Req: {:?}", req);
     let mut _global_state = global_state.lock().unwrap();
 
     let time_to_think = _global_state.time_to_think;
 
     let board = &mut _global_state.board;
-    
+
     let _ = board.make_move(&piece_move);
-    
-    let mut board_clone = board.clone();
 
-    let ai = &mut _global_state.ai;
+    // let mut board_clone = board.clone();
 
-    let (_, ai_move) = ai.get_move(&mut board_clone, time_to_think);
+    // let ai = &mut _global_state.ai;
 
-    let board = &mut _global_state.board;
+    // let (_, ai_move) = ai.get_move(&mut board_clone, time_to_think);
 
-    if ai_move.get_from_position() != -1 && ai_move.get_to_position() != -1 {
-        let _ = board.make_move(&ai_move);
-    }
+    // let board = &mut _global_state.board;
+
+    // if ai_move.get_from_position() != -1 && ai_move.get_to_position() != -1 {
+    //     let _ = board.make_move(&ai_move);
+    // }
 
     drop(_global_state);
 
@@ -78,7 +83,10 @@ pub async fn load_fen(
 }
 
 #[post("/ai/time_to_think")]
-pub async fn set_ai_depth(depth: web::Json<AIDepthDTO>, global_state: web::Data<Mutex<GlobalState>>,) -> impl Responder {
+pub async fn set_ai_depth(
+    depth: web::Json<AIDepthDTO>,
+    global_state: web::Data<Mutex<GlobalState>>,
+) -> impl Responder {
     global_state.lock().unwrap().time_to_think = depth.time_to_think;
 
     HttpResponse::Ok()
@@ -88,15 +96,24 @@ pub fn get_board_response(global_state: web::Data<Mutex<GlobalState>>) -> impl R
     let mut _global_state = global_state.lock().unwrap();
     let board = &mut _global_state.board;
 
+    let board_state = board.get_state_reference();
+
+    let black_en_passant = board_state.get_black_en_passant();
+    let white_en_passant = board_state.get_white_en_passant();
+    let board_fen = board_state.get_fen();
+
     let pieces = board.get_pieces();
 
     HttpResponse::Ok().json(json!({
         "blackCaptures": board.black_captures_to_fen(),
+        "blackEnPassant": black_en_passant,
+        "boardFen": board_fen,
         "whiteCaptures": board.white_captures_to_fen(),
         "whiteMove": board.is_white_move(),
         "winner": board.get_winner_fen(),
         "zobrit": board.get_zobrist_hash(),
         "pieces": pieces,
+        "whiteEnPassant": white_en_passant,
         "boardEvaluation": get_board_value(board, board.is_white_move() && !board.is_game_finished(), &pieces)
     }))
 }
@@ -136,12 +153,12 @@ fn move_generation_count(board: &mut Board, depth: usize, track_moves: bool) -> 
                     if piece_move.is_promotion() {
                         println!(
                             "{}{}: {}",
-                            get_move_char(&piece_move),
+                            get_move_notation(&piece_move),
                             promotion_option.clone(),
                             moves_count
                         )
                     } else {
-                        println!("{}: {}", get_move_char(&piece_move), moves_count)
+                        println!("{}: {}", get_move_notation(&piece_move), moves_count)
                     }
                 }
 
@@ -151,22 +168,6 @@ fn move_generation_count(board: &mut Board, depth: usize, track_moves: bool) -> 
     }
 
     num_positions
-}
-
-fn get_position_string(position: i8, columns: &[char]) -> String {
-    let line = get_position_line_number(position);
-    let column = get_position_column_number(position);
-
-    format!("{}{}", columns[column], line)
-}
-
-fn get_move_char(piece_move: &PieceMove) -> String {
-    let columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-
-    let from_position_str = get_position_string(piece_move.get_from_position(), &columns);
-    let to_position_str = get_position_string(piece_move.get_to_position(), &columns);
-
-    format!("{}{}", from_position_str, to_position_str)
 }
 
 // #[cfg(test)]

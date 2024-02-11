@@ -1,3 +1,4 @@
+pub mod board_utils;
 pub mod board_piece;
 pub mod contants;
 pub mod enums;

@@ -1,15 +1,12 @@
 use crate::common::{
-    contants::EMPTY_PIECE,
-    enums::PieceType,
-    piece_utils::{is_piece_of_type, is_white_piece, piece_value_from_fen, pieces_to_fen},
+    board_utils::get_piece_position_fen, contants::EMPTY_PIECE, enums::PieceType, piece_utils::{get_piece_fen_from_value, is_piece_of_type, is_white_piece, piece_value_from_fen, pieces_to_fen}
 };
 
 use super::{
     contants::{
         BLACK_KING_INITIAL_POSITION, BLACK_KING_VALUE, LETTER_A_UNICODE,
         WHITE_KING_INITIAL_POSITION, WHITE_KING_VALUE,
-    },
-    zobrist::Zobrist,
+    }, fen_utils::get_position_fen, zobrist::Zobrist
 };
 
 #[derive(Debug, Clone)]
@@ -20,8 +17,8 @@ pub struct BoardState {
     black_en_passant: i8,
     black_king_moved: bool,
     black_king_position: i8,
-    full_moves: i8,
-    half_moves: i8,
+    full_moves: usize,
+    half_moves: usize,
     white_move: bool,
     squares: [i8; 64],
     white_able_to_king_side_castle: bool,
@@ -142,9 +139,23 @@ impl BoardState {
             captured_piece,
         );
 
+        if !self.is_white_move() {
+            self.increment_full_moves();
+        }
+
+        self.set_white_move(!self.is_white_move());
+
+        if is_piece_of_type(moved_piece, PieceType::Pawn) {
+            self.half_moves = 0;
+        } else {
+            self.half_moves += 1;
+        }
+
         if is_piece_of_type(captured_piece, PieceType::Empty) {
             return;
         }
+
+        self.half_moves = 0;
 
         let is_white = is_white_piece(captured_piece);
 
@@ -179,7 +190,7 @@ impl BoardState {
     }
 
     fn load_half_move_clock(&mut self, half_move: &str) {
-        if let Ok(value) = half_move.parse::<i8>() {
+        if let Ok(value) = half_move.parse::<usize>() {
             self.half_moves = value;
         } else {
             self.half_moves = 0;
@@ -187,7 +198,7 @@ impl BoardState {
     }
 
     fn load_full_move_number(&mut self, moves: &str) {
-        if let Ok(value) = moves.parse::<i8>() {
+        if let Ok(value) = moves.parse::<usize>() {
             self.full_moves = value;
         } else {
             self.full_moves = 0;
@@ -278,6 +289,10 @@ impl BoardState {
         }
     }
 
+    pub fn get_fen(&self) -> String {
+        get_position_fen(&self)
+    }
+
     pub fn is_black_able_to_king_side_castle(&self) -> bool {
         self.black_able_to_king_side_castle
     }
@@ -308,6 +323,14 @@ impl BoardState {
 
     pub fn get_squares(&self) -> &[i8; 64] {
         &self.squares
+    }
+
+    pub fn get_half_moves(&self) -> usize {
+        self.half_moves
+    }
+
+    pub fn get_full_moves(&self) -> usize {
+        self.full_moves
     }
 
     pub fn is_white_able_to_king_side_castle(&self) -> bool {
@@ -396,28 +419,28 @@ impl BoardState {
 
     pub fn update_castling_ability(&mut self, index: i8, is_black: bool, is_king_side: bool) {
         match (index, is_black, is_king_side) {
-            (0, true, false) => {
+            (0, true, false) => { // BLACK_QUEEN_SIDE_ROOK_POSITION
                 if self.black_able_to_queen_side_castle {
                     self.zobrist.update_hash_on_black_lose_queen_side_castle();
                 }
 
                 self.black_able_to_queen_side_castle = false;
             }
-            (7, true, true) => {
+            (7, true, true) => { // BLACK_KING_SIDE_ROOK_POSITION
                 if self.black_able_to_king_side_castle {
                     self.zobrist.update_hash_on_black_lose_rook_side_castle();
                 }
 
                 self.black_able_to_king_side_castle = false;
             }
-            (56, false, false) => {
+            (56, false, false) => { // WHITE_QUEEN_SIDE_ROOK_POSITION
                 if self.white_able_to_queen_side_castle {
                     self.zobrist.update_hash_on_white_lose_queen_side_castle()
                 }
 
                 self.white_able_to_queen_side_castle = false;
             }
-            (63, false, true) => {
+            (63, false, true) => { // WHITE_KING_SIDE_ROOK_POSITION
                 if self.white_able_to_king_side_castle {
                     self.zobrist.update_hash_on_white_lose_rook_side_castle()
                 }

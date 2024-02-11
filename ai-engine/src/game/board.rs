@@ -126,12 +126,6 @@ impl Board {
     ) {
         self.handle_en_passant(from_index, moving_piece, to_index);
 
-        if !self.state.is_white_move() {
-            self.state.increment_full_moves();
-        }
-
-        self.state.set_white_move(!self.state.is_white_move());
-
         // Remove hook ability due to rook move
         if get_piece_type(moving_piece) == PieceType::Rook {
             self.state
