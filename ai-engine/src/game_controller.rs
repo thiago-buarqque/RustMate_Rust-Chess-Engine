@@ -4,7 +4,9 @@ use serde_json::json;
 use crate::{
     ai::ai_utils::get_board_value,
     common::{
-        board_utils::{get_move_notation, get_piece_position_fen}, contants::EMPTY_PIECE, piece_move::PieceMove,
+        board_utils::get_move_notation,
+        contants::{EMPTY_PIECE, INVALID_BOARD_POSITION},
+        piece_move::PieceMove,
         piece_utils::get_promotion_options,
     },
     dto::dtos::{AIDepthDTO, FenDTO, MovesCountDTO},
@@ -48,19 +50,21 @@ pub async fn move_piece(
 
     let board = &mut _global_state.board;
 
-    let _ = board.make_move(&piece_move);
+    let _ = board.move_piece(&piece_move);
 
-    // let mut board_clone = board.clone();
+    let mut board_clone = board.clone();
 
-    // let ai = &mut _global_state.ai;
+    let ai = &mut _global_state.ai;
 
-    // let (_, ai_move) = ai.get_move(&mut board_clone, time_to_think);
+    let (_, ai_move) = ai.get_move(&mut board_clone, time_to_think);
 
-    // let board = &mut _global_state.board;
+    let board = &mut _global_state.board;
 
-    // if ai_move.get_from_position() != -1 && ai_move.get_to_position() != -1 {
-    //     let _ = board.make_move(&ai_move);
-    // }
+    if ai_move.get_from_position() != INVALID_BOARD_POSITION
+        && ai_move.get_to_position() != INVALID_BOARD_POSITION
+    {
+        let _ = board.move_piece(&ai_move);
+    }
 
     drop(_global_state);
 
@@ -144,7 +148,7 @@ fn move_generation_count(board: &mut Board, depth: usize, track_moves: bool) -> 
             for promotion_option in promotion_char_options {
                 piece_move.set_promotion_value(promotion_option);
 
-                let _ = board.make_move(&piece_move);
+                let _ = board.move_piece(&piece_move);
 
                 let moves_count = move_generation_count(board, depth - 1, false);
                 num_positions += moves_count;

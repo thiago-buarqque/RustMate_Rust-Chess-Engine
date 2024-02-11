@@ -1,4 +1,4 @@
-mod fen_utils;
+mod board_fen_utils;
 pub mod board;
 pub mod board_state;
 pub mod contants;

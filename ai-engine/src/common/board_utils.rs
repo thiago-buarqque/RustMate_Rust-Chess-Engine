@@ -10,7 +10,7 @@ pub fn get_position_column_number(position: i8) -> usize {
     (position - (position - (position % 8))) as usize
 }
 
-pub fn get_piece_position_fen(position: i8) -> String {
+pub fn get_position_notation(position: i8) -> String {
     let columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 
     let line = get_position_line_number(position);
@@ -22,8 +22,8 @@ pub fn get_piece_position_fen(position: i8) -> String {
 pub fn get_move_notation(piece_move: &PieceMove) -> String {
     // Unfinished
 
-    let from_position_str = get_piece_position_fen(piece_move.get_from_position());
-    let to_position_str = get_piece_position_fen(piece_move.get_to_position());
+    let from_position_str = get_position_notation(piece_move.get_from_position());
+    let to_position_str = get_position_notation(piece_move.get_to_position());
 
     format!("{}{}", from_position_str, to_position_str)
 }

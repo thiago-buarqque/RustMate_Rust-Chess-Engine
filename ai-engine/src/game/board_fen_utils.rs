@@ -1,4 +1,6 @@
-use crate::common::{board_utils::get_piece_position_fen, enums::PieceType, piece_utils::get_piece_fen_from_value};
+use crate::common::{
+    board_utils::get_position_notation, contants::INVALID_BOARD_POSITION, enums::PieceType, fen_utils::get_piece_fen,
+};
 
 use super::board_state::BoardState;
 
@@ -58,7 +60,7 @@ fn get_pieces_fen(board_state: &BoardState, fen: &mut String) {
 
         append_empty_squares(fen, &mut empty_squares);
 
-        fen.push(get_piece_fen_from_value(piece));
+        fen.push(get_piece_fen(piece));
     }
 }
 
@@ -92,7 +94,7 @@ fn get_castle_fen(board_state: &BoardState) -> String {
     if castle_fen.is_empty() {
         castle_fen = String::from("-");
     }
-    
+
     castle_fen
 }
 
@@ -100,10 +102,10 @@ fn get_en_passant_fen(board_state: &BoardState) -> String {
     let black_en_passant = board_state.get_black_en_passant();
     let white_en_passant = board_state.get_white_en_passant();
 
-    if black_en_passant != -1 {
-        String::from(get_piece_position_fen(black_en_passant).as_str())
-    } else if white_en_passant != -1 {
-        String::from(get_piece_position_fen(white_en_passant).as_str())
+    if black_en_passant != INVALID_BOARD_POSITION {
+        String::from(get_position_notation(black_en_passant).as_str())
+    } else if white_en_passant != INVALID_BOARD_POSITION {
+        String::from(get_position_notation(white_en_passant).as_str())
     } else {
         String::from("-")
     }

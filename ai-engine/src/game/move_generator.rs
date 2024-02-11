@@ -1,7 +1,7 @@
 use crate::common::{
-    board_piece::BoardPiece,
-    contants::EMPTY_PIECE,
-    enums::{PieceType, PieceColor},
+    piece::Piece,
+    contants::{EMPTY_PIECE, INVALID_BOARD_POSITION},
+    enums::{PieceColor, PieceType},
     piece_move::PieceMove,
     piece_utils::{get_piece_type, is_same_color, is_white_piece},
 };
@@ -10,8 +10,8 @@ use super::{
     board::Board,
     board_state::BoardState,
     contants::{
-        BLACK_KING_ROOK_POS, BLACK_PAWN_VALUE, BLACK_QUEEN_ROOK_POS, WHITE_KING_ROOK_POS,
-        WHITE_PAWN_VALUE, WHITE_QUEEN_ROOK_POS,
+        BLACK_KING_ROOK_POSITION, BLACK_PAWN_VALUE, BLACK_QUEEN_ROOK_POSITION,
+        WHITE_KING_ROOK_POSITION, WHITE_PAWN_VALUE, WHITE_QUEEN_ROOK_POSITION,
     },
     move_generator_helper::{
         get_adjacent_position, get_knight_move, is_king_in_check, is_path_clear,
@@ -59,11 +59,12 @@ impl MoveGenerator {
         }
     }
 
-    pub fn get_available_moves(&mut self, board: &mut Board) -> Vec<BoardPiece> {
+    pub fn get_available_moves(&mut self, board: &mut Board) -> Vec<Piece> {
         let (black_moves, white_moves, mut pieces) = self.generate_pieces_moves(board);
 
         // Only the two kings on the board
-        if black_moves.is_empty() && white_moves.is_empty() && self.has_only_the_two_kings(&pieces) {
+        if black_moves.is_empty() && white_moves.is_empty() && self.has_only_the_two_kings(&pieces)
+        {
             // Game ends in draw
             board.set_winner(false, board.is_white_move());
         } else {
@@ -75,17 +76,19 @@ impl MoveGenerator {
         pieces
     }
 
-    fn has_only_the_two_kings(&self, pieces: &Vec<BoardPiece>) -> bool {
-        pieces.iter().map(|piece| piece.get_value()).sum::<i8>() == ((PieceColor::Black.value() | PieceType::King.value()) + (PieceColor::White.value() | PieceType::King.value()))
+    fn has_only_the_two_kings(&self, pieces: &Vec<Piece>) -> bool {
+        pieces.iter().map(|piece| piece.get_value()).sum::<u8>()
+            == ((PieceColor::Black.value() | PieceType::King.value())
+                + (PieceColor::White.value() | PieceType::King.value()))
     }
 
     fn generate_pieces_moves(
         &mut self,
         board: &mut Board,
-    ) -> (Vec<PieceMove>, Vec<PieceMove>, Vec<BoardPiece>) {
+    ) -> (Vec<PieceMove>, Vec<PieceMove>, Vec<Piece>) {
         let mut black_moves: Vec<PieceMove> = vec![];
         let mut white_moves: Vec<PieceMove> = vec![];
-        let mut pieces: Vec<BoardPiece> = Vec::with_capacity(64);
+        let mut pieces: Vec<Piece> = Vec::with_capacity(64);
 
         let squares = board.get_state_reference().get_squares();
 
@@ -104,7 +107,7 @@ impl MoveGenerator {
                 }
             }
 
-            pieces.push(BoardPiece::new(
+            pieces.push(Piece::new(
                 moves,
                 position as i8,
                 piece_value,
@@ -117,7 +120,7 @@ impl MoveGenerator {
     fn get_king_available_moves(
         &self,
         black_moves: &[PieceMove],
-        board_pieces: &mut [BoardPiece],
+        board_pieces: &mut [Piece],
         white_moves: &[PieceMove],
     ) {
         let white_king_position = self.board_state.get_white_king_position();
@@ -142,7 +145,7 @@ impl MoveGenerator {
 
     pub fn remove_locked_and_invalid_moves(
         &mut self,
-        pieces: &mut [BoardPiece],
+        pieces: &mut [Piece],
         board: &mut Board,
     ) {
         let (is_white_move, king_position) = self.determine_move_and_king_position();
@@ -178,7 +181,7 @@ impl MoveGenerator {
 
     fn filter_invalid_moves(
         &mut self,
-        board_piece: &mut BoardPiece,
+        board_piece: &mut Piece,
         king_position: i8,
         board: &mut Board,
         no_moves_available: &mut bool,
@@ -219,7 +222,7 @@ impl MoveGenerator {
         board: &mut Board,
         valid_moves: &mut Vec<PieceMove>,
         is_king: bool,
-        piece_value: i8,
+        piece_value: u8,
     ) {
         let mut piece_move_clone = piece_move.clone();
 
@@ -233,7 +236,7 @@ impl MoveGenerator {
             piece_move_clone.set_promotion_value(piece_value);
         }
 
-        let _ = board.make_move(&piece_move_clone);
+        let _ = board.move_piece(&piece_move_clone);
 
         if !self.is_king_attacked_on_state(target_position, board.get_state_clone()) {
             valid_moves.push(piece_move.clone());
@@ -368,7 +371,7 @@ impl MoveGenerator {
         position: i8,
         moves: &mut Vec<PieceMove>,
         king_position: i8,
-        king: i8,
+        king_value: u8,
     ) {
         if let Some(attacking_move) = opponent_moves
             .iter()
@@ -381,15 +384,15 @@ impl MoveGenerator {
             // Is a pawn straight attacking the position?
             // The king can move in front of the pawn
             if get_piece_type(possible_pawn) == PieceType::Pawn {
-                moves.push(PieceMove::new(king_position, king, position));
+                moves.push(PieceMove::new(king_position, king_value, position));
             }
         } else {
             let piece_value = self.board_state.get_piece(position);
 
-            let same_color = is_same_color(king, piece_value);
+            let same_color = is_same_color(king_value, piece_value);
 
             if piece_value == EMPTY_PIECE || !same_color {
-                let mut _move = PieceMove::new(king_position, king, position);
+                let mut _move = PieceMove::new(king_position, king_value, position);
 
                 _move.set_is_capture(!same_color);
 
@@ -400,7 +403,7 @@ impl MoveGenerator {
 
     fn generate_castle_moves(
         &self,
-        king_piece: i8,
+        king_piece: u8,
         moves: &mut Vec<PieceMove>,
         opponent_moves: &[PieceMove],
         king_position: i8,
@@ -417,9 +420,9 @@ impl MoveGenerator {
         }
 
         let (queen_side_rook_position, king_side_rook_position) = if is_white_king {
-            (WHITE_QUEEN_ROOK_POS, WHITE_KING_ROOK_POS)
+            (WHITE_QUEEN_ROOK_POSITION, WHITE_KING_ROOK_POSITION)
         } else {
-            (BLACK_QUEEN_ROOK_POS, BLACK_KING_ROOK_POS)
+            (BLACK_QUEEN_ROOK_POSITION, BLACK_KING_ROOK_POSITION)
         };
 
         let able_to_castle_queen_side =
@@ -435,7 +438,7 @@ impl MoveGenerator {
                 -1,
             )
         {
-            self.try_castle(
+            self.generate_castle_move(
                 king_position,
                 king_piece,
                 false,
@@ -454,7 +457,7 @@ impl MoveGenerator {
                 1,
             )
         {
-            self.try_castle(
+            self.generate_castle_move(
                 king_position,
                 king_piece,
                 true,
@@ -465,10 +468,10 @@ impl MoveGenerator {
         }
     }
 
-    fn try_castle(
+    fn generate_castle_move(
         &self,
         king_position: i8,
-        king_piece: i8,
+        king_value: u8,
         is_king_side: bool,
         new_position: i8,
         opponent_moves: &[PieceMove],
@@ -483,7 +486,7 @@ impl MoveGenerator {
             return;
         }
 
-        let is_white_king = is_white_piece(king_piece);
+        let is_white_king = is_white_piece(king_value);
 
         let offset = if is_white_king { -8 } else { 8 };
 
@@ -504,7 +507,7 @@ impl MoveGenerator {
         if self.board_state.get_piece(frontal_pawn_position) != pawn_value
             && self.board_state.get_piece(side_diagonal_pawn_position) != pawn_value
         {
-            moves.push(PieceMove::new(king_position, king_piece, new_position));
+            moves.push(PieceMove::new(king_position, king_value, new_position));
         }
     }
 
@@ -546,7 +549,7 @@ impl MoveGenerator {
     fn generate_sliding_moves(
         &self,
         moves: &mut Vec<PieceMove>,
-        piece: i8,
+        piece: u8,
         position: i8,
         offset: SquareOffset,
     ) {
@@ -569,7 +572,7 @@ impl MoveGenerator {
                 break;
             }
 
-            let new_position = position + ((i + 1) as i8 * offset.value());
+            let new_position = position + ((i + 1) * offset.value());
 
             if !self.board_state.is_valid_position(new_position) {
                 break;
@@ -648,7 +651,7 @@ impl MoveGenerator {
         moves: &mut Vec<PieceMove>,
         next_line_position: i8,
         offset: i8,
-        pawn_value: i8,
+        pawn_value: u8,
         position: i8,
         white_piece: bool,
     ) {
@@ -679,7 +682,7 @@ impl MoveGenerator {
         &self,
         moves: &mut Vec<PieceMove>,
         next_line_position: i8,
-        pawn_value: i8,
+        pawn_value: u8,
         position: i8,
         white_piece: bool,
         left_diagonal: bool,
@@ -716,7 +719,7 @@ impl MoveGenerator {
         &self,
         moves: &mut Vec<PieceMove>,
         next_line_position: i8,
-        pawn_value: i8,
+        pawn_value: u8,
         position: i8,
         white_piece: bool,
     ) {
@@ -743,7 +746,7 @@ impl MoveGenerator {
         &self,
         moves: &mut Vec<PieceMove>,
         offset: i8,
-        pawn_value: i8,
+        pawn_value: u8,
         position: i8,
         white_piece: bool,
     ) {
@@ -753,16 +756,20 @@ impl MoveGenerator {
             self.board_state.get_white_en_passant()
         };
 
-        if en_passant == -1 {
+        if en_passant == INVALID_BOARD_POSITION {
             return;
         }
 
-        let left_square = if position % 8 != 0 { position - 1 } else { -1 };
+        let left_square = if position % 8 != 0 {
+            position - 1
+        } else {
+            INVALID_BOARD_POSITION
+        };
 
         let right_square = if (position + 1) % 8 != 0 {
             position + 1
         } else {
-            -1
+            INVALID_BOARD_POSITION
         };
 
         let en_passant_target = if white_piece {

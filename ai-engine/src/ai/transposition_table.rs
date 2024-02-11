@@ -10,14 +10,15 @@ pub struct TranspositionTableEntry {
 
 impl TranspositionTableEntry {
     pub fn estimated_size(&self) -> usize {
-        std::mem::size_of::<u8>() + std::mem::size_of::<f32>()
-        + std::mem::size_of::<Option<PieceMove>>()
+        std::mem::size_of::<u8>()
+            + std::mem::size_of::<f32>()
+            + std::mem::size_of::<Option<PieceMove>>()
     }
 }
 
 pub struct TranspositionTable {
     table: HashMap<u64, TranspositionTableEntry>,
-    hits: u64
+    hits: u64,
 }
 
 impl TranspositionTable {

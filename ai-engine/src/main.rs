@@ -13,7 +13,10 @@ use global_state::GlobalState;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    rayon::ThreadPoolBuilder::new().num_threads(24).build_global().unwrap();
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(24)
+        .build_global()
+        .unwrap();
     println!("Server started successfully 🚀!");
 
     let state = web::Data::new(Mutex::new(GlobalState::new()));

@@ -10,8 +10,8 @@ pub enum PieceType {
 }
 
 impl PieceType {
-    pub fn value(&self) -> i8 {
-        *self as i8
+    pub fn value(&self) -> u8 {
+        *self as u8
     }
 }
 
@@ -22,7 +22,7 @@ pub enum PieceColor {
 }
 
 impl PieceColor {
-    pub fn value(&self) -> i8 {
-        *self as i8
+    pub fn value(&self) -> u8 {
+        *self as u8
     }
 }

@@ -1,33 +1,33 @@
 use crate::common::{
-    board_utils::get_piece_position_fen, contants::EMPTY_PIECE, enums::PieceType, piece_utils::{get_piece_fen_from_value, is_piece_of_type, is_white_piece, piece_value_from_fen, pieces_to_fen}
+    contants::{EMPTY_PIECE, INVALID_BOARD_POSITION}, enums::PieceType, fen_utils::{get_fen_piece_value, translate_pieces_to_fen}, piece_utils::{is_piece_of_type, is_white_piece}
 };
 
 use super::{
-    contants::{
+    board_fen_utils::get_position_fen, contants::{
         BLACK_KING_INITIAL_POSITION, BLACK_KING_VALUE, LETTER_A_UNICODE,
         WHITE_KING_INITIAL_POSITION, WHITE_KING_VALUE,
-    }, fen_utils::get_position_fen, zobrist::Zobrist
+    }, zobrist::Zobrist
 };
 
 #[derive(Debug, Clone)]
 pub struct BoardState {
     black_able_to_king_side_castle: bool,
     black_able_to_queen_side_castle: bool,
-    black_captures: Vec<i8>,
+    black_captures: Vec<u8>,
     black_en_passant: i8,
     black_king_moved: bool,
     black_king_position: i8,
     full_moves: usize,
     half_moves: usize,
     white_move: bool,
-    squares: [i8; 64],
+    squares: [u8; 64],
     white_able_to_king_side_castle: bool,
     white_able_to_queen_side_castle: bool,
-    white_captures: Vec<i8>,
+    white_captures: Vec<u8>,
     white_en_passant: i8,
     white_king_moved: bool,
     white_king_position: i8,
-    winner: i8,
+    winner: u8,
     zobrist: Zobrist,
 }
 
@@ -39,7 +39,7 @@ impl BoardState {
             black_able_to_king_side_castle: true,
             black_able_to_queen_side_castle: true,
             black_captures: Vec::new(),
-            black_en_passant: -1,
+            black_en_passant: INVALID_BOARD_POSITION,
             black_king_moved: false,
             black_king_position: BLACK_KING_INITIAL_POSITION,
             full_moves: 0,
@@ -49,7 +49,7 @@ impl BoardState {
             white_able_to_king_side_castle: true,
             white_able_to_queen_side_castle: true,
             white_captures: Vec::new(),
-            white_en_passant: -1,
+            white_en_passant: INVALID_BOARD_POSITION,
             white_king_moved: false,
             white_king_position: WHITE_KING_INITIAL_POSITION,
             winner: 0,
@@ -98,43 +98,43 @@ impl BoardState {
             || (!white_king && self.is_black_able_to_king_side_castle())
     }
 
-    pub fn white_captures_to_fen(&self) -> Vec<char> {
-        pieces_to_fen(&self.white_captures)
+    pub fn get_white_captures_fen(&self) -> Vec<char> {
+        translate_pieces_to_fen(&self.white_captures)
     }
 
-    pub fn black_captures_to_fen(&self) -> Vec<char> {
-        pieces_to_fen(&self.black_captures)
+    pub fn get_black_captures_fen(&self) -> Vec<char> {
+        translate_pieces_to_fen(&self.black_captures)
     }
 
-    pub fn get_piece(&self, index: i8) -> i8 {
-        if self.is_valid_position(index) {
-            return self.squares[index as usize];
+    pub fn get_piece(&self, position: i8) -> u8 {
+        if self.is_valid_position(position) {
+            return self.squares[position as usize];
         }
 
-        -1
+        EMPTY_PIECE
     }
 
-    pub fn place_piece(&mut self, index: i8, piece: i8) {
+    pub fn place_piece(&mut self, position: i8, piece: u8) {
         if piece == BLACK_KING_VALUE {
-            self.black_king_position = index;
+            self.black_king_position = position;
         } else if piece == WHITE_KING_VALUE {
-            self.white_king_position = index;
+            self.white_king_position = position;
         }
 
-        self.squares[index as usize] = piece;
+        self.squares[position as usize] = piece;
     }
 
-    pub fn move_piece(&mut self, from_index: i8, piece: i8, to_index: i8) {
-        let moved_piece = self.get_piece(from_index);
-        let captured_piece = self.get_piece(to_index);
+    pub fn move_piece(&mut self, from_position: i8, piece: u8, to_position: i8) {
+        let moved_piece = self.get_piece(from_position);
+        let captured_piece = self.get_piece(to_position);
 
-        self.place_piece(to_index, piece);
+        self.place_piece(to_position, piece);
 
-        self.place_piece(from_index, EMPTY_PIECE);
+        self.place_piece(from_position, EMPTY_PIECE);
 
         self.zobrist.update_hash_on_move(
-            from_index as usize,
-            to_index as usize,
+            from_position as usize,
+            to_position as usize,
             moved_piece,
             captured_piece,
         );
@@ -166,14 +166,14 @@ impl BoardState {
         }
     }
 
-    pub fn is_valid_position(&self, index: i8) -> bool {
-        index >= 0 && index < self.squares.len() as i8
+    pub fn is_valid_position(&self, position: i8) -> bool {
+        position >= 0 && position < self.squares.len() as i8
     }
 
     pub fn load_position(&mut self, fen_position: &str) {
         let fields: Vec<&str> = fen_position.split_whitespace().collect();
 
-        self.generate_pieces_from_fen(fields[0]);
+        self.load_pieces(fields[0]);
         self.load_active_color(fields[1]);
         self.load_castling(fields[2]);
         self.load_en_passant(fields[3]);
@@ -207,8 +207,8 @@ impl BoardState {
 
     fn load_en_passant(&mut self, en_passant: &str) {
         if en_passant == "-" {
-            self.white_en_passant = -1;
-            self.black_en_passant = -1;
+            self.white_en_passant = INVALID_BOARD_POSITION;
+            self.black_en_passant = INVALID_BOARD_POSITION;
         } else {
             let column = en_passant.chars().nth(0).unwrap();
             let row: u8 = en_passant.chars().nth(1).unwrap().to_digit(10).unwrap() as u8;
@@ -226,10 +226,10 @@ impl BoardState {
 
             if is_white {
                 self.white_en_passant = position as i8;
-                self.black_en_passant = -1;
+                self.black_en_passant = INVALID_BOARD_POSITION;
             } else {
                 self.black_en_passant = position as i8;
-                self.white_en_passant = -1;
+                self.white_en_passant = INVALID_BOARD_POSITION;
             }
         }
     }
@@ -261,22 +261,22 @@ impl BoardState {
         }
     }
 
-    fn generate_pieces_from_fen(&mut self, board_rows: &str) {
+    fn load_pieces(&mut self, board_rows: &str) {
         let rows: Vec<&str> = board_rows.split('/').collect();
 
-        let mut index = 0;
+        let mut index: u8 = 0;
 
         for row in rows.iter() {
             self.generate_row_pieces_fen(row, &mut index);
         }
     }
 
-    fn generate_row_pieces_fen(&mut self, row: &&str, index: &mut usize) {
+    fn generate_row_pieces_fen(&mut self, row: &&str, index: &mut u8) {
         for char in row.chars() {
             if char.is_numeric() {
-                *index += char.to_digit(10).unwrap() as usize;
+                *index += char.to_digit(10).unwrap() as u8;
             } else {
-                self.squares[*index] = piece_value_from_fen(&char);
+                self.squares[*index as usize] = get_fen_piece_value(&char);
 
                 if char == 'k' {
                     self.black_king_position = *index as i8;
@@ -321,7 +321,7 @@ impl BoardState {
         self.white_move
     }
 
-    pub fn get_squares(&self) -> &[i8; 64] {
+    pub fn get_squares(&self) -> &[u8; 64] {
         &self.squares
     }
 
@@ -353,11 +353,11 @@ impl BoardState {
         self.white_king_moved
     }
 
-    pub fn winner(&self) -> i8 {
+    pub fn get_winner(&self) -> u8 {
         self.winner
     }
 
-    pub fn set_winner(&mut self, value: i8) {
+    pub fn set_winner(&mut self, value: u8) {
         self.winner = value;
     }
 
@@ -369,11 +369,11 @@ impl BoardState {
         self.full_moves += 1;
     }
 
-    pub fn append_black_capture(&mut self, piece_value: i8) {
+    pub fn append_black_capture(&mut self, piece_value: u8) {
         self.black_captures.push(piece_value)
     }
 
-    pub fn append_white_capture(&mut self, piece_value: i8) {
+    pub fn append_white_capture(&mut self, piece_value: u8) {
         self.white_captures.push(piece_value)
     }
 
@@ -419,28 +419,32 @@ impl BoardState {
 
     pub fn update_castling_ability(&mut self, index: i8, is_black: bool, is_king_side: bool) {
         match (index, is_black, is_king_side) {
-            (0, true, false) => { // BLACK_QUEEN_SIDE_ROOK_POSITION
+            (0, true, false) => {
+                // BLACK_QUEEN_SIDE_ROOK_POSITION
                 if self.black_able_to_queen_side_castle {
                     self.zobrist.update_hash_on_black_lose_queen_side_castle();
                 }
 
                 self.black_able_to_queen_side_castle = false;
             }
-            (7, true, true) => { // BLACK_KING_SIDE_ROOK_POSITION
+            (7, true, true) => {
+                // BLACK_KING_SIDE_ROOK_POSITION
                 if self.black_able_to_king_side_castle {
                     self.zobrist.update_hash_on_black_lose_rook_side_castle();
                 }
 
                 self.black_able_to_king_side_castle = false;
             }
-            (56, false, false) => { // WHITE_QUEEN_SIDE_ROOK_POSITION
+            (56, false, false) => {
+                // WHITE_QUEEN_SIDE_ROOK_POSITION
                 if self.white_able_to_queen_side_castle {
                     self.zobrist.update_hash_on_white_lose_queen_side_castle()
                 }
 
                 self.white_able_to_queen_side_castle = false;
             }
-            (63, false, true) => { // WHITE_KING_SIDE_ROOK_POSITION
+            (63, false, true) => {
+                // WHITE_KING_SIDE_ROOK_POSITION
                 if self.white_able_to_king_side_castle {
                     self.zobrist.update_hash_on_white_lose_rook_side_castle()
                 }
