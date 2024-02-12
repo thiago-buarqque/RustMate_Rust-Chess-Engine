@@ -170,7 +170,7 @@ impl BoardState {
         position >= 0 && position < self.squares.len() as i8
     }
 
-    pub fn load_position(&mut self, fen_position: &str) {
+    pub fn load_position(&mut self, fen_position: &str) {        
         let fields: Vec<&str> = fen_position.split_whitespace().collect();
 
         self.load_pieces(fields[0]);
@@ -187,6 +187,8 @@ impl BoardState {
                 self.load_full_move_number(fields[5]);
             }
         }
+
+        self.zobrist.compute_hash(&self.clone());
     }
 
     fn load_half_move_clock(&mut self, half_move: &str) {

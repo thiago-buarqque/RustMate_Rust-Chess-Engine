@@ -41,9 +41,9 @@ impl AIPlayer {
 
         let mut max = true;
 
+        let alpha = Arc::new(Mutex::new(f32::MIN));
         while Instant::now().duration_since(start_time) < Duration::new(time_to_think, 0) {
             let current_best_move = best_move.clone();
-            let alpha = Arc::new(Mutex::new(f32::MIN));
 
             let pieces: Vec<Piece> = board.get_pieces();
 
@@ -52,9 +52,15 @@ impl AIPlayer {
             let moves: Vec<PieceMove> =
                 get_sorted_moves(&Some(best_move_guard.to_owned()), board, true, &pieces);
 
-            // print!("Sorted moves for: {}", board.get_state_reference().get);
-
             drop(best_move_guard);
+
+            // print!("Sorted moves for: {}", board.get_state_reference().get_fen());
+
+            // for _move in moves.clone() {
+            //     print!(" {}->{}: {}", _move.get_from_position(), _move.get_to_position(), _move.get_move_worth());
+            // }
+
+            // println!();
 
             moves.par_iter().for_each(|_move| {
                 let mut new_board = board.clone();
@@ -65,20 +71,19 @@ impl AIPlayer {
                     &mut new_board,
                     -f32::MAX,
                     -*alpha.lock().unwrap(),
-                    max,
+                    !max,
                     depth,
                     &state_count,
                     &transposition_table,
                 );
-                // println!("Original move worth: {} ({}->{}) | score: {score}", _move.get_move_worth(), _move.get_from_position(), _move.get_to_position());
 
                 let mut alpha_guard = alpha.lock().unwrap();
 
                 if score > *alpha_guard {
                     *alpha_guard = score;
-
+                    
                     let mut best_move_guard = current_best_move.lock().unwrap();
-
+                    
                     *best_move_guard = _move.clone();
                 }
 
@@ -90,11 +95,23 @@ impl AIPlayer {
 
             let _transposition_table = transposition_table.lock().unwrap();
 
+            let current_best_move = current_best_move.lock().unwrap();
+
+            // println!("Iteration best move: {}->{}: {}", 
+            //     current_best_move.get_from_position(), current_best_move.get_to_position(), current_best_move.get_move_worth());
+
+            // println!();
+
+            drop(current_best_move);
+
             println!(
                 "Hash table size on depth {}: {}kb",
                 depth,
                 _transposition_table.estimated_memory_usage_kb()
             );
+
+            // println!();
+            // println!();
 
             drop(_transposition_table)
         }
@@ -111,31 +128,6 @@ impl AIPlayer {
 
         (locked_value.to_owned(), best_move)
     }
-
-    // fn search_parallel(
-    //     &self,
-    //     _move: &PieceMove,
-    //     board: &mut Board,
-    //     depth: u8,
-    //     value: &Arc<Mutex<f32>>,
-    //     moves_count: &Arc<Mutex<u64>>,
-    //     best_move: &Arc<Mutex<PieceMove>>,
-    // ) {
-    //     let _ = board.make_move(_move);
-    //     let node_results = self.search(board, f32::MIN, f32::MAX, false, depth - 1);
-    //     let mut locked_moves_count = moves_count.lock().unwrap();
-    //     *locked_moves_count = locked_moves_count.add(node_results.1);
-    //     drop(locked_moves_count);
-    //     let mut locked_value = value.lock().unwrap();
-    //     if -node_results.0 > *locked_value {
-    //         *locked_value = -node_results.0;
-    //         let mut locked_best_move = best_move.lock().unwrap();
-    //         *locked_best_move = _move.clone();
-    //         drop(locked_best_move)
-    //     }
-    //     drop(locked_value);
-    //     board.undo_last_move();
-    // }
 
     fn negamax(
         &self,
@@ -191,15 +183,23 @@ impl AIPlayer {
         let mut moves: Vec<PieceMove> = get_sorted_moves(&best_move, board, max, &pieces);
 
         let mut alpha = alpha;
-        for _move in moves.iter_mut() {
+        for (i, _move) in moves.iter_mut().enumerate() {
             let _ = board.move_piece(_move);
+
+            let mut new_depth = depth - 1;
+
+            // Considering the move sorting is good: we could decrease
+            // the depth from the 6th move forward.
+            if i >= 4 && !_move.is_capture() && depth > 2 {
+                new_depth = 1;
+            }
 
             let score = -self.negamax(
                 board,
                 -beta,
                 -alpha,
                 !max,
-                depth - 1,
+                new_depth,
                 &state_count,
                 transposition_table,
             );

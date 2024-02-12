@@ -248,9 +248,9 @@ pub fn get_board_value(board: &mut Board, max: bool, pieces: &[Piece]) -> f32 {
         return 0.0;
     } else if board.is_game_finished() {
         return if max {
-            KING_WORTH * 10.0
-        } else {
             -KING_WORTH * 10.0
+        } else {
+            KING_WORTH * 10.0
         };
     }
 
