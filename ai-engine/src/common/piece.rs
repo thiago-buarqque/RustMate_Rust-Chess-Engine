@@ -1,33 +1,38 @@
-use serde::{ser::{SerializeStruct, Serializer}, Serialize};
+use serde::{
+    ser::{SerializeStruct, Serializer},
+    Serialize,
+};
 
-use super::{piece_move::PieceMove, piece_utils::piece_fen_from_value};
+use super::{fen_utils::get_piece_fen, piece_move::PieceMove};
 
-#[derive(Debug, Clone)]
-pub struct BoardPiece {
+#[derive(Debug)]
+pub struct Piece {
     moves: Vec<PieceMove>,
     position: i8,
-    value: i8,
+    value: u8,
     white: bool,
 }
 
-impl Serialize for BoardPiece {
+impl Serialize for Piece {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        // 3 is the number of fields in the struct.
-        let mut state = serializer.serialize_struct("BoardPiece", 4)?;
+        let mut state = serializer.serialize_struct("BoardPiece", 5)?;
+
+        state.serialize_field("fen", &get_piece_fen(self.value))?;
         state.serialize_field("moves", &self.moves)?;
         state.serialize_field("position", &self.position)?;
-        state.serialize_field("fen", &piece_fen_from_value(self.value))?;
+        state.serialize_field("value", &self.value)?;
         state.serialize_field("white", &self.white)?;
+
         state.end()
     }
 }
 
-impl BoardPiece {
-    pub fn new(moves: Vec<PieceMove>, position: i8, value: i8, white: bool) -> Self {
-        BoardPiece {
+impl Piece {
+    pub fn new(moves: Vec<PieceMove>, position: i8, value: u8, white: bool) -> Self {
+        Piece {
             moves,
             position,
             value,
@@ -47,7 +52,7 @@ impl BoardPiece {
         self.position
     }
 
-    pub fn get_value(&self) -> i8 {
+    pub fn get_value(&self) -> u8 {
         self.value
     }
 

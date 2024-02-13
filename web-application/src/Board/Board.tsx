@@ -56,9 +56,11 @@ const notAnAvailableMove = (availableMoves: TMove[], position: number) => {
 
 const Board = () => {
   const [selectedPiece, setSelectedPiece] = useState<TPiece | null>(null);
+  const [isAlreadyMoving, setIsAlreadyMoving] = useState(false);
   const [board, setBoard] = useState<TBoard>({
     blackCaptures: [],
     boardEvaluation: 0,
+    boardFen: INITIAL_FEN,
     whiteCaptures: [],
     pieces: [],
     whiteMove: true,
@@ -67,6 +69,10 @@ const Board = () => {
   });
 
   const onPieceSelect = (piece: TPiece) => {
+    if(isAlreadyMoving) {
+      return;
+    }
+
     if (board.whiteMove !== piece.white) {
       // Play invalid move sound
       return;
@@ -84,6 +90,10 @@ const Board = () => {
   };
 
   const togglePieceAvailableMoves = (piece: TPiece) => {
+    if(isAlreadyMoving) {
+      return;
+    }
+
     piece.moves.forEach((move) => {
       const className =
         board.pieces[move.toPosition].fen !== EMPTY_FEN ? "capture-receptor" : "empty-receptor";
@@ -102,7 +112,10 @@ const Board = () => {
   };
 
   const onMovePiece = (cell: HTMLDivElement, cellPosition: number) => {
-    // console.log("Cell click");
+    if(isAlreadyMoving) {
+      return;
+    }
+
     if (selectedPiece) {
       const { position, moves } = selectedPiece;
 
@@ -155,7 +168,8 @@ const Board = () => {
   };
 
   const movePiece = (pieceMove: TMove) => {
-    pieceMove.promotionType = 5 // Queen
+    setIsAlreadyMoving(true);
+    pieceMove.promotionType = TPieceColor.White | 5 // Queen
     
     http
       .post<TBoard>("/board/move/piece", pieceMove)
@@ -163,11 +177,15 @@ const Board = () => {
       .then((data) => {
         setBoard(data);
         playMoveAudio(false);
-      });
+      })
+      .finally(() => {
+        setIsAlreadyMoving(false);
+      })
   };
 
   const resetBoard = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     const inputFen: HTMLInputElement | null = document.getElementById(
       "input-fen"
     ) as HTMLInputElement;
@@ -191,7 +209,7 @@ const Board = () => {
 
   const fetchCountMoves = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    let depthInput = document.getElementById("in_depth");
+    let depthInput = document.getElementById("raw_search_depth");
 
     if (!depthInput) {
       return;
@@ -206,6 +224,22 @@ const Board = () => {
       .then((response) => response.data)
       .then((data) => {
         console.log(`Evaluated ${data.moves} in ${data.elapsedTime}ms for a depth of ${depth}`);
+      });
+  };
+
+  const setAITime = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    let aiTimeInput = document.getElementById("ai_time");
+
+    if (!aiTimeInput) {
+      return;
+    }
+
+    let time = Number((aiTimeInput as HTMLInputElement).value);
+
+    http
+      .post<{ moves: number, elapsedTime: number }>("/ai/time_to_think", {
+        time_to_think: time,
       });
   };
 
@@ -238,9 +272,15 @@ const Board = () => {
           </button>
         </form>
         <form method="post" onSubmit={fetchCountMoves}>
-          <input type="number" name="depth" id="in_depth" />
+          <input type="number" name="rawDepth" id="raw_search_depth" />
           <button type="submit" id="count_moves_btn">
             Count
+          </button>
+        </form>
+        <form method="post" onSubmit={setAITime}>
+          <input type="number" name="aiTime" id="ai_time" defaultValue={5}/>
+          <button type="submit" id="set_ai_time_btn">
+            Set
           </button>
         </form>
       </div>
@@ -282,6 +322,7 @@ const Board = () => {
             ))}
           </div>
         ))}
+        {/* <span id="board-fen">{board.boardFen}</span> */}
         <span id="winner-announcement">{getBoardEvaluationMessage(board.boardEvaluation) + ` (${board.boardEvaluation.toFixed(0)})`}</span>
         {/* <span id="zobrit">{getZobritBinary(board.zobrit)}</span> */}
       </div>

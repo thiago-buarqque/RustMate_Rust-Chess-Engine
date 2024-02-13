@@ -1,8 +1,8 @@
 extern crate rand;
 
-use rand::{Rng, rngs::StdRng, SeedableRng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use crate::common::contants::EMPTY_PIECE;
+use crate::common::contants::{EMPTY_PIECE, INVALID_BOARD_POSITION};
 
 use super::{board_state::BoardState, zobrist_utils::get_piece_index};
 
@@ -53,20 +53,6 @@ impl Zobrist {
         }
     }
 
-    pub fn clone(&self) -> Self {
-        Self {
-            black_can_rook_castle: self.black_can_rook_castle,
-            black_can_queen_castle: self.black_can_queen_castle,
-            black_pawn_en_passant: self.black_pawn_en_passant,
-            hash: self.hash,
-            table: self.table.clone(),
-            white_can_rook_castle: self.white_can_rook_castle,
-            white_can_queen_castle: self.white_can_queen_castle,
-            white_pawn_en_passant: self.white_pawn_en_passant,
-            white_to_move: self.white_to_move,
-        }
-    }
-
     pub fn get_hash(&self) -> u64 {
         self.hash
     }
@@ -75,8 +61,8 @@ impl Zobrist {
         &mut self,
         from_index: usize,
         to_index: usize,
-        moved_piece: i8,
-        captured_piece: i8,
+        moved_piece: u8,
+        captured_piece: u8,
     ) {
         let moved_piece_index = get_piece_index(moved_piece);
 
@@ -135,7 +121,7 @@ impl Zobrist {
             hash ^= self.black_can_queen_castle;
         }
 
-        if board_state.get_black_en_passant() != -1 {
+        if board_state.get_black_en_passant() != INVALID_BOARD_POSITION {
             hash ^= self.black_pawn_en_passant;
         }
 
@@ -147,7 +133,7 @@ impl Zobrist {
             hash ^= self.white_can_queen_castle;
         }
 
-        if board_state.get_white_en_passant() != -1 {
+        if board_state.get_white_en_passant() != INVALID_BOARD_POSITION {
             hash ^= self.white_pawn_en_passant;
         }
 

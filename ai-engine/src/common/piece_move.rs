@@ -1,4 +1,7 @@
-use serde::{ser::{SerializeStruct, Serializer}, Deserialize, Serialize, Deserializer};
+use serde::{
+    ser::{SerializeStruct, Serializer},
+    Deserialize, Deserializer, Serialize,
+};
 
 use super::contants::EMPTY_PIECE;
 
@@ -6,11 +9,12 @@ use super::contants::EMPTY_PIECE;
 pub struct PieceMove {
     from_position: i8,
     capture: bool,
+    castle: bool,
     en_passant: bool,
     promotion: bool,
     move_worth: i32,
-    piece_value: i8,
-    promotion_type: i8,
+    piece_value: u8,
+    promotion_type: u8,
     to_position: i8,
 }
 
@@ -20,8 +24,9 @@ impl Serialize for PieceMove {
         S: Serializer,
     {
         // 3 is the number of fields in the struct.
-        let mut state = serializer.serialize_struct("PieceMove", 8)?;
+        let mut state = serializer.serialize_struct("PieceMove", 9)?;
         state.serialize_field("capture", &self.capture)?;
+        state.serialize_field("castle", &self.castle)?;
         state.serialize_field("enPassant", &self.en_passant)?;
         state.serialize_field("fromPosition", &self.from_position)?;
         state.serialize_field("moveWorth", &self.move_worth)?;
@@ -51,17 +56,19 @@ impl<'de> Deserialize<'de> for PieceMove {
             where
                 V: serde::de::MapAccess<'de>,
             {
+                let mut castle: Option<bool> = None;
                 let mut from_position: Option<i8> = None;
                 let mut capture: Option<bool> = None;
                 let mut en_passant: Option<bool> = None;
                 let mut promotion: Option<bool> = None;
                 let mut move_worth: Option<i32> = None;
-                let mut piece_value: Option<i8> = None;
-                let mut promotion_type: Option<i8> = None;
+                let mut piece_value: Option<u8> = None;
+                let mut promotion_type: Option<u8> = None;
                 let mut to_position: Option<i8> = None;
 
                 while let Some(key) = map.next_key()? {
                     match key {
+                        "castle" => castle = Some(map.next_value()?),
                         "fromPosition" => from_position = Some(map.next_value()?),
                         "capture" => capture = Some(map.next_value()?),
                         "enPassant" => en_passant = Some(map.next_value()?),
@@ -73,22 +80,40 @@ impl<'de> Deserialize<'de> for PieceMove {
                         _ => {
                             return Err(serde::de::Error::unknown_field(
                                 key,
-                                &["fromPosition", "capture", "enPassant", "promotion", "moveWorth", "pieceValue", "promotionType", "toPosition"],
+                                &[
+                                    "fromPosition",
+                                    "capture",
+                                    "enPassant",
+                                    "promotion",
+                                    "moveWorth",
+                                    "pieceValue",
+                                    "promotionType",
+                                    "toPosition",
+                                ],
                             ));
                         }
                     }
                 }
 
-                let from_position = from_position.ok_or_else(|| serde::de::Error::missing_field("from_position"))?;
+                let castle = castle.ok_or_else(|| serde::de::Error::missing_field("castle"))?;
+                let from_position = from_position
+                    .ok_or_else(|| serde::de::Error::missing_field("from_position"))?;
                 let capture = capture.ok_or_else(|| serde::de::Error::missing_field("capture"))?;
-                let en_passant = en_passant.ok_or_else(|| serde::de::Error::missing_field("en_passant"))?;
-                let promotion = promotion.ok_or_else(|| serde::de::Error::missing_field("promotion"))?;
-                let move_worth = move_worth.ok_or_else(|| serde::de::Error::missing_field("move_worth"))?;
-                let piece_value = piece_value.ok_or_else(|| serde::de::Error::missing_field("piece_value"))?;
-                let promotion_type = promotion_type.ok_or_else(|| serde::de::Error::missing_field("promotion_type"))?;
-                let to_position = to_position.ok_or_else(|| serde::de::Error::missing_field("to_position"))?;
+                let en_passant =
+                    en_passant.ok_or_else(|| serde::de::Error::missing_field("en_passant"))?;
+                let promotion =
+                    promotion.ok_or_else(|| serde::de::Error::missing_field("promotion"))?;
+                let move_worth =
+                    move_worth.ok_or_else(|| serde::de::Error::missing_field("move_worth"))?;
+                let piece_value =
+                    piece_value.ok_or_else(|| serde::de::Error::missing_field("piece_value"))?;
+                let promotion_type = promotion_type
+                    .ok_or_else(|| serde::de::Error::missing_field("promotion_type"))?;
+                let to_position =
+                    to_position.ok_or_else(|| serde::de::Error::missing_field("to_position"))?;
 
                 Ok(PieceMove {
+                    castle,
                     from_position,
                     capture,
                     en_passant,
@@ -106,29 +131,17 @@ impl<'de> Deserialize<'de> for PieceMove {
 }
 
 impl PieceMove {
-    pub fn new(from: i8, piece_value: i8, to: i8) -> Self {
+    pub fn new(from_position: i8, piece_value: u8, to_position: i8) -> Self {
         Self {
-            from_position: from,
+            castle: false,
+            from_position,
             capture: false,
             en_passant: false,
             promotion: false,
             move_worth: 0,
             piece_value,
             promotion_type: EMPTY_PIECE,
-            to_position: to,
-        }
-    }
-
-    pub fn clone(&self) -> PieceMove {
-        PieceMove {
-            from_position: self.from_position,
-            capture: self.capture,
-            en_passant: self.en_passant,
-            promotion: self.promotion,
-            move_worth: self.move_worth,
-            piece_value: self.piece_value,
-            promotion_type: self.promotion_type,
-            to_position: self.to_position,
+            to_position,
         }
     }
 
@@ -151,11 +164,11 @@ impl PieceMove {
         self.move_worth
     }
 
-    pub fn get_piece_value(&self) -> i8 {
+    pub fn get_piece_value(&self) -> u8 {
         self.piece_value
     }
 
-    pub fn get_promotion_value(&self) -> i8 {
+    pub fn get_promotion_value(&self) -> u8 {
         self.promotion_type
     }
 
@@ -175,10 +188,6 @@ impl PieceMove {
         self.promotion
     }
 
-    pub fn set_from_position(&mut self, from_position: i8) {
-        self.from_position = from_position;
-    }
-
     pub fn set_is_capture(&mut self, is_capture: bool) {
         self.capture = is_capture;
     }
@@ -191,20 +200,8 @@ impl PieceMove {
         self.promotion = is_promotion;
     }
 
-    pub fn set_move_worth(&mut self, move_worth: i32) {
-        self.move_worth = move_worth;
-    }
-
-    pub fn set_piece_value(&mut self, piece_value: i8) {
-        self.piece_value = piece_value;
-    }
-
-    pub fn set_promotion_value(&mut self, promotion_type: i8) {
+    pub fn set_promotion_value(&mut self, promotion_type: u8) {
         self.promotion_type = promotion_type;
-    }
-
-    pub fn set_to_position(&mut self, to_position: i8) {
-        self.to_position = to_position;
     }
 
     pub fn sum_to_move_worth(&mut self, value: i32) {

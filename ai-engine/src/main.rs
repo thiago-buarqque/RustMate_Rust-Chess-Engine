@@ -13,6 +13,10 @@ use global_state::GlobalState;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(24)
+        .build_global()
+        .unwrap();
     println!("Server started successfully 🚀!");
 
     let state = web::Data::new(Mutex::new(GlobalState::new()));
@@ -31,9 +35,10 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::clone(&state))
             .service(game_controller::get_board)
-            .service(game_controller::move_piece)
-            .service(game_controller::load_fen)
             .service(game_controller::get_move_generation_count)
+            .service(game_controller::load_fen)
+            .service(game_controller::move_piece)
+            .service(game_controller::set_ai_depth)
             // .configure(config)
             .wrap(cors)
             .wrap(Logger::default())

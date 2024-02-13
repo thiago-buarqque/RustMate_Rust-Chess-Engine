@@ -1,6 +1,7 @@
 export type TBoard = {
   blackCaptures: string[];
   boardEvaluation: number;
+  boardFen: string;
   pieces: TPiece[];
   whiteCaptures: string[];
   whiteMove: boolean;
