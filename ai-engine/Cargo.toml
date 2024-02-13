@@ -15,6 +15,7 @@ lto = true
 opt-level = 3
 panic = "abort"
 strip = true
+debug = true
 
 [dependencies]
 actix-cors = "0.6.4"

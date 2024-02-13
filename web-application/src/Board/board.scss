@@ -155,6 +155,13 @@ div#board {
     left: 0;
     width: 100%;
   }
+
+  #board-fen {
+    @extend #winner-announcement;
+    font-size: 18px;
+    bottom: -60px;
+  }
+
 }
 
 #floating-forms {
