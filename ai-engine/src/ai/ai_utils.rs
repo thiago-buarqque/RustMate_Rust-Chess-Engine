@@ -1,11 +1,6 @@
 use crate::{
     common::{
-        piece::Piece,
-        board_utils::{get_position_column_number, get_position_line_number},
-        contants::{BISHOP_WORTH, EMPTY_PIECE, KING_WORTH, PAWN_WORTH, QUEEN_WORTH, ROOK_WORTH},
-        enums::PieceType,
-        piece_move::PieceMove,
-        piece_utils::{get_piece_type, get_piece_worth, get_promotion_options, is_white_piece},
+        board_utils::{get_position_column, get_position_rank}, contants::{BISHOP_WORTH, EMPTY_PIECE, KING_WORTH, PAWN_WORTH, QUEEN_WORTH, ROOK_WORTH}, enums::PieceType, piece::Piece, piece_move::PieceMove, piece_utils::{get_piece_type, get_piece_worth, get_promotion_options, is_white_piece}
     },
     game::{board::Board, board_state::BoardState, move_generator_helper::get_adjacent_position},
 };
@@ -38,7 +33,7 @@ pub fn get_sorted_moves(
             let target_piece = board_state.get_piece(_move.get_to_position());
 
             _move.sum_to_move_worth(
-                (5 * get_piece_worth(target_piece)) - get_piece_worth(moving_piece),
+                (get_piece_worth(target_piece)) - get_piece_worth(moving_piece),
             );
         }
 
@@ -106,8 +101,8 @@ fn get_end_game_move_worth(mut board: Board, max: bool, piece_move: &PieceMove) 
 
     let mut evaluation = 0.0_f32;
 
-    let opponent_king_rank = get_position_line_number(opponent_king_position) as f32;
-    let opponent_king_file = get_position_column_number(opponent_king_position) as f32;
+    let opponent_king_rank = get_position_rank(opponent_king_position) as f32;
+    let opponent_king_file = get_position_column(opponent_king_position) as f32;
 
     let opponent_king_dst_to_center_file = (3.0 - opponent_king_file).max(opponent_king_file - 4.0);
     let opponent_king_dst_to_center_rank = (3.0 - opponent_king_rank).max(opponent_king_rank - 4.0);
@@ -117,8 +112,8 @@ fn get_end_game_move_worth(mut board: Board, max: bool, piece_move: &PieceMove) 
 
     evaluation += opponent_king_dst_from_center as f32;
 
-    let friendly_king_rank = get_position_line_number(friendly_king_position) as f32;
-    let friendly_king_file = get_position_column_number(friendly_king_position) as f32;
+    let friendly_king_rank = get_position_rank(friendly_king_position) as f32;
+    let friendly_king_file = get_position_column(friendly_king_position) as f32;
 
     let dst_between_kings_file = (friendly_king_file - opponent_king_file).abs();
     let dst_between_kings_rank = (friendly_king_rank - opponent_king_rank).abs();
@@ -179,13 +174,7 @@ fn get_friendly_moves_and_attacked_positions(
 fn get_position_value(position: i8, piece_value: u8, end_game: bool, white_piece: bool) -> f32 {
     let piece_type = get_piece_type(piece_value);
 
-    if piece_type == PieceType::Pawn {
-        if white_piece {
-            return WHITE_PAWN_SQUARE_TABLE[position as usize];
-        }
-
-        return BLACK_PAWN_SQUARE_TABLE[position as usize];
-    } else if piece_type == PieceType::King {
+    if piece_type == PieceType::King {
         if end_game {
             return if white_piece {
                 WHITE_KING_SQUARE_TABLE_END_GAME[position as usize]
@@ -205,6 +194,7 @@ fn get_position_value(position: i8, piece_value: u8, end_game: bool, white_piece
         match piece_type {
             PieceType::Bishop => WHITE_BISHOP_SQUARE_TABLE[position as usize],
             PieceType::Knight => WHITE_KNIGHT_SQUARE_TABLE[position as usize],
+            PieceType::Pawn => WHITE_PAWN_SQUARE_TABLE[position as usize],
             PieceType::Queen => QUEEN_SQUARE_TABLE[position as usize],
             PieceType::Rook => WHITE_ROOK_SQUARE_TABLE[position as usize],
             _ => 0.0,
@@ -213,6 +203,7 @@ fn get_position_value(position: i8, piece_value: u8, end_game: bool, white_piece
         match piece_type {
             PieceType::Bishop => BLACK_BISHOP_SQUARE_TABLE[position as usize],
             PieceType::Knight => BLACK_KNIGHT_SQUARE_TABLE[position as usize],
+            PieceType::Pawn => BLACK_PAWN_SQUARE_TABLE[position as usize],
             PieceType::Queen => QUEEN_SQUARE_TABLE[position as usize],
             PieceType::Rook => BLACK_ROOK_SQUARE_TABLE[position as usize],
             _ => 0.0,

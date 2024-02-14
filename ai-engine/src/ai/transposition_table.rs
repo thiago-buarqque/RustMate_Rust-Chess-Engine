@@ -34,6 +34,10 @@ impl TranspositionTable {
         self.table.insert(hash, entry);
     }
 
+    pub fn len(&self) -> usize {
+        self.table.len()
+    }
+
     pub fn retrieve(&mut self, hash: u64) -> Option<&TranspositionTableEntry> {
         let entry = self.table.get(&hash);
 

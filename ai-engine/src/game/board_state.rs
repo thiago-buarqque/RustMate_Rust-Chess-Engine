@@ -346,7 +346,7 @@ impl BoardState {
         self.black_king_in_check = black_king_in_check;
     }
 
-    pub fn set_white_king_in_check(&mut self, white_king_in_check: bool) {
+    pub fn set_white_king_in_check(&mut self, white_king_in_check: bool) {        
         self.white_king_in_check = white_king_in_check;
     }
 

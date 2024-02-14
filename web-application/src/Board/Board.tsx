@@ -1,7 +1,7 @@
-import React, { MouseEventHandler, useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import BoardPiece, { PIECE_ICONS } from "./BoardPiece";
-import { TBoard, TMove, TPiece, TPieceColor, TPieceType } from "./types";
+import { AIResponse, TBoard, TMove, TPiece, TPieceColor, TPieceType } from "./types";
 
 //@ts-ignore
 import captureAudio from "../assets/sound/capture.mp3";
@@ -12,6 +12,7 @@ import http from "../http-common";
 
 import "./board.scss";
 import { EMPTY_FEN, INITIAL_FEN } from "./constants";
+import Logs, { getBoardEvaluationMessage } from "./Logs";
 
 const LINES = [0, 1, 2, 3, 4, 5, 6, 7];
 const COLUMNS: { [key: number]: string } = {
@@ -28,6 +29,7 @@ const COLUMNS: { [key: number]: string } = {
 const EMPTY_PIECE: TPiece = {
   moves: [],
   position: -1,
+  value: 0,
   fen: null,
   white: false,
 };
@@ -50,26 +52,29 @@ const playMoveAudio = (capture: boolean) => {
   audio.play();
 };
 
-const notAnAvailableMove = (availableMoves: TMove[], position: number) => {
+const getPieceMove = (availableMoves: TMove[], position: number) => {
   return availableMoves.find((move) => move.toPosition === position);
 };
 
 const Board = () => {
   const [selectedPiece, setSelectedPiece] = useState<TPiece | null>(null);
-  const [isAlreadyMoving, setIsAlreadyMoving] = useState(false);
+  const [isWaitingForAI, setIsWaitingForAI] = useState(false);
+  const [lastAIResponse, setLastAIResponse] = useState<AIResponse>();
   const [board, setBoard] = useState<TBoard>({
     blackCaptures: [],
+    blackKingInCheck: false,
     boardEvaluation: 0,
     boardFen: INITIAL_FEN,
     whiteCaptures: [],
     pieces: [],
+    whiteKingInCheck: false,
     whiteMove: true,
     winner: "-",
     zobrit: 0
   });
 
   const onPieceSelect = (piece: TPiece) => {
-    if(isAlreadyMoving) {
+    if(isWaitingForAI) {
       return;
     }
 
@@ -90,7 +95,7 @@ const Board = () => {
   };
 
   const togglePieceAvailableMoves = (piece: TPiece) => {
-    if(isAlreadyMoving) {
+    if(isWaitingForAI) {
       return;
     }
 
@@ -112,29 +117,25 @@ const Board = () => {
   };
 
   const onMovePiece = (cell: HTMLDivElement, cellPosition: number) => {
-    if(isAlreadyMoving) {
+    if(isWaitingForAI) {
       return;
     }
 
     if (selectedPiece) {
       const { position, moves } = selectedPiece;
 
-      let pieceMove = notAnAvailableMove(moves, cellPosition);
+      let pieceMove = getPieceMove(moves, cellPosition);
 
       if (pieceMove === undefined) {
         return;
       }
 
-      if (pieceMove.isPromotion) {
-        console.log("This is a promoting pawn!");
+      // TODO: Add the option to choose the promotion
+      if (pieceMove.promotion) {
+        pieceMove.promotionType = TPieceColor.White | TPieceType.Queen
       }
 
       const copy_board: TBoard = JSON.parse(JSON.stringify(board));
-
-      let capture = false;
-      if (copy_board.pieces[cellPosition].fen !== null) {
-        capture = true;
-      }
 
       copy_board.pieces[position] = get_empty_piece(position);
 
@@ -151,39 +152,63 @@ const Board = () => {
 
       cellPiece?.classList.remove("disabled");
 
-      playMoveAudio(capture);
+      // document.querySelectorAll('.cell.to-position').forEach(el => el.classList.remove('to-position'));
 
-      // console.log(`Capture`, capture);
-      // if (capture) {
-      //   console.log(cell);
-      //   cell.classList.remove("capture-receptor");
-      // }
+      // cell?.classList.add("to-position");
+
+      playMoveAudio(pieceMove.capture);
 
       togglePieceAvailableMoves(selectedPiece);
-      // add loading before sending request
+      
       movePiece(pieceMove);
-      // currentTarget.onclick = null;
-      // send request to server and update the state with the result
     }
   };
 
+  const fetchBoard = async () => {
+    return http
+      .get<TBoard>("/board")
+      .then((response) => response.data)
+      .then((data) => {        
+        setBoard(data);
+      });
+  }
+
+  const getAiMove = () => {
+    setIsWaitingForAI(true);
+    
+    http
+      .post<AIResponse>("/ai/move")
+      .then((response) => response.data)
+      .then((aiResponse) => {
+        fetchBoard().then(() => {
+          playMoveAudio(aiResponse.aiMove.capture);
+
+          setLastAIResponse(aiResponse);
+        });
+      })
+      .finally(() => {
+        setIsWaitingForAI(false);
+      })
+  };
+
   const movePiece = (pieceMove: TMove) => {
-    setIsAlreadyMoving(true);
-    pieceMove.promotionType = TPieceColor.White | 5 // Queen
+    // setIsWaitingForAI(true);
     
     http
       .post<TBoard>("/board/move/piece", pieceMove)
       .then((response) => response.data)
       .then((data) => {
         setBoard(data);
-        playMoveAudio(false);
+
+        // getAiMove();
       })
-      .finally(() => {
-        setIsAlreadyMoving(false);
+      .catch((err) => {
+        console.error(err);
+        setIsWaitingForAI(false);
       })
   };
 
-  const resetBoard = (e: React.FormEvent<HTMLFormElement>) => {
+  const loadFEN = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const inputFen: HTMLInputElement | null = document.getElementById(
@@ -204,26 +229,10 @@ const Board = () => {
       .then((response) => response.data)
       .then((data) => {
         setBoard(data);
-      });
-  };
-
-  const fetchCountMoves = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    let depthInput = document.getElementById("raw_search_depth");
-
-    if (!depthInput) {
-      return;
-    }
-
-    let depth = Number((depthInput as HTMLInputElement).value);
-
-    http
-      .post<{ moves: number, elapsedTime: number }>("/board/moves/count", {
-        depth,
-      })
-      .then((response) => response.data)
-      .then((data) => {
-        console.log(`Evaluated ${data.moves} in ${data.elapsedTime}ms for a depth of ${depth}`);
+        // if (!data.whiteMove) {
+        //     getAiMove();
+        // }
+        setLastAIResponse(undefined);
       });
   };
 
@@ -244,46 +253,32 @@ const Board = () => {
   };
 
   useEffect(() => {
-    http
-      .get<TBoard>("/board")
-      .then((response) => response.data)
-      .then((data) => {        
-        setBoard(data);
-      });
+    fetchBoard();
   }, []);
-
-  useEffect(() => {
-    if (board.winner !== "-") {
-      if (board.winner === "d") {
-        alert("Draw");
-      } else {
-        alert(board.winner === "w" ? `Humano venceu!` : `IA venceu!`);
-      }
-    }
-  }, [board]);
 
   return (
     <>
       <div id="floating-forms">
-        <form method="post" onSubmit={resetBoard}>
+        <form method="post" onSubmit={loadFEN}>
           <input type="text" name="fen" id="input-fen" />
           <button type="submit" id="reset-btn">
             Load FEN
           </button>
         </form>
-        <form method="post" onSubmit={fetchCountMoves}>
+        {/* <form method="post" onSubmit={fetchCountMoves}>
           <input type="number" name="rawDepth" id="raw_search_depth" />
           <button type="submit" id="count_moves_btn">
             Count
           </button>
-        </form>
+        </form>*/}
         <form method="post" onSubmit={setAITime}>
-          <input type="number" name="aiTime" id="ai_time" defaultValue={5}/>
+          <input type="number" name="aiTime" id="ai_time" defaultValue={2}/>
           <button type="submit" id="set_ai_time_btn">
             Set
           </button>
-        </form>
+        </form> 
       </div>
+
       <div id="board">
         <div id="white-captures" className="captures">
           {board.whiteCaptures.map((piece_fen, i) => (
@@ -297,14 +292,16 @@ const Board = () => {
         </div>
         {LINES.map((i) => (
           <div key={i} className="row">
-            {LINES.map((j) => (
-              <div
+            {LINES.map((j) => {
+              const piece = board.pieces[i * 8 + j];
+
+              return <div
                 key={j}
-                className={`cell${selectedPiece?.position === (i * 8 + j) ? " selected" : ""}`}
+                className={`cell${selectedPiece?.position === (i * 8 + j) ? " selected" : ""} ${getInCheckClass(board.blackKingInCheck, piece?.value, board.whiteKingInCheck)}`}
                 data-pos={i * 8 + j}
                 onClick={(e) => onMovePiece(e.currentTarget, i * 8 + j)}
               >
-                {/* <span className="cell-index">{i * 8 + j}</span> */}
+                <span className="cell-index">{i * 8 + j}</span>
                 {j === 0 && (
                   <span className={`row-index ${(i + 1) % 2 === 0 ? "white" : ""}`}>{8 - i}</span>
                 )}
@@ -313,45 +310,38 @@ const Board = () => {
                     {COLUMNS[j]}
                   </span>
                 )}
-                {board.pieces[i * 8 + j] && board.pieces[i * 8 + j].fen !== EMPTY_FEN ? (
-                  <BoardPiece boardPiece={board.pieces[i * 8 + j]} onClick={onPieceSelect} />
+                {piece && piece.fen !== EMPTY_FEN ? (
+                  <BoardPiece 
+                    blackKingInCheck={board.blackKingInCheck} 
+                    boardPiece={piece} 
+                    onClick={onPieceSelect} 
+                    whiteKingInCheck={board.whiteKingInCheck}
+                  />
                 ) : (
                   <div className="move-dot"></div>
                 )}
               </div>
-            ))}
+            })}
           </div>
         ))}
-        {/* <span id="board-fen">{board.boardFen}</span> */}
-        <span id="winner-announcement">{getBoardEvaluationMessage(board.boardEvaluation) + ` (${board.boardEvaluation.toFixed(0)})`}</span>
-        {/* <span id="zobrit">{getZobritBinary(board.zobrit)}</span> */}
+        {board.winner !== '-' && <span id="winner-announcement">{getBoardEvaluationMessage(board.boardEvaluation, board.winner)}</span>}
       </div>
+
+      <Logs aiResponse={lastAIResponse} board={board} isWaitingForAI={isWaitingForAI} />
     </>
   );
 };
 
-const getBoardEvaluationMessage = (boardEvaluation: number) => {
-  if(boardEvaluation === 0) {
-    return "No one is winning";
-  } else if(boardEvaluation < 0 && boardEvaluation >= -100) {
-    return "Black is slightly better"
-  } else if(boardEvaluation < -100) {
-    return "Black is winning"
-  } else if(boardEvaluation > 0 && boardEvaluation <= 100) {
-    return "White is slightly better"
-  } else {
-    return "White is winning"
-  }
-}
-
-const getZobritBinary = (zobrit: number) => {
-  let binary = zobrit.toString(2)
-
-  while(binary.length < 64) {
-    binary = "0" + binary;
+const getInCheckClass = (blackKingInCheck: boolean, piece: number, whiteKingInCheck: boolean) => {
+  if(piece === (TPieceColor.Black | TPieceType.King) && blackKingInCheck) {
+    return 'in-check';
   }
 
-  return binary.slice(0, 16) + " " + binary.slice(16, 32) + "\n" + binary.slice(32, 48) + " " + binary.slice(48, 64);
+  if(piece === (TPieceColor.White | TPieceType.King) && whiteKingInCheck) {
+    return 'in-check';
+  }
+
+  return '';
 }
 
 export default Board;

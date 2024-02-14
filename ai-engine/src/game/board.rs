@@ -40,7 +40,16 @@ impl Board {
     pub fn get_pieces(&mut self) -> Vec<Piece> {
         let mut move_generator = self.get_move_generator();
 
-        move_generator.get_available_moves(self)
+        let moves = move_generator.get_available_moves(self);
+        
+        // Sorry, this is awful, just have to finish this project for now.
+        // When I get back to it in the future I'll refactor this shitty code
+        let generated_board_state = move_generator.get_board_state();
+
+        self.state.set_white_king_in_check(generated_board_state.is_white_king_in_check());
+        self.state.set_black_king_in_check(generated_board_state.is_black_king_in_check());
+
+        moves
     }
 
     pub fn set_winner(&mut self, is_king_in_check: bool, is_white_move: bool) {
@@ -62,6 +71,18 @@ impl Board {
             x if x == (PieceColor::Black.value() | PieceColor::White.value()) => 'd', // draw
             _ => '-',
         }
+    }
+
+    pub fn is_black_king_in_check(&self) -> bool {
+        self.state.is_black_king_in_check()
+    }
+
+    pub fn is_white_king_in_check(&self) -> bool {
+        self.state.is_white_king_in_check()
+    }
+
+    pub fn get_winner(&self) -> u8 {
+        self.state.get_winner()
     }
 
     pub fn move_piece(&mut self, piece_move: &PieceMove) -> Result<(), &'static str> {
