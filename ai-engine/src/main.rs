@@ -39,6 +39,7 @@ async fn main() -> std::io::Result<()> {
             .service(game_controller::load_fen)
             .service(game_controller::move_piece)
             .service(game_controller::set_ai_depth)
+            .service(game_controller::ai_move)
             // .configure(config)
             .wrap(cors)
             .wrap(Logger::default())

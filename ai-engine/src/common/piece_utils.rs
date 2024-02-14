@@ -51,3 +51,21 @@ pub fn is_white_piece(piece_value: u8) -> bool {
 pub fn is_same_color(piece1: u8, piece2: u8) -> bool {
     is_white_piece(piece1) == is_white_piece(piece2)
 }
+
+pub fn get_piece_symbol(piece_code: u8) -> char {
+    match piece_code {
+        WHITE_KING => '♔',
+        WHITE_QUEEN => '♕',
+        WHITE_ROOK => '♖',
+        WHITE_BISHOP => '♗',
+        WHITE_KNIGHT => '♘',
+        WHITE_PAWN => '♙',
+        BLACK_KING => '♚',
+        BLACK_QUEEN => '♛',
+        BLACK_ROOK => '♜',
+        BLACK_BISHOP => '♝',
+        BLACK_KNIGHT => '♞',
+        BLACK_PAWN => '♟',
+        _ => 'e',
+    }
+}

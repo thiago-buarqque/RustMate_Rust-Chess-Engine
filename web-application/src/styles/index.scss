@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
 * {
     box-sizing: border-box;
 }
@@ -25,6 +27,14 @@ body {
     align-items: center;
     justify-content: center;
 
-    // background-color: rgb(207, 215, 255);
-    background-color: #a9b3e5;
+    column-gap: 24px;
+
+    // background-color: #a9b3e5;
+    background: hsla(221, 59%, 75%, 1);
+
+    background: radial-gradient(circle, hsla(221, 59%, 75%, 1) 50%, hsla(216, 40%, 58%, 1) 100%);
+
+    background: -moz-radial-gradient(circle, hsla(221, 59%, 75%, 1) 50%, hsla(216, 40%, 58%, 1) 100%);
+
+    background: -webkit-radial-gradient(circle, hsla(221, 59%, 75%, 1) 50%, hsla(216, 40%, 58%, 1) 100%);
 }

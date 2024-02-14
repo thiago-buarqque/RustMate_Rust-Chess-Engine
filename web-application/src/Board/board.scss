@@ -10,6 +10,8 @@ div#board {
 
   position: relative;
 
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+
   .captures {
     width: 50%;
     position: absolute;
@@ -86,10 +88,22 @@ div#board {
       }
 
       &.capture-receptor {
-        background-color: rgba(255, 0, 0, 0.35) !important;
+        background-color: rgba(255, 0, 0, 0.616) !important;
       }
 
       &.selected {
+        background-color: #d6d6d6 !important;
+      }
+
+      &.in-check {
+        background-color: rgba(255, 0, 0, 0.35) !important;
+      }
+
+      &.from-position {
+
+      }
+
+      &.to-position {
         background-color: #d6d6d6 !important;
       }
 
@@ -148,10 +162,10 @@ div#board {
   }
 
   #winner-announcement {
-    font-size: 32px;
+    font-size: 40px;
     text-align: center;
     position: absolute;
-    bottom: -80px;
+    bottom: -72px;
     left: 0;
     width: 100%;
   }

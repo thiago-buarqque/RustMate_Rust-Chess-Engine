@@ -13,7 +13,7 @@ import QueenWhite from "../assets/queen-white.svg";
 import RookBlack from "../assets/rook-black.svg";
 import RookWhite from "../assets/rook-white.svg";
 
-import { TPiece} from "./types";
+import { TPiece, TPieceColor, TPieceType} from "./types";
 
 export const PIECE_ICONS: {
   [key: string]: string;
@@ -33,12 +33,14 @@ export const PIECE_ICONS: {
 };
 
 interface IProps {
+  blackKingInCheck: boolean;
   boardPiece: TPiece;
   onClick: (position: TPiece) => void;
+  whiteKingInCheck: boolean;
 }
 
-const BoardPiece: React.FC<IProps> = ({ boardPiece, onClick }) => {
-  const { fen: type } = boardPiece;
+const BoardPiece: React.FC<IProps> = ({ blackKingInCheck, boardPiece, onClick, whiteKingInCheck }) => {
+  const { fen} = boardPiece;
 
   return (
     <button
@@ -49,7 +51,7 @@ const BoardPiece: React.FC<IProps> = ({ boardPiece, onClick }) => {
         }
       }}
     >
-      {type && <img className="piece" src={PIECE_ICONS[type]} alt={type} />}
+      {fen && <img className="piece" src={PIECE_ICONS[fen]} alt={fen} />}
     </button>
   );
 };
