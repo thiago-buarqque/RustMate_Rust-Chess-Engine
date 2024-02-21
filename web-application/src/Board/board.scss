@@ -88,7 +88,7 @@ div#board {
       }
 
       &.capture-receptor {
-        background-color: rgba(255, 0, 0, 0.616) !important;
+        background-color: rgba(255, 0, 0, 0.4) !important;
       }
 
       &.selected {
@@ -96,15 +96,15 @@ div#board {
       }
 
       &.in-check {
-        background-color: rgba(255, 0, 0, 0.35) !important;
+        background-color: rgba(255, 0, 0, 0.6) !important;
       }
 
       &.from-position {
-
+        background-color: #e2d6ab !important;
       }
 
       &.to-position {
-        background-color: #d6d6d6 !important;
+        background-color: #eee394 !important;
       }
 
       .row-index,
@@ -162,10 +162,10 @@ div#board {
   }
 
   #winner-announcement {
-    font-size: 40px;
+    font-size: 56px;
     text-align: center;
     position: absolute;
-    bottom: -72px;
+    bottom: -88px;
     left: 0;
     width: 100%;
   }
