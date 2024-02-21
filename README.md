@@ -7,6 +7,12 @@ An Chess engine implemented in Rust. I started this project to learn Rust and ge
 > Note: The original idea was to make the game in Python along with Rust as the AI engine. That proved to not be
 the best approach. Soon the API in Pyton will be replace for a API in Rust (once I get more experienced in Rust crate to create Rest applications).
 
+### Videos
+
+https://github.com/thiago-buarqque/RustMate_Rust-Chess-Engine/assets/57292581/a4eb872c-47e1-4cc1-976c-17ae3fe05de8
+
+https://github.com/thiago-buarqque/RustMate_Rust-Chess-Engine/assets/57292581/c9154817-4ea4-4205-bcbf-52c47460a274
+
 #### Implemented features
 
 - [x] The chess game is implemented, working and correctly generating valid moves;
