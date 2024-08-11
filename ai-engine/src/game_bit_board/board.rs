@@ -1,4 +1,4 @@
-use crate::game_bit_board::board_utils::get_piece_type_from_index;
+use crate::game_bit_board::{board_utils::get_piece_type_from_index, utils::get_piece_letter};
 
 use super::{
     board_utils::{
@@ -103,40 +103,25 @@ impl Board {
             }
         }
 
-        unimplemented!()
+        PieceType::Empty
     }
 
     pub fn display(&self) {
         for row in (0..8).rev() {
+            print!("{} ", row + 1);
             for col in 0..8 {
-                let pos = 1 << (row * 8 + col);
-                let piece_char = if self.bitboards[BISHOPS_IDX] & pos != 0 {
-                    "B"
-                } else if self.bitboards[KINGS_IDX] & pos != 0 {
-                    "K"
-                } else if self.bitboards[KNIGHTS_IDX] & pos != 0 {
-                    "N"
-                } else if self.bitboards[PAWNS_IDX] & pos != 0 {
-                    "P"
-                } else if self.bitboards[QUEENS_IDX] & pos != 0 {
-                    "Q"
-                } else if self.bitboards[ROOKS_IDX] & pos != 0 {
-                    "R"
-                } else {
-                    "."
-                };
+                let position = 1 << (row * 8 + col);
 
-                let color_char = if self.bitboards[WHITE_IDX] & pos != 0 {
-                    piece_char.to_uppercase()
-                } else if self.bitboards[BLACK_IDX] & pos != 0 {
-                    piece_char.to_lowercase()
-                } else {
-                    ".".to_string()
-                };
-                print!("{} ", color_char);
+                let piece_char = get_piece_letter(
+                    self.get_piece_color_from_position(position), 
+                    self.get_piece_type_from_position(position)
+                );
+
+                print!("{} ", piece_char);
             }
             println!();
         }
+        println!("  a b c d e f g h");
     }
 }
 
