@@ -2,8 +2,8 @@ attr_fn_like_width = 60
 combine_control_expr = false
 wrap_comments = true
 edition = "2021"
-error_on_line_overflow = true
-error_on_unformatted = true
+# error_on_line_overflow = true
+# error_on_unformatted = true
 fn_params_layout = "Compressed"
 fn_call_width = 60
 fn_single_line = true
@@ -13,5 +13,11 @@ overflow_delimited_expr = false
 reorder_impl_items = true
 
 ignore = [
+  "src/ai/",
+  "src/common/",
+  "src/dto/",
+  "src/game/",
+  "src/game_controller.rs",
+  "src/global_state.rs",
   "src/game_bit_board/move_generator/contants.rs",
 ]

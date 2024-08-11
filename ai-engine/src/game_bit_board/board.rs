@@ -5,7 +5,7 @@ use super::{
         get_color_index, get_piece_type_index, is_pawn_promotion, BISHOPS_IDX, BLACK_IDX,
         KINGS_IDX, KNIGHTS_IDX, PAWNS_IDX, PIECE_INDEXES, QUEENS_IDX, ROOKS_IDX, WHITE_IDX,
     },
-    enums::{Color, PieceType}
+    enums::{Color, PieceType},
 };
 
 pub struct Board {
@@ -55,13 +55,9 @@ impl Board {
         self.bitboards[get_color_index(color)]
     }
 
-    fn get_occupied_squares(&self) -> u64 {
-        self.bitboards[WHITE_IDX] | self.bitboards[BLACK_IDX]
-    }
+    fn get_occupied_squares(&self) -> u64 { self.bitboards[WHITE_IDX] | self.bitboards[BLACK_IDX] }
 
-    fn get_empty_squares(&self) -> u64 {
-        !self.get_occupied_squares()
-    }
+    fn get_empty_squares(&self) -> u64 { !self.get_occupied_squares() }
 
     fn place_piece(&mut self, color: Color, piece_type: PieceType, position: u64) {
         self.bitboards[get_color_index(color)] |= position;
@@ -113,8 +109,8 @@ impl Board {
                 let position = 1 << (row * 8 + col);
 
                 let piece_char = get_piece_letter(
-                    self.get_piece_color_from_position(position), 
-                    self.get_piece_type_from_position(position)
+                    self.get_piece_color_from_position(position),
+                    self.get_piece_type_from_position(position),
                 );
 
                 print!("{} ", piece_char);
@@ -127,16 +123,16 @@ impl Board {
 
 #[cfg(test)]
 mod tests {
-    use crate::game_bit_board::positions::*;
     use crate::game_bit_board::{
         board::{Board, PAWNS_IDX, QUEENS_IDX},
         enums::{Color, PieceType},
+        positions::*,
     };
 
     #[test]
     fn test_board_initialization() {
         let board = Board::new();
-        
+
         let white_pawns = 0xFF00; // Rank 2
         let black_pawns = 0x00FF000000000000; // Rank 7
 
@@ -156,20 +152,14 @@ mod tests {
     fn test_get_occupied_squares() {
         let board = Board::new();
 
-        assert_eq!(
-            0xFFFF00000000FFFF,
-            board.get_occupied_squares()
-        )
+        assert_eq!(0xFFFF00000000FFFF, board.get_occupied_squares())
     }
 
     #[test]
     fn test_get_empty_squares() {
         let board = Board::new();
 
-        assert_eq!(
-            0x0000FFFFFFFF0000,
-            board.get_empty_squares()
-        )
+        assert_eq!(0x0000FFFFFFFF0000, board.get_empty_squares())
     }
 
     #[test]

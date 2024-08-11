@@ -12,5 +12,5 @@ pub enum PieceType {
     Rook,
     Queen,
     King,
-    Empty
+    Empty,
 }

@@ -49,7 +49,7 @@ pub fn get_piece_type_index(piece_type: PieceType) -> usize {
         PieceType::Pawn => PAWNS_IDX,
         PieceType::Queen => QUEENS_IDX,
         PieceType::Rook => ROOKS_IDX,
-        PieceType::Empty => usize::MAX
+        PieceType::Empty => usize::MAX,
     }
 }
 
