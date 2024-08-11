@@ -13,13 +13,13 @@ pub struct Board {
 }
 
 impl Board {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut board = Board { bitboards: [0; 8] };
         board.reset();
         board
     }
 
-    fn empty() -> Self {
+    pub fn empty() -> Self {
         let mut board = Board { bitboards: [0; 8] };
 
         board
@@ -45,6 +45,22 @@ impl Board {
 
         // Placement of kings
         self.bitboards[KINGS_IDX] = 0x1000000000000010;
+    }
+
+    pub fn get_piece_positions(&self, color: Color, piece_type: PieceType) -> u64 {
+        self.bitboards[get_piece_type_index(piece_type)] & self.bitboards[get_color_index(color)]
+    }
+
+    pub fn get_player_pieces_positions(&self, color: Color) -> u64 {
+        self.bitboards[get_color_index(color)]
+    }
+
+    fn get_occupied_squares(&self) -> u64 {
+        self.bitboards[WHITE_IDX] | self.bitboards[BLACK_IDX]
+    }
+
+    fn get_empty_squares(&self) -> u64 {
+        !self.get_occupied_squares()
     }
 
     fn place_piece(&mut self, color: Color, piece_type: PieceType, position: u64) {
@@ -149,6 +165,26 @@ mod tests {
             black_pawns,
             "Black pawns should be correctly initialized on rank 7"
         );
+    }
+
+    #[test]
+    fn test_get_occupied_squares() {
+        let board = Board::new();
+
+        assert_eq!(
+            0xFFFF00000000FFFF,
+            board.get_occupied_squares()
+        )
+    }
+
+    #[test]
+    fn test_get_empty_squares() {
+        let board = Board::new();
+
+        assert_eq!(
+            0x0000FFFFFFFF0000,
+            board.get_empty_squares()
+        )
     }
 
     #[test]
