@@ -13,7 +13,78 @@ struct MoveGenerator {}
 impl MoveGenerator {
     pub fn new() -> Self { MoveGenerator {} }
 
-    fn generate_king_moves(friendly_piece_positions: u64, initial_position: u64) -> u64 {
+    fn generate_queen_moves(
+        enemy_positions: u64, friendly_positions: u64, initial_position: u64,
+    ) -> u64 {
+        MoveGenerator::generate_bishop_moves(enemy_positions, friendly_positions, initial_position)
+            | MoveGenerator::generate_rook_moves(
+                enemy_positions,
+                friendly_positions,
+                initial_position,
+            )
+    }
+
+    fn generate_rook_moves(
+        enemy_positions: u64, friendly_positions: u64, initial_position: u64,
+    ) -> u64 {
+        let mut moves: u64 = 0;
+
+        [north_one, south_one, west_one, east_one]
+            .iter()
+            .for_each(|step_fn| {
+                MoveGenerator::generate_sliding_moves(
+                    enemy_positions,
+                    friendly_positions,
+                    initial_position,
+                    &mut moves,
+                    step_fn,
+                );
+            });
+
+        moves
+    }
+
+    fn generate_bishop_moves(
+        enemy_positions: u64, friendly_positions: u64, initial_position: u64,
+    ) -> u64 {
+        let mut moves: u64 = 0;
+
+        [no_we_one, so_we_one, so_ea_one, no_ea_one]
+            .iter()
+            .for_each(|step_fn| {
+                MoveGenerator::generate_sliding_moves(
+                    enemy_positions,
+                    friendly_positions,
+                    initial_position,
+                    &mut moves,
+                    step_fn,
+                );
+            });
+
+        moves
+    }
+
+    fn generate_sliding_moves(
+        enemy_positions: u64, friendly_positions: u64, initial_position: u64, moves: &mut u64,
+        step_one: &dyn Fn(u64) -> u64,
+    ) {
+        let mut new_position = step_one(initial_position);
+
+        while new_position != 0 && (new_position & !friendly_positions) != 0 {
+            *moves |= new_position;
+
+            // Found an enemy piece and can capture it
+            if new_position & enemy_positions != 0 {
+                break;
+            }
+
+            new_position = step_one(new_position);
+        }
+    }
+
+    /// This function was used once to generate king pseudo-legal moves
+    /// It will be kept here for the sake of history.
+    fn generate_king_moves(friendly_positions: u64, initial_position: u64) -> u64 {
         (north_one(initial_position)
             | no_ea_one(initial_position)
             | east_one(initial_position)
@@ -22,7 +93,7 @@ impl MoveGenerator {
             | so_we_one(initial_position)
             | west_one(initial_position)
             | no_we_one(initial_position))
-            & !friendly_piece_positions
+            & !friendly_positions
     }
 
     /// This function was used once to generate king pseudo-legal moves
@@ -109,10 +180,13 @@ fn print_board(color: Color, piece_index: u64, piece_type: PieceType, bb_positio
     println!("  a b c d e f g h");
     for rank in (0..8).rev() {
         print!("{} ", rank + 1);
+
         for file in 0..8 {
             let square = 1 << (rank * 8 + file);
+
             if square == 1 << piece_index {
                 let symbol = get_piece_symbol(color, piece_type);
+
                 print!("{symbol} ");
             } else if bb_position & square != 0 {
                 print!("1 ");
@@ -120,9 +194,12 @@ fn print_board(color: Color, piece_index: u64, piece_type: PieceType, bb_positio
                 print!(". ");
             }
         }
+
         println!("{}", rank + 1);
     }
+
     println!("  a b c d e f g h");
+    println!("{:#018X}", bb_position)
 }
 
 #[cfg(test)]
@@ -131,25 +208,94 @@ mod tests {
     use crate::game_bit_board::{
         enums::{Color, PieceType},
         move_generator::move_generator::print_board,
+        positions::{A1, C1, D1, D5},
     };
 
     use super::MoveGenerator;
 
     #[test]
-    fn test_pre_compute_pawn_moves() {
-        let mut moves = [0; 64];
+    fn test_generate_queen_moves() {
+        let position = D1;
 
-        MoveGenerator::pre_compute_king_moves(&mut moves);
+        let mut moves = MoveGenerator::generate_queen_moves(0, 0, position);
 
-        println!("{:#018X?}", moves);
+        println!(
+            "{:?}",
+            print_board(Color::Black, 3, PieceType::Queen, moves)
+        );
 
-        for i in 0..64 {
-            let _moves = moves[i];
+        assert_eq!(0x08080888492A1CF7, moves);
 
-            println!(
-                "{:?}",
-                print_board(Color::Black, i as u64, PieceType::King, _moves)
-            );
-        }
+        moves = MoveGenerator::generate_queen_moves(0x1020000, 0x800, position);
+
+        println!(
+            "{:?}",
+            print_board(Color::Black, 3, PieceType::Queen, moves)
+        );
+
+        assert_eq!(0x00000080402214F7, moves);
+    }
+
+    #[test]
+    fn test_generate_bishop_moves() {
+        let position = C1;
+        let mut moves = MoveGenerator::generate_bishop_moves(0, 0, position);
+
+        println!(
+            "{:?}",
+            print_board(Color::Black, 2, PieceType::Bishop, moves)
+        );
+
+        assert_eq!(0x0000804020110A00, moves);
+
+        moves = MoveGenerator::generate_bishop_moves(0, 0x800, position);
+
+        println!(
+            "{:?}",
+            print_board(Color::Black, 2, PieceType::Bishop, moves)
+        );
+
+        assert_eq!(0x0000000000010200, moves);
+
+        moves = MoveGenerator::generate_bishop_moves(0x800, 0, position);
+
+        println!(
+            "{:?}",
+            print_board(Color::Black, 2, PieceType::Bishop, moves)
+        );
+
+        assert_eq!(0x0000000000010A00, moves);
+    }
+
+    #[test]
+    fn test_generate_rook_moves() {
+        let mut position = A1;
+
+        let mut moves = MoveGenerator::generate_rook_moves(0, 0, position);
+
+        println!("{:?}", print_board(Color::Black, 0, PieceType::Rook, moves));
+
+        assert_eq!(0x01010101010101FE, moves);
+
+        position = D5;
+
+        moves = MoveGenerator::generate_rook_moves(0, 0xFFFF000000000000, position);
+
+        println!(
+            "{:?}",
+            print_board(Color::Black, 35, PieceType::Rook, moves)
+        );
+
+        assert_eq!(0x000008F708080808, moves);
+
+        moves =
+            MoveGenerator::generate_rook_moves(0x0000000000FFF9F6, 0xFFFF000000000000, position);
+
+        assert_eq!(0x000008F708080000, moves);
+
+        println!(
+            "{:?}",
+            print_board(Color::Black, 35, PieceType::Rook, moves)
+        );
     }
 }

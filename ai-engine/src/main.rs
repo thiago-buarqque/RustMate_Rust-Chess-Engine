@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // mod ai;
 // mod common;
 // mod dto;
