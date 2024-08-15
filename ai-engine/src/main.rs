@@ -1,16 +1,10 @@
-mod ai;
-mod common;
-mod dto;
-mod game;
+// mod ai;
+// mod common;
+// mod dto;
+// mod game;
 mod game_bit_board;
-mod game_controller;
-mod global_state;
-
-use std::sync::Mutex;
-
-use actix_cors::Cors;
-use actix_web::{http::header, middleware::Logger, web, App, HttpServer};
-use global_state::GlobalState;
+// mod game_controller;
+// mod global_state;
 
 fn main() {}
 

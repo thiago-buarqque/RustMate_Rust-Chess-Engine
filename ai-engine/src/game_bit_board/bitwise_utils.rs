@@ -17,9 +17,9 @@ pub fn so_we_one(b: u64) -> u64 { (b >> 9) & NOT_H_FILE }
 
 pub fn no_we_one(b: u64) -> u64 { (b << 7) & NOT_H_FILE }
 
-pub fn sout_one(b: u64) -> u64 { b >> 8 }
+pub fn south_one(b: u64) -> u64 { b >> 8 }
 
-pub fn nort_one(b: u64) -> u64 { b << 8 }
+pub fn north_one(b: u64) -> u64 { b << 8 }
 
 pub fn upper_bits(b: u64, square: u64) -> u64 { (!b) << square }
 
@@ -33,13 +33,13 @@ mod tests {
         positions::{H2, H3, H8},
     };
 
-    use super::nort_one;
+    use super::north_one;
 
     #[test]
     fn test_nort_one() {
         // See https://www.chessprogramming.org/Square_Mapping_Considerations
         // https://www.chessprogramming.org/General_Setwise_Operations#UpdateByMove:~:text=_mm256_srlv_epi64-,One%20Step%20Only,-The%20advantage%20with
-        assert_eq!(H3, nort_one(H2));
+        assert_eq!(H3, north_one(H2));
 
         let board: Board = Board::new();
 
@@ -50,11 +50,11 @@ mod tests {
 
         let empty_squares: u64 = !white_pieces & !black_pieces;
 
-        let pawn_single_push_targets: u64 = nort_one(white_pawns) & empty_squares;
+        let pawn_single_push_targets: u64 = north_one(white_pawns) & empty_squares;
 
         assert_eq!(0x0000000000FF0000, pawn_single_push_targets);
 
-        let pawn_double_push_targets: u64 = nort_one(pawn_single_push_targets) & empty_squares;
+        let pawn_double_push_targets: u64 = north_one(pawn_single_push_targets) & empty_squares;
 
         assert_eq!(0x00000000FF000000, pawn_double_push_targets)
     }
