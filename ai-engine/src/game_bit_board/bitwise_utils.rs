@@ -1,6 +1,6 @@
-pub fn to_bitboard_position(position: u64) -> u64 { 1 << position }
+pub fn to_bitboard_position(square: u64) -> u64 { 1 << square }
 
-pub fn to_decimal_position(bb_position: u64) -> u64 { 1 >> bb_position }
+pub fn to_decimal_position(square: u64) -> u64 { 1 >> square }
 
 const NOT_A_FILE: u64 = 0xfefefefefefefefe;
 const NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f;

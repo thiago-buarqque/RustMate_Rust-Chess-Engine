@@ -19,11 +19,7 @@ impl Board {
         board
     }
 
-    pub fn empty() -> Self {
-        let mut board = Board { bitboards: [0; 8] };
-
-        board
-    }
+    pub fn empty() -> Self { Board { bitboards: [0; 8] } }
 
     fn reset(&mut self) {
         // Placement of pawns
@@ -59,17 +55,17 @@ impl Board {
 
     fn get_empty_squares(&self) -> u64 { !self.get_occupied_squares() }
 
-    fn place_piece(&mut self, color: Color, piece_type: PieceType, position: u64) {
-        self.bitboards[get_color_index(color)] |= position;
+    fn place_piece(&mut self, color: Color, piece_type: PieceType, bb_position: u64) {
+        self.bitboards[get_color_index(color)] |= bb_position;
 
-        self.bitboards[get_piece_type_index(piece_type)] |= position;
+        self.bitboards[get_piece_type_index(piece_type)] |= bb_position;
     }
 
     /// This function assumes the piece exist on the specified position.
-    fn remove_piece(&mut self, color: Color, piece_type: PieceType, position: u64) {
-        self.bitboards[get_color_index(color)] ^= position;
+    fn remove_piece(&mut self, color: Color, piece_type: PieceType, bb_position: u64) {
+        self.bitboards[get_color_index(color)] ^= bb_position;
 
-        self.bitboards[get_piece_type_index(piece_type)] ^= position;
+        self.bitboards[get_piece_type_index(piece_type)] ^= bb_position;
     }
 
     pub fn move_piece(&mut self, color: Color, piece_type: PieceType, from: u64, to: u64) {
@@ -83,8 +79,8 @@ impl Board {
     }
 
     /// This function assumes that the position is not empty
-    fn get_piece_color_from_position(&self, position: u64) -> Color {
-        if self.bitboards[WHITE_IDX] & position != 0 {
+    fn get_piece_color_from_position(&self, bb_position: u64) -> Color {
+        if self.bitboards[WHITE_IDX] & bb_position != 0 {
             return Color::White;
         }
 
@@ -92,9 +88,9 @@ impl Board {
     }
 
     /// This function assumes that the position is not empty
-    fn get_piece_type_from_position(&self, position: u64) -> PieceType {
+    fn get_piece_type_from_position(&self, bb_position: u64) -> PieceType {
         for piece_index in PIECE_INDEXES {
-            if self.bitboards[piece_index] & position != 0 {
+            if self.bitboards[piece_index] & bb_position != 0 {
                 return get_piece_type_from_index(piece_index);
             }
         }
