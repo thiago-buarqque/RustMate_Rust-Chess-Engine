@@ -1,61 +1,114 @@
 pub fn to_bitboard_position(position: u64) -> u64 { 1 << position }
 
-pub fn to_decimal_position(position: u64) -> u64 { 1 >> position }
+pub fn to_decimal_position(bb_position: u64) -> u64 { 1 >> bb_position }
 
 const NOT_A_FILE: u64 = 0xfefefefefefefefe;
 const NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f;
 
-pub fn east_one(b: u64) -> u64 { (b << 1) & NOT_A_FILE }
+pub fn east_one(bb: u64) -> u64 { (bb << 1) & NOT_A_FILE }
 
-pub fn no_ea_one(b: u64) -> u64 { (b << 9) & NOT_A_FILE }
+pub fn no_ea_one(bb: u64) -> u64 { (bb << 9) & NOT_A_FILE }
 
-pub fn so_ea_one(b: u64) -> u64 { (b >> 7) & NOT_A_FILE }
+pub fn so_ea_one(bb: u64) -> u64 { (bb >> 7) & NOT_A_FILE }
 
-pub fn west_one(b: u64) -> u64 { (b >> 1) & NOT_H_FILE }
+pub fn west_one(bb: u64) -> u64 { (bb >> 1) & NOT_H_FILE }
 
-pub fn so_we_one(b: u64) -> u64 { (b >> 9) & NOT_H_FILE }
+pub fn so_we_one(bb: u64) -> u64 { (bb >> 9) & NOT_H_FILE }
 
-pub fn no_we_one(b: u64) -> u64 { (b << 7) & NOT_H_FILE }
+pub fn no_we_one(bb: u64) -> u64 { (bb << 7) & NOT_H_FILE }
 
-pub fn south_one(b: u64) -> u64 { b >> 8 }
+pub fn south_one(bb: u64) -> u64 { bb >> 8 }
 
-pub fn north_one(b: u64) -> u64 { b << 8 }
+pub fn north_one(bb: u64) -> u64 { bb << 8 }
 
-pub fn upper_bits(b: u64, square: u64) -> u64 { (!b) << square }
+pub fn upper_bits(square: u64) -> u64 { !1 << square }
 
-pub fn lower_bits(b: u64, square: u64) -> u64 { (1 << square) - 1 }
+pub fn lower_bits(square: u64) -> u64 { (1 << square) - 1 }
 
 #[cfg(test)]
 mod tests {
     use crate::game_bit_board::{
-        board::Board,
-        enums::{Color, PieceType},
-        positions::{H2, H3, H8},
+        bitwise_utils::{lower_bits, to_bitboard_position, to_decimal_position, upper_bits},
+        positions::{A1, A8, D1, D2, D3, E1, E2, E3, F1, F2, F3, H1, H8},
     };
 
-    use super::north_one;
+    use super::{
+        east_one, no_ea_one, no_we_one, north_one, so_ea_one, so_we_one, south_one, west_one,
+    };
 
     #[test]
-    fn test_nort_one() {
-        // See https://www.chessprogramming.org/Square_Mapping_Considerations
-        // https://www.chessprogramming.org/General_Setwise_Operations#UpdateByMove:~:text=_mm256_srlv_epi64-,One%20Step%20Only,-The%20advantage%20with
-        assert_eq!(H3, north_one(H2));
+    fn test_to_bitboard_position() {
+        assert_eq!(A1, to_bitboard_position(0));
+    }
 
-        let board: Board = Board::new();
+    #[test]
+    fn test_to_decimal_position() {
+        assert_eq!(0, to_decimal_position(A1));
+    }
 
-        let white_pawns: u64 = board.get_piece_positions(Color::White, PieceType::Pawn);
+    #[test]
+    fn test_north_one() {
+        assert_eq!(E3, north_one(E2));
 
-        let white_pieces: u64 = board.get_player_pieces_positions(Color::White);
-        let black_pieces: u64 = board.get_player_pieces_positions(Color::Black);
+        assert_eq!(0, north_one(H8));
+    }
 
-        let empty_squares: u64 = !white_pieces & !black_pieces;
+    #[test]
+    fn test_south_one() {
+        assert_eq!(E1, south_one(E2));
 
-        let pawn_single_push_targets: u64 = north_one(white_pawns) & empty_squares;
+        assert_eq!(0, south_one(E1));
+    }
 
-        assert_eq!(0x0000000000FF0000, pawn_single_push_targets);
+    #[test]
+    fn test_east_one() {
+        assert_eq!(F2, east_one(E2));
 
-        let pawn_double_push_targets: u64 = north_one(pawn_single_push_targets) & empty_squares;
+        assert_eq!(0, east_one(H8));
+    }
 
-        assert_eq!(0x00000000FF000000, pawn_double_push_targets)
+    #[test]
+    fn test_west_one() {
+        assert_eq!(D2, west_one(E2));
+
+        assert_eq!(0, west_one(A8));
+    }
+
+    #[test]
+    fn test_no_we_one() {
+        assert_eq!(D3, no_we_one(E2));
+
+        assert_eq!(0, no_we_one(A8));
+    }
+
+    #[test]
+    fn test_so_we_one() {
+        assert_eq!(D1, so_we_one(E2));
+
+        assert_eq!(0, so_we_one(A1));
+    }
+
+    #[test]
+    fn test_no_ea_one() {
+        assert_eq!(F3, no_ea_one(E2));
+
+        assert_eq!(0, no_ea_one(H8));
+    }
+
+    #[test]
+    fn test_so_ea_one() {
+        assert_eq!(F1, so_ea_one(E2));
+
+        assert_eq!(0, so_ea_one(H1));
+    }
+
+    #[test]
+    fn test_upper_bits() {
+        assert_eq!(0xFFFFFFFFFFFF0000, upper_bits(15));
+    }
+
+    #[test]
+    fn test_lower_bits() {
+        assert_eq!(0x0000000000007FFF, lower_bits(15));
     }
 }
