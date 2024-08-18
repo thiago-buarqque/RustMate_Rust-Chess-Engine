@@ -5,6 +5,15 @@ pub fn to_decimal_position(square: u64) -> u64 { 1 >> square }
 const NOT_A_FILE: u64 = 0xfefefefefefefefe;
 const NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f;
 
+const A_FILE: u64 = 0x0101010101010101;
+const H_FILE: u64 = 0x8080808080808080;
+const FIRST_RANK: u64 = 0x00000000000000FF;
+const EIGHTH_RANK: u64 = 0xFF00000000000000;
+const A1_H8_DIAGONAL: u64 = 0x8040201008040201;
+const H1_A8_ANTIDIAGONAL: u64 = 0x0102040810204080;
+const LIGHT_SQUARES: u64 = 0x55AA55AA55AA55AA;
+const DARK_SQUARES: u64 = 0xAA55AA55AA55AA55;
+
 pub fn east_one(bb: u64) -> u64 { (bb << 1) & NOT_A_FILE }
 
 pub fn no_ea_one(bb: u64) -> u64 { (bb << 9) & NOT_A_FILE }

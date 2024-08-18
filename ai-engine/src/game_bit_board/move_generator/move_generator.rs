@@ -146,37 +146,36 @@ impl MoveGenerator {
         *moves |= east_one(north_16);
     }
 
-    /// This function was used once to generate the pawn moves
+    /// This function was used once to generate the pawn attacks
     /// It will be kept here for the sake of history.
-    fn pre_compute_pawn_moves(
-        moves_vec: &mut [u64; 64], ea_one_fn: &dyn Fn(u64) -> u64,
-        step_one_fn: &dyn Fn(u64) -> u64, we_one_fn: &dyn Fn(u64) -> u64, white: bool,
+    fn pre_compute_pawn_attacks(
+        moves_vec: &mut [u64; 64], ea_one_fn: &dyn Fn(u64) -> u64, we_one_fn: &dyn Fn(u64) -> u64,
     ) {
-        let start = 0;
-        let end = 63;
-
-        for square in start..=end {
+        for square in 0..=63 {
             let position = to_bitboard_position(square);
 
-            let mut moves: u64 = step_one_fn(position);
+            moves_vec[square as usize] = we_one_fn(position) | ea_one_fn(position);
+        }
+    }
+
+    /// This function was used once to generate the pawn moves
+    /// It will be kept here for the sake of history.
+    fn pre_compute_pawn_moves(moves_vec: &mut [u64; 64], white: bool) {
+        let offset_fn = if white { north_one } else { south_one };
+
+        for square in 0..=63 {
+            let position = to_bitboard_position(square);
+
+            moves_vec[square as usize] = offset_fn(position);
 
             if is_pawn_in_initial_position(position, white) {
-                let two_squares_move = step_one_fn(moves);
-
-                moves = two_squares_move | moves;
+                moves_vec[square as usize] |= offset_fn(moves_vec[square as usize]);
             }
-
-            let no_we_move = we_one_fn(position);
-            let no_ea_move = ea_one_fn(position);
-
-            moves = moves | no_we_move | no_ea_move;
-
-            moves_vec[square as usize] = moves;
         }
     }
 }
 
-fn print_board(color: Color, piece_index: u64, piece_type: PieceType, bb_position: u64) {
+fn print_board(color: Color, piece_square: u64, piece_type: PieceType, bb_position: u64) {
     println!("  a b c d e f g h");
     for rank in (0..8).rev() {
         print!("{} ", rank + 1);
@@ -184,7 +183,7 @@ fn print_board(color: Color, piece_index: u64, piece_type: PieceType, bb_positio
         for file in 0..8 {
             let square = 1 << (rank * 8 + file);
 
-            if square == 1 << piece_index {
+            if square == 1 << piece_square {
                 let symbol = get_piece_symbol(color, piece_type);
 
                 print!("{symbol} ");
