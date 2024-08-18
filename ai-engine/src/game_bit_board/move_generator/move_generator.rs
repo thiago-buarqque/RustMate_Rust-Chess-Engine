@@ -82,6 +82,32 @@ impl MoveGenerator {
         }
     }
 
+    fn pre_compute_slider_moves(generate: &dyn Fn(u64, u64, u64) -> u64) -> [u64; 64] {
+        let mut moves = [0; 64];
+
+        for square in 0..=63 {
+            let position = to_bitboard_position(square);
+
+            let bb_position = generate(0, 0, position);
+
+            moves[square as usize] = bb_position;
+        }
+
+        moves
+    }
+
+    fn pre_compute_bishop_moves() -> [u64; 64]  {
+        MoveGenerator::pre_compute_slider_moves(&MoveGenerator::generate_bishop_moves)
+    }
+
+    fn pre_compute_queen_moves() -> [u64; 64]  {
+        MoveGenerator::pre_compute_slider_moves(&MoveGenerator::generate_queen_moves)
+    }
+
+    fn pre_compute_rook_moves() -> [u64; 64]  {
+        MoveGenerator::pre_compute_slider_moves(&MoveGenerator::generate_rook_moves)
+    }
+
     /// This function was used once to generate king pseudo-legal moves
     /// It will be kept here for the sake of history.
     fn generate_king_moves(friendly_positions: u64, initial_position: u64) -> u64 {
@@ -211,6 +237,33 @@ mod tests {
     };
 
     use super::MoveGenerator;
+
+    #[test]
+    fn test_pre_compute_bishop_moves() {
+        let moves = MoveGenerator::pre_compute_bishop_moves();
+
+        print_board(Color::White, 2, PieceType::Bishop, moves[2]);
+
+        println!("{:#018X?}", moves)
+    }
+
+    #[test]
+    fn test_pre_compute_queen_moves() {
+        let moves = MoveGenerator::pre_compute_queen_moves();
+
+        print_board(Color::White, 3, PieceType::Queen, moves[3]);
+
+        println!("{:#018X?}", moves)
+    }
+
+    #[test]
+    fn test_pre_compute_rook_moves() {
+        let moves = MoveGenerator::pre_compute_rook_moves();
+
+        print_board(Color::White, 0, PieceType::Rook, moves[0]);
+
+        println!("{:#018X?}", moves)
+    }
 
     #[test]
     fn test_generate_queen_moves() {
