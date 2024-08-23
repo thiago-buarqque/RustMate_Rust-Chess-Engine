@@ -1,3 +1,5 @@
+use std::{collections::HashMap, mem::size_of};
+
 use crate::game_bit_board::enums::Color;
 
 use super::{
@@ -45,4 +47,22 @@ pub fn get_piece_letter(color: Color, piece_type: PieceType) -> String {
 
 pub fn is_pawn_in_initial_position(position: u64, white: bool) -> bool {
     (ROW_2.contains(&position) && white) || (ROW_7.contains(&position) && !white)
+}
+
+pub fn memory_usage_in_kb(map: &HashMap<(u8, u64), u64>) -> usize {
+    // Calculate the size of one entry
+    let entry_size = size_of::<(u8, u64)>() + size_of::<u64>();
+
+    // Number of elements
+    let num_elements = map.len();
+
+    // Estimate the overhead (this is a rough estimate, depending on the capacity)
+    // Assume the overhead is proportional to the capacity
+    let overhead = map.capacity() * size_of::<(u8, u64)>() / 2;
+
+    // Calculate the total memory usage
+    let total_memory = num_elements * entry_size + overhead;
+
+    // Convert to kilobytes
+    total_memory / 1024
 }

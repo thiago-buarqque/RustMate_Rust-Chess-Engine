@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::game_bit_board::{
     bitwise_utils::{east_one, west_one},
     utils::{get_piece_symbol, is_pawn_in_initial_position},
@@ -12,6 +14,50 @@ struct MoveGenerator {}
 
 impl MoveGenerator {
     pub fn new() -> Self { MoveGenerator {} }
+
+    /// Borrowed from Sebastian Lague https://youtu.be/_vqlIPDR2TU?feature=shared&t=1902
+    fn get_blockers_bitboards(bb_moves: u64) -> Vec<u64> {
+        let mut square_indices = Vec::new();
+
+        for i in 0..=63 {
+            if ((bb_moves >> i) & 1) == 1 {
+                square_indices.push(i);
+            }
+        }
+
+        let num_patterns = 1 << square_indices.len();
+        let mut blockers_bitboards = Vec::with_capacity(num_patterns);
+
+        for pattern_i in 0..num_patterns {
+            blockers_bitboards.push(0);
+
+            for bit_i in 0..square_indices.len() {
+                let bit = (pattern_i >> bit_i) & 1;
+
+                blockers_bitboards[pattern_i] |= (bit << square_indices[bit_i]) as u64;
+            }
+        }
+
+        blockers_bitboards
+    }
+
+    fn create_lookup_table(generate: &dyn Fn(u64, u64, u64) -> u64) -> HashMap<(u8, u64), u64> {
+        // TODO: use the magic number approach instead of a Hash Map
+        let mut lookup_table = HashMap::new();
+
+        for i in 0..=63 {
+            let position: u64 = to_bitboard_position(i);
+
+            let moves_bb = generate(0, 0, position);
+            let blockers = MoveGenerator::get_blockers_bitboards(moves_bb);
+
+            blockers.iter().for_each(|blocker_bb| {
+                lookup_table.insert((i as u8, *blocker_bb), generate(*blocker_bb, 0, position));
+            });
+        }
+
+        lookup_table
+    }
 
     fn generate_queen_moves(
         enemy_positions: u64, friendly_positions: u64, initial_position: u64,
@@ -96,15 +142,15 @@ impl MoveGenerator {
         moves
     }
 
-    fn pre_compute_bishop_moves() -> [u64; 64]  {
+    fn pre_compute_bishop_moves() -> [u64; 64] {
         MoveGenerator::pre_compute_slider_moves(&MoveGenerator::generate_bishop_moves)
     }
 
-    fn pre_compute_queen_moves() -> [u64; 64]  {
+    fn pre_compute_queen_moves() -> [u64; 64] {
         MoveGenerator::pre_compute_slider_moves(&MoveGenerator::generate_queen_moves)
     }
 
-    fn pre_compute_rook_moves() -> [u64; 64]  {
+    fn pre_compute_rook_moves() -> [u64; 64] {
         MoveGenerator::pre_compute_slider_moves(&MoveGenerator::generate_rook_moves)
     }
 
@@ -233,10 +279,74 @@ mod tests {
     use crate::game_bit_board::{
         enums::{Color, PieceType},
         move_generator::move_generator::print_board,
-        positions::{A1, C1, D1, D5},
+        positions::{A1, C1, D1, D5, E4},
+        utils::memory_usage_in_kb,
     };
 
     use super::MoveGenerator;
+
+    #[test]
+    fn test_create_rook_lookup_table() {
+        test_create_lookup_table(&MoveGenerator::generate_rook_moves, PieceType::Rook)
+    }
+
+    #[test]
+    fn test_create_bishop_lookup_table() {
+        test_create_lookup_table(&MoveGenerator::generate_bishop_moves, PieceType::Bishop)
+    }
+
+    fn test_create_lookup_table(generate: &dyn Fn(u64, u64, u64) -> u64, piece_type: PieceType) {
+        let table = MoveGenerator::create_lookup_table(generate);
+
+        println!(
+            "{} look up table memory usage: {}KB\n",
+            piece_type,
+            memory_usage_in_kb(&table)
+        );
+
+        let mut i = 0;
+        for key in table.keys() {
+            println!("{:?} -> {:?}", key, table.get(key).unwrap());
+            i += 1;
+
+            if i == 3 {
+                break;
+            }
+
+            print_board(
+                Color::White,
+                key.0.into(),
+                piece_type,
+                *table.get(key).unwrap(),
+            );
+
+            println!("\nBlockers:\n");
+
+            print_board(Color::White, key.0.into(), PieceType::Empty, key.1);
+
+            println!();
+        }
+    }
+
+    #[test]
+    fn test_get_blockers_bitboards() {
+        let position = E4;
+
+        let moves = MoveGenerator::generate_rook_moves(0, 0, position);
+
+        print_board(Color::White, 28, PieceType::Rook, moves);
+
+        let blockes = MoveGenerator::get_blockers_bitboards(moves);
+
+        println!("Generated {}", blockes.len());
+
+        print_board(
+            Color::White,
+            28,
+            PieceType::Rook,
+            *blockes.get(1256).unwrap(),
+        )
+    }
 
     #[test]
     fn test_pre_compute_bishop_moves() {
