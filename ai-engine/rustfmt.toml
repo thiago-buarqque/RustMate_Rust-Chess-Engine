@@ -20,4 +20,5 @@ ignore = [
   "src/game_controller.rs",
   "src/global_state.rs",
   "src/game_bit_board/move_generator/contants.rs",
+  "src/game_bit_board/contants.rs",
 ]
