@@ -1,0 +1,44 @@
+name: Rust CI
+
+on:
+  pull_request:
+    paths:
+      - '.github/**'
+      - 'ai-engine/**'
+jobs:
+  build:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Build the Rust project
+        run: cd ai-engine && cargo build --verbose --all
+
+      - name: Run tests
+        run: cd ai-engine && cargo test --verbose --all
+  rustfmt:
+    name: Source formatter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain with rustfmt available
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: rustfmt
+
+      - name: Run cargo fmt checker
+        run: cd ai-engine && cargo +nightly fmt --check
