@@ -41,22 +41,113 @@ impl MoveGenerator {
         blockers_bitboards
     }
 
-    fn create_lookup_table(generate: &dyn Fn(u64, u64, u64) -> u64) -> HashMap<(u8, u64), u64> {
+    fn create_lookup_table(
+        generate: &dyn Fn(u64, u64, u64) -> u64, relevant_squares: &[u64; 64],
+    ) -> HashMap<(u8, u64), u64> {
         // TODO: use the magic number approach instead of a Hash Map
         let mut lookup_table = HashMap::new();
 
-        for i in 0..=63 {
-            let position: u64 = to_bitboard_position(i);
+        for square in 0..=63 {
+            let position: u64 = to_bitboard_position(square);
 
-            let moves_bb = generate(0, 0, position);
+            let moves_bb = generate(0, 0, position) & relevant_squares[square as usize];
             let blockers = MoveGenerator::get_blockers_bitboards(moves_bb);
 
             blockers.iter().for_each(|blocker_bb| {
-                lookup_table.insert((i as u8, *blocker_bb), generate(*blocker_bb, 0, position));
+                lookup_table.insert(
+                    (square as u8, *blocker_bb),
+                    generate(*blocker_bb, 0, position),
+                );
             });
         }
 
         lookup_table
+    }
+
+    fn generate_bishop_relevant_squares() -> [u64; 64] {
+        let mut masks = [0u64; 64];
+
+        for square in 0..64 {
+            let rank: u8 = square / 8;
+            let file: u8 = square % 8;
+
+            let mut mask = 0u64;
+
+            // Main diagonal (from top-left to bottom-right)
+            let mut r = rank;
+            let mut f = file;
+
+            // Bottom-left direction
+            while r > 1 && f > 1 {
+                r -= 1;
+                f -= 1;
+                mask |= 1u64 << (r * 8 + f);
+            }
+
+            // Top-right direction
+            r = rank;
+            f = file;
+            while r < 6 && f < 6 {
+                r += 1;
+                f += 1;
+                mask |= 1u64 << (r * 8 + f);
+            }
+
+            // Anti-diagonal (from top-right to bottom-left)
+            r = rank;
+            f = file;
+
+            // Top-left direction
+            while r > 1 && f < 6 {
+                r -= 1;
+                f += 1;
+                mask |= 1u64 << (r * 8 + f);
+            }
+
+            // Bottom-right direction
+            r = rank;
+            f = file;
+            while r < 6 && f > 1 {
+                r += 1;
+                f -= 1;
+                mask |= 1u64 << (r * 8 + f);
+            }
+
+            masks[square as usize] = mask;
+        }
+
+        masks
+    }
+
+    fn generate_rook_relevant_squares() -> [u64; 64] {
+        let mut masks = [0u64; 64];
+
+        for square in 0..64 {
+            let rank = square / 8;
+            let file = square % 8;
+
+            let mut mask = 0u64;
+
+            // Horizontal (rank) mask
+            for f in 1..7 {
+                // Exclude edge files
+                if f != file {
+                    mask |= 1u64 << (rank * 8 + f);
+                }
+            }
+
+            // Vertical (file) mask
+            for r in 1..7 {
+                // Exclude edge ranks
+                if r != rank {
+                    mask |= 1u64 << (r * 8 + file);
+                }
+            }
+
+            masks[square] = mask;
+        }
+
+        masks
     }
 
     fn generate_queen_moves(
@@ -278,7 +369,10 @@ mod tests {
 
     use crate::game_bit_board::{
         enums::{Color, PieceType},
-        move_generator::move_generator::print_board,
+        move_generator::{
+            contants::{BISHOP_RELEVANT_SQUARES, ROOK_RELEVANT_SQUARES},
+            move_generator::print_board,
+        },
         positions::{A1, C1, D1, D5, E4},
         utils::memory_usage_in_kb,
     };
@@ -287,16 +381,27 @@ mod tests {
 
     #[test]
     fn test_create_rook_lookup_table() {
-        test_create_lookup_table(&MoveGenerator::generate_rook_moves, PieceType::Rook)
+        test_create_lookup_table(
+            &MoveGenerator::generate_rook_moves,
+            PieceType::Rook,
+            &ROOK_RELEVANT_SQUARES,
+        )
     }
 
     #[test]
     fn test_create_bishop_lookup_table() {
-        test_create_lookup_table(&MoveGenerator::generate_bishop_moves, PieceType::Bishop)
+        test_create_lookup_table(
+            &MoveGenerator::generate_bishop_moves,
+            PieceType::Bishop,
+            &BISHOP_RELEVANT_SQUARES,
+        )
     }
 
-    fn test_create_lookup_table(generate: &dyn Fn(u64, u64, u64) -> u64, piece_type: PieceType) {
-        let table = MoveGenerator::create_lookup_table(generate);
+    fn test_create_lookup_table(
+        generate: &dyn Fn(u64, u64, u64) -> u64, piece_type: PieceType,
+        relevant_squares: &[u64; 64],
+    ) {
+        let table = MoveGenerator::create_lookup_table(generate, relevant_squares);
 
         println!(
             "{} look up table memory usage: {}KB\n",
