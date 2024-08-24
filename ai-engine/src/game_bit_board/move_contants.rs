@@ -1,0 +1,14 @@
+pub const NORMAL: u16 = 0x0;
+pub const DOUBLE_PAWN_PUSH: u16 = 0x1;
+pub const KING_CASTLE: u16 = 0x2;
+pub const QUEEN_CASTLE: u16 = 0x3;
+pub const CAPTURE: u16 = 0x4;
+pub const EN_PASSANT: u16 = 0x5;
+pub const KNIGHT_PROMOTION: u16 = 0x8;
+pub const BISHOP_PROMOTION: u16 = 0x9;
+pub const ROOK_PROMOTION: u16 = 0xA;
+pub const QUEEN_PROMOTION: u16 = 0xB;
+pub const KNIGHT_PROMO_CAPTURE: u16 = 0xC;
+pub const BISHOP_PROMO_CAPTURE: u16 = 0xD;
+pub const ROOK_PROMO_CAPTURE: u16 = 0xE;
+pub const QUEEN_PROMO_CAPTURE: u16 = 0xF;
