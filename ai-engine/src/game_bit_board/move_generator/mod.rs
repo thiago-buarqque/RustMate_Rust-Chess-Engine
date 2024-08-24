@@ -1,2 +1,2 @@
 mod contants;
-pub mod move_generator;
+pub mod raw_move_generator;
