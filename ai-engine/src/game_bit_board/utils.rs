@@ -2,10 +2,7 @@ use std::{collections::HashMap, mem::size_of};
 
 use crate::game_bit_board::enums::Color;
 
-use super::{
-    enums::PieceType,
-    positions::{ROW_2, ROW_7},
-};
+use super::{enums::PieceType, positions::BBPositions};
 
 pub fn get_piece_symbol(color: Color, piece_type: PieceType) -> String {
     (match (color, piece_type) {
@@ -46,7 +43,8 @@ pub fn get_piece_letter(color: Color, piece_type: PieceType) -> String {
 }
 
 pub fn is_pawn_in_initial_position(position: u64, white: bool) -> bool {
-    (ROW_2.contains(&position) && white) || (ROW_7.contains(&position) && !white)
+    (BBPositions::ROW_2.contains(&position) && white)
+        || (BBPositions::ROW_7.contains(&position) && !white)
 }
 
 pub fn memory_usage_in_kb(map: &HashMap<(u8, u64), u64>) -> usize {
