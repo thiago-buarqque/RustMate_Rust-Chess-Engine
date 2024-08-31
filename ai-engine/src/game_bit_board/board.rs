@@ -1,6 +1,7 @@
-use crate::game_bit_board::{board_utils::get_piece_type_from_index, utils::get_piece_letter};
+use crate::game_bit_board::{board_utils::get_piece_type_from_index, utils::get_piece_symbol};
 
 use super::{
+    _move::Move,
     board_utils::{
         get_color_index, get_piece_type_index, is_pawn_promotion, BISHOPS_IDX, BLACK_IDX,
         KINGS_IDX, KNIGHTS_IDX, PAWNS_IDX, PIECE_INDEXES, QUEENS_IDX, ROOKS_IDX, WHITE_IDX,
@@ -21,7 +22,7 @@ impl Board {
 
     pub fn empty() -> Self { Board { bitboards: [0; 8] } }
 
-    fn reset(&mut self) {
+    pub fn reset(&mut self) {
         // Placement of pawns
         self.bitboards[PAWNS_IDX] = 0x00FF00000000FF00;
         self.bitboards[WHITE_IDX] = 0x000000000000FFFF;
@@ -51,11 +52,13 @@ impl Board {
         self.bitboards[get_color_index(color)]
     }
 
-    fn get_occupied_squares(&self) -> u64 { self.bitboards[WHITE_IDX] | self.bitboards[BLACK_IDX] }
+    pub fn get_occupied_squares(&self) -> u64 {
+        self.bitboards[WHITE_IDX] | self.bitboards[BLACK_IDX]
+    }
 
-    fn get_empty_squares(&self) -> u64 { !self.get_occupied_squares() }
+    pub fn get_empty_squares(&self) -> u64 { !self.get_occupied_squares() }
 
-    fn place_piece(&mut self, color: Color, piece_type: PieceType, bb_position: u64) {
+    pub fn place_piece(&mut self, color: Color, piece_type: PieceType, bb_position: u64) {
         self.bitboards[get_color_index(color)] |= bb_position;
 
         self.bitboards[get_piece_type_index(piece_type)] |= bb_position;
@@ -68,7 +71,12 @@ impl Board {
         self.bitboards[get_piece_type_index(piece_type)] ^= bb_position;
     }
 
-    pub fn move_piece(&mut self, color: Color, piece_type: PieceType, from: u64, to: u64) {
+    pub fn move_piece(&mut self, _move: Move) {
+        let color = self.get_piece_color(_move.get_from());
+        let piece_type = self.get_piece_type(_move.get_from());
+        let from: u64 = 1 << _move.get_from();
+        let to: u64 = 1 << _move.get_to();
+
         self.remove_piece(color, piece_type, from);
 
         if piece_type == PieceType::Pawn && is_pawn_promotion(color, from, to) {
@@ -78,19 +86,19 @@ impl Board {
         }
     }
 
-    /// This function assumes that the position is not empty
-    fn get_piece_color_from_position(&self, bb_position: u64) -> Color {
-        if self.bitboards[WHITE_IDX] & bb_position != 0 {
+    /// This function assumes that the square is not empty
+    pub fn get_piece_color(&self, square: usize) -> Color {
+        if self.bitboards[WHITE_IDX] & 1 << square != 0 {
             return Color::White;
         }
 
         return Color::Black;
     }
 
-    /// This function assumes that the position is not empty
-    fn get_piece_type_from_position(&self, bb_position: u64) -> PieceType {
+    /// This function assumes that the square is not empty
+    pub fn get_piece_type(&self, square: usize) -> PieceType {
         for piece_index in PIECE_INDEXES {
-            if self.bitboards[piece_index] & bb_position != 0 {
+            if self.bitboards[piece_index] & 1 << square != 0 {
                 return get_piece_type_from_index(piece_index);
             }
         }
@@ -102,11 +110,9 @@ impl Board {
         for row in (0..8).rev() {
             print!("{} ", row + 1);
             for col in 0..8 {
-                let position = 1 << (row * 8 + col);
-
-                let piece_char = get_piece_letter(
-                    self.get_piece_color_from_position(position),
-                    self.get_piece_type_from_position(position),
+                let piece_char = get_piece_symbol(
+                    self.get_piece_color(row * 8 + col),
+                    self.get_piece_type(row * 8 + col),
                 );
 
                 print!("{} ", piece_char);
@@ -120,9 +126,11 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use crate::game_bit_board::{
+        _move::Move,
         board::{Board, PAWNS_IDX, QUEENS_IDX},
         enums::{Color, PieceType},
-        positions::*,
+        move_contants::QUEEN_PROMOTION,
+        positions::BBPositions,
     };
 
     #[test]
@@ -162,10 +170,10 @@ mod tests {
     fn test_move_piece() {
         let mut board = Board::new();
 
-        let from = A7;
-        let to = A6;
+        let from = BBPositions::A7;
+        let to = BBPositions::A6;
 
-        board.move_piece(Color::Black, PieceType::Pawn, from, to);
+        board.move_piece(Move::from_to(48, 40));
 
         assert_eq!(
             board.bitboards[PAWNS_IDX] & to,
@@ -182,12 +190,12 @@ mod tests {
     #[test]
     fn test_pawn_promotion() {
         let mut board = Board::empty();
-        let from = H7;
-        let to = H8;
+        let from = BBPositions::H7;
+        let to = BBPositions::H8;
 
         board.place_piece(Color::White, PieceType::Pawn, from);
 
-        board.move_piece(Color::White, PieceType::Pawn, from, to);
+        board.move_piece(Move::with_flags(QUEEN_PROMOTION, 55, 63));
 
         assert_eq!(
             board.bitboards[PAWNS_IDX] & to,
@@ -207,7 +215,7 @@ mod tests {
 
         board.display();
 
-        board.move_piece(Color::White, PieceType::Pawn, A2, A3);
+        board.move_piece(Move::from_to(8, 16));
 
         println!("After moving white pawn from a2 to a3:");
 
