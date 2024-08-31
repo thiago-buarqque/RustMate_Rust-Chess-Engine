@@ -401,7 +401,7 @@ mod tests {
             contants::{BISHOP_RELEVANT_SQUARES, ROOK_RELEVANT_SQUARES},
             raw_move_generator::print_board,
         },
-        positions::{A1, C1, D1, D5, E4},
+        positions::BBPositions,
         utils::memory_usage_in_kb,
     };
 
@@ -463,7 +463,7 @@ mod tests {
 
     #[test]
     fn test_get_blockers_bitboards() {
-        let position = E4;
+        let position = BBPositions::E4;
 
         let moves = RawMoveGenerator::generate_rook_moves(0, 0, position);
 
@@ -510,7 +510,7 @@ mod tests {
 
     #[test]
     fn test_generate_queen_moves() {
-        let position = D1;
+        let position = BBPositions::D1;
 
         let mut moves = RawMoveGenerator::generate_queen_moves(0, 0, position);
 
@@ -533,7 +533,7 @@ mod tests {
 
     #[test]
     fn test_generate_bishop_moves() {
-        let position = C1;
+        let position = BBPositions::C1;
         let mut moves = RawMoveGenerator::generate_bishop_moves(0, 0, position);
 
         println!(
@@ -564,7 +564,7 @@ mod tests {
 
     #[test]
     fn test_generate_rook_moves() {
-        let mut position = A1;
+        let mut position = BBPositions::A1;
 
         let mut moves = RawMoveGenerator::generate_rook_moves(0, 0, position);
 
@@ -572,7 +572,7 @@ mod tests {
 
         assert_eq!(0x01010101010101FE, moves);
 
-        position = D5;
+        position = BBPositions::D5;
 
         moves = RawMoveGenerator::generate_rook_moves(0, 0xFFFF000000000000, position);
 

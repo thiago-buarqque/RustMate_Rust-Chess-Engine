@@ -34,11 +34,22 @@ pub fn upper_bits(square: u64) -> u64 { !1 << square }
 
 pub fn lower_bits(square: u64) -> u64 { (1 << square) - 1 }
 
+pub fn pop_lsb(bitboard: &mut u64) -> u8 {
+    if *bitboard == 0 {
+        u8::MAX
+    } else {
+        let lsb_index = bitboard.trailing_zeros();
+        *bitboard &= *bitboard - 1;
+
+        lsb_index as u8
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::game_bit_board::{
         bitwise_utils::{lower_bits, to_bitboard_position, to_decimal_position, upper_bits},
-        positions::{A1, A8, D1, D2, D3, E1, E2, E3, F1, F2, F3, H1, H8},
+        positions::BBPositions,
     };
 
     use super::{
@@ -47,68 +58,68 @@ mod tests {
 
     #[test]
     fn test_to_bitboard_position() {
-        assert_eq!(A1, to_bitboard_position(0));
+        assert_eq!(BBPositions::A1, to_bitboard_position(0));
     }
 
     #[test]
     fn test_to_decimal_position() {
-        assert_eq!(0, to_decimal_position(A1));
+        assert_eq!(0, to_decimal_position(BBPositions::A1));
     }
 
     #[test]
     fn test_north_one() {
-        assert_eq!(E3, north_one(E2));
+        assert_eq!(BBPositions::E3, north_one(BBPositions::E2));
 
-        assert_eq!(0, north_one(H8));
+        assert_eq!(0, north_one(BBPositions::H8));
     }
 
     #[test]
     fn test_south_one() {
-        assert_eq!(E1, south_one(E2));
+        assert_eq!(BBPositions::E1, south_one(BBPositions::E2));
 
-        assert_eq!(0, south_one(E1));
+        assert_eq!(0, south_one(BBPositions::E1));
     }
 
     #[test]
     fn test_east_one() {
-        assert_eq!(F2, east_one(E2));
+        assert_eq!(BBPositions::F2, east_one(BBPositions::E2));
 
-        assert_eq!(0, east_one(H8));
+        assert_eq!(0, east_one(BBPositions::H8));
     }
 
     #[test]
     fn test_west_one() {
-        assert_eq!(D2, west_one(E2));
+        assert_eq!(BBPositions::D2, west_one(BBPositions::E2));
 
-        assert_eq!(0, west_one(A8));
+        assert_eq!(0, west_one(BBPositions::A8));
     }
 
     #[test]
     fn test_no_we_one() {
-        assert_eq!(D3, no_we_one(E2));
+        assert_eq!(BBPositions::D3, no_we_one(BBPositions::E2));
 
-        assert_eq!(0, no_we_one(A8));
+        assert_eq!(0, no_we_one(BBPositions::A8));
     }
 
     #[test]
     fn test_so_we_one() {
-        assert_eq!(D1, so_we_one(E2));
+        assert_eq!(BBPositions::D1, so_we_one(BBPositions::E2));
 
-        assert_eq!(0, so_we_one(A1));
+        assert_eq!(0, so_we_one(BBPositions::A1));
     }
 
     #[test]
     fn test_no_ea_one() {
-        assert_eq!(F3, no_ea_one(E2));
+        assert_eq!(BBPositions::F3, no_ea_one(BBPositions::E2));
 
-        assert_eq!(0, no_ea_one(H8));
+        assert_eq!(0, no_ea_one(BBPositions::H8));
     }
 
     #[test]
     fn test_so_ea_one() {
-        assert_eq!(F1, so_ea_one(E2));
+        assert_eq!(BBPositions::F1, so_ea_one(BBPositions::E2));
 
-        assert_eq!(0, so_ea_one(H1));
+        assert_eq!(0, so_ea_one(BBPositions::H1));
     }
 
     #[test]

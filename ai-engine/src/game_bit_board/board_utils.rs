@@ -1,6 +1,6 @@
 use super::{
     enums::{Color, PieceType},
-    positions::{ROW_1, ROW_2, ROW_7, ROW_8},
+    positions::BBPositions,
 };
 
 pub const BLACK_IDX: usize = 0;
@@ -23,11 +23,11 @@ pub const PIECE_INDEXES: [usize; 6] = [
 ];
 
 pub fn is_white_pawn_promotion(color: Color, from: u64, to: u64) -> bool {
-    color == Color::White && ROW_7.contains(&from) && ROW_8.contains(&to)
+    color == Color::White && BBPositions::ROW_7.contains(&from) && BBPositions::ROW_8.contains(&to)
 }
 
 pub fn is_black_pawn_promotion(color: Color, from: u64, to: u64) -> bool {
-    color == Color::Black && ROW_2.contains(&from) && ROW_1.contains(&to)
+    color == Color::Black && BBPositions::ROW_2.contains(&from) && BBPositions::ROW_1.contains(&to)
 }
 
 pub fn is_pawn_promotion(color: Color, from: u64, to: u64) -> bool {
