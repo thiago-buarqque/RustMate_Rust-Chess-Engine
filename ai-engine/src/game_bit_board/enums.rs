@@ -6,6 +6,20 @@ pub enum Color {
     White,
 }
 
+impl Color {
+    pub fn is_black(&self) -> bool { *self == Color::Black }
+
+    pub fn is_white(&self) -> bool { *self == Color::White }
+
+    pub fn opponent(&self) -> Color {
+        if *self == Color::White {
+            Color::Black
+        } else {
+            Color::White
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum PieceType {
     Pawn,
