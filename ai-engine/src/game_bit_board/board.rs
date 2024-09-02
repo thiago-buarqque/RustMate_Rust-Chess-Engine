@@ -11,16 +11,28 @@ use super::{
 
 pub struct Board {
     bitboards: [u64; 8],
+    en_passant_bb_position: u64,
+    en_passant_bb_piece_square: u64,
 }
 
 impl Board {
     pub fn new() -> Self {
-        let mut board = Board { bitboards: [0; 8] };
+        let mut board = Board {
+            bitboards: [0; 8],
+            en_passant_bb_position: 0,
+            en_passant_bb_piece_square: 0,
+        };
         board.reset();
         board
     }
 
-    pub fn empty() -> Self { Board { bitboards: [0; 8] } }
+    pub fn empty() -> Self {
+        Board {
+            bitboards: [0; 8],
+            en_passant_bb_position: 0,
+            en_passant_bb_piece_square: 0,
+        }
+    }
 
     pub fn reset(&mut self) {
         // Placement of pawns
@@ -43,6 +55,10 @@ impl Board {
         // Placement of kings
         self.bitboards[KINGS_IDX] = 0x1000000000000010;
     }
+
+    pub fn get_en_passant(&self) -> u64 { self.en_passant_bb_position }
+
+    pub fn get_en_passant_square(&self) -> u64 { self.en_passant_bb_piece_square }
 
     pub fn get_piece_positions(&self, color: Color, piece_type: PieceType) -> u64 {
         self.bitboards[get_piece_type_index(piece_type)] & self.bitboards[get_color_index(color)]
@@ -73,17 +89,35 @@ impl Board {
 
     pub fn move_piece(&mut self, _move: Move) {
         let color = self.get_piece_color(_move.get_from());
-        let piece_type = self.get_piece_type(_move.get_from());
+        let mut piece_type = self.get_piece_type(_move.get_from());
         let from: u64 = 1 << _move.get_from();
         let to: u64 = 1 << _move.get_to();
 
+        if _move.is_en_passant() {
+            // Remove the en passant enemy piece
+            self.remove_piece(color, piece_type, self.en_passant_bb_piece_square);
+            self.en_passant_bb_position = 0;
+            self.en_passant_bb_piece_square = 0;
+        }
+
         self.remove_piece(color, piece_type, from);
 
-        if piece_type == PieceType::Pawn && is_pawn_promotion(color, from, to) {
-            self.place_piece(color, PieceType::Queen, to);
-        } else {
-            self.place_piece(color, piece_type, to);
+        if piece_type == PieceType::Pawn {
+            if _move.is_double_pawn_push() {
+                // Save en passant info
+                self.en_passant_bb_position = _move.get_en_passant_bb_position();
+                self.en_passant_bb_piece_square = _move.get_en_passant_bb_piece_square();
+            } else if is_pawn_promotion(color, from, to) {
+                // TODO: get promotion defined inside the move
+                piece_type = PieceType::Queen;
+            }
+        } else if self.en_passant_bb_position != 0 {
+            // When a move is made and en passant is available, remove en passant option
+            self.en_passant_bb_position = 0;
+            self.en_passant_bb_piece_square = 0;
         }
+
+        self.place_piece(color, piece_type, to);
     }
 
     /// This function assumes that the square is not empty
@@ -129,9 +163,37 @@ mod tests {
         _move::Move,
         board::{Board, PAWNS_IDX, QUEENS_IDX},
         enums::{Color, PieceType},
-        move_contants::QUEEN_PROMOTION,
-        positions::BBPositions,
+        move_contants::{DOUBLE_PAWN_PUSH, EN_PASSANT, QUEEN_PROMOTION},
+        positions::{BBPositions, Squares},
     };
+
+    #[test]
+    fn test_en_passant_move() {
+        let mut board = Board::new();
+
+        board.move_piece(Move::from_to(Squares::D2, Squares::D4));
+        board.move_piece(Move::from_to(Squares::E7, Squares::E5));
+        board.move_piece(Move::from_to(Squares::D4, Squares::D5));
+
+        let mut _move = Move::with_flags(DOUBLE_PAWN_PUSH, Squares::C7, Squares::C5);
+
+        _move.set_en_passant_bb_position(BBPositions::C6);
+        _move.set_en_passant_bb_piece_square(BBPositions::C5);
+
+        board.move_piece(_move);
+
+        assert_eq!(PieceType::Pawn, board.get_piece_type(Squares::C5));
+
+        board.display();
+
+        board.move_piece(Move::with_flags(EN_PASSANT, Squares::D5, Squares::C6));
+
+        board.display();
+
+        assert_eq!(PieceType::Empty, board.get_piece_type(Squares::C5));
+        assert_eq!(PieceType::Pawn, board.get_piece_type(Squares::C6));
+        assert_eq!(Color::White, board.get_piece_color(Squares::C6));
+    }
 
     #[test]
     fn test_board_initialization() {

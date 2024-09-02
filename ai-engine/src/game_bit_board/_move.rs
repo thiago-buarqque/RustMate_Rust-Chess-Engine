@@ -32,12 +32,22 @@ use super::move_contants::*;
 #[derive(Debug, Clone)]
 pub struct Move {
     _move: u16,
+    en_passant_bb_position: u64,
+    en_passant_bb_piece_square: u64,
 }
 
 impl PartialEq for Move {
-    fn eq(&self, other: &Self) -> bool { self._move == other._move }
+    fn eq(&self, other: &Self) -> bool {
+        self._move == other._move
+            && self.en_passant_bb_position == other.en_passant_bb_position
+            && self.en_passant_bb_piece_square == other.en_passant_bb_piece_square
+    }
 
-    fn ne(&self, other: &Self) -> bool { self._move != other._move }
+    fn ne(&self, other: &Self) -> bool {
+        self._move != other._move
+            || self.en_passant_bb_position != other.en_passant_bb_position
+            || self.en_passant_bb_piece_square != other.en_passant_bb_piece_square
+    }
 }
 
 impl fmt::Display for Move {
@@ -62,10 +72,12 @@ impl fmt::Display for Move {
 
         write!(
             f,
-            "{} -> {} | {}",
+            "{} -> {} | {} | ep_position: {} | ep_square: {}",
             Squares::to_string(self.get_from()),
             Squares::to_string(self.get_to()),
-            flag
+            flag,
+            self.en_passant_bb_position,
+            self.en_passant_bb_piece_square
         )
     }
 }
@@ -92,6 +104,8 @@ impl Move {
     pub fn with_flags(flags: u16, from: usize, to: usize) -> Self {
         Self {
             _move: ((flags & 0xf) << 12) | ((from as u16 & 0x3f) << 6) | (to as u16 & 0x3f),
+            en_passant_bb_position: 0,
+            en_passant_bb_piece_square: 0,
         }
     }
 
@@ -130,6 +144,18 @@ impl Move {
     pub fn is_rook_promo_capture(&self) -> bool { (self._move >> 12) == ROOK_PROMO_CAPTURE }
 
     pub fn is_queen_promo_capture(&self) -> bool { (self._move >> 12) == QUEEN_PROMO_CAPTURE }
+
+    pub fn set_en_passant_bb_position(&mut self, position: u64) {
+        self.en_passant_bb_position = position
+    }
+
+    pub fn get_en_passant_bb_position(&self) -> u64 { self.en_passant_bb_position }
+
+    pub fn set_en_passant_bb_piece_square(&mut self, square: u64) {
+        self.en_passant_bb_piece_square = square
+    }
+
+    pub fn get_en_passant_bb_piece_square(&self) -> u64 { self.en_passant_bb_piece_square }
 }
 
 #[cfg(test)]

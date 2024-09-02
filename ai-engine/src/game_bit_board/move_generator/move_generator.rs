@@ -178,7 +178,26 @@ impl MoveGenerator {
             let mut forward_two = offset_fn(forward_one);
 
             if forward_two & !occupied_squares != 0 {
-                moves.push(Move::from_to(square, pop_lsb(&mut forward_two) as usize));
+                let en_passant_bb_piece_square = forward_two;
+
+                let target_square = pop_lsb(&mut forward_two) as usize;
+
+                let mut _move = Move::with_flags(DOUBLE_PAWN_PUSH, square, target_square);
+
+                _move.set_en_passant_bb_position(forward_one);
+                _move.set_en_passant_bb_piece_square(en_passant_bb_piece_square);
+
+                moves.push(_move);
+            }
+        } else if board.get_en_passant() != 0 {
+            let mut attacks = (MoveGenerator::look_up_pawn_attacks(color, square)
+                & !friendly_pieces_bb)
+                & board.get_en_passant();
+
+            while attacks != 0 {
+                let target_square = pop_lsb(&mut attacks);
+
+                moves.push(Move::with_flags(EN_PASSANT, square, target_square as usize));
             }
         }
 
@@ -216,7 +235,7 @@ mod tests {
         positions::{BBPositions, Squares},
     };
 
-    use super::MoveGenerator;
+    use super::{MoveGenerator, DOUBLE_PAWN_PUSH, EN_PASSANT};
 
     static MOVE_GENERATOR: Lazy<MoveGenerator> = Lazy::new(|| MoveGenerator::new());
 
@@ -373,8 +392,15 @@ mod tests {
 
         let mut expected_moves = Vec::new();
 
-        let white_pawn_to_d4 = Move::from_to(Squares::D2, Squares::D4);
-        let black_pawn_to_e5 = Move::from_to(Squares::E7, Squares::E5);
+        let mut white_pawn_to_d4 = Move::with_flags(DOUBLE_PAWN_PUSH, Squares::D2, Squares::D4);
+
+        white_pawn_to_d4.set_en_passant_bb_position(BBPositions::D3);
+        white_pawn_to_d4.set_en_passant_bb_piece_square(BBPositions::D4);
+
+        let mut black_pawn_to_e5 = Move::with_flags(DOUBLE_PAWN_PUSH, Squares::E7, Squares::E5);
+
+        black_pawn_to_e5.set_en_passant_bb_position(BBPositions::E6);
+        black_pawn_to_e5.set_en_passant_bb_piece_square(BBPositions::E5);
 
         expected_moves.push(white_pawn_to_d4.clone());
         expected_moves.push(black_pawn_to_e5.clone());
@@ -393,6 +419,39 @@ mod tests {
         let capture2 = Move::with_flags(CAPTURE, 36, 27);
 
         expected_moves.push(capture2);
+
+        assert_available_moves(&board, expected_moves, Vec::new());
+    }
+
+    #[test]
+    fn test_get_en_passant() {
+        let mut board = Board::new();
+
+        board.move_piece(Move::with_flags(DOUBLE_PAWN_PUSH, Squares::D2, Squares::D4));
+        board.move_piece(Move::from_to(Squares::D4, Squares::D5));
+        board.move_piece(Move::with_flags(DOUBLE_PAWN_PUSH, Squares::F2, Squares::F4));
+        board.move_piece(Move::from_to(Squares::F4, Squares::F5));
+
+        let mut expected_moves = Vec::new();
+
+        let mut black_double_push = Move::with_flags(DOUBLE_PAWN_PUSH, Squares::E7, Squares::E5);
+
+        black_double_push.set_en_passant_bb_position(BBPositions::E6);
+        black_double_push.set_en_passant_bb_piece_square(BBPositions::E5);
+
+        expected_moves.push(black_double_push.clone());
+
+        assert_available_moves(&board, expected_moves, Vec::new());
+
+        board.move_piece(black_double_push);
+
+        expected_moves = Vec::new();
+
+        // Assert that two en passant moves are available when the opponent pawn pushes
+        // two squares between two friendly pawns.
+
+        expected_moves.push(Move::with_flags(EN_PASSANT, Squares::D5, Squares::E6));
+        expected_moves.push(Move::with_flags(EN_PASSANT, Squares::F5, Squares::E6));
 
         assert_available_moves(&board, expected_moves, Vec::new());
     }
