@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::game_bit_board::{
     _move::Move,
-    bitwise_utils::{north_one, pop_lsb, south_one, to_bitboard_position},
+    bitwise_utils::{east_one, north_one, pop_lsb, south_one, to_bitboard_position, west_one},
     board::Board,
     enums::{Color, PieceType},
     move_contants::*,
@@ -11,8 +11,10 @@ use crate::game_bit_board::{
 
 use super::{
     contants::{
-        BISHOP_RELEVANT_SQUARES, BLACK_PAWN_ATTACKS, BLACK_PAWN_MOVES, KING_MOVES, KNIGHT_MOVES,
-        ROOK_RELEVANT_SQUARES, WHITE_PAWN_ATTACKS, WHITE_PAWN_MOVES,
+        BISHOP_RELEVANT_SQUARES, BLACK_KING_SIDE_PATH_TO_ROOK, BLACK_PAWN_ATTACKS,
+        BLACK_PAWN_MOVES, BLACK_QUEEN_SIDE_PATH_TO_ROOK, KING_MOVES, KNIGHT_MOVES,
+        ROOK_RELEVANT_SQUARES, WHITE_KING_SIDE_PATH_TO_ROOK, WHITE_PAWN_ATTACKS, WHITE_PAWN_MOVES,
+        WHITE_QUEEN_SIDE_PATH_TO_ROOK,
     },
     raw_move_generator::RawMoveGenerator,
 };
@@ -146,6 +148,30 @@ impl MoveGenerator {
 
             moves.push(Move::with_flags(flags, square, target_square as usize));
         }
+
+        if board.has_queen_side_castle_right(color) {
+            if ((friendly_pieces_bb & BLACK_QUEEN_SIDE_PATH_TO_ROOK) == 0 && color.is_black())
+                || ((friendly_pieces_bb & WHITE_QUEEN_SIDE_PATH_TO_ROOK) == 0 && color.is_white())
+            {
+                let mut west_two = west_one(west_one(1 << square));
+
+                let _move = Move::with_flags(QUEEN_CASTLE, square, pop_lsb(&mut west_two) as usize);
+
+                moves.push(_move);
+            }
+        }
+
+        if board.has_king_side_castle_right(color) {
+            if ((friendly_pieces_bb & BLACK_KING_SIDE_PATH_TO_ROOK) == 0 && color.is_black())
+                || ((friendly_pieces_bb & WHITE_KING_SIDE_PATH_TO_ROOK) == 0 && color.is_white())
+            {
+                let mut east_two = east_one(east_one(1 << square));
+
+                let _move = Move::with_flags(KING_CASTLE, square, pop_lsb(&mut east_two) as usize);
+
+                moves.push(_move);
+            }
+        }
     }
 
     fn get_pawn_moves(board: &Board, moves: &mut Vec<Move>, square: usize, color: Color) {
@@ -231,7 +257,7 @@ mod tests {
         _move::Move,
         board::Board,
         enums::{Color, PieceType},
-        move_contants::CAPTURE,
+        move_contants::{CAPTURE, KING_CASTLE, QUEEN_CASTLE},
         positions::{BBPositions, Squares},
     };
 
@@ -258,6 +284,107 @@ mod tests {
                 "Move {not_expected_move} should not exist"
             );
         });
+    }
+
+    fn setup_castle_test(queen_castle: Move, king_castle: Move) -> Board {
+        let board = Board::new();
+
+        let mut not_expected_moves = Vec::new();
+        not_expected_moves.push(queen_castle.clone());
+        not_expected_moves.push(king_castle.clone());
+
+        assert_available_moves(&board, Vec::new(), not_expected_moves);
+
+        board
+    }
+
+    fn play_castle_moves(board: &mut Board, color: Color, queen_castle: Move, king_castle: Move) {
+        let opening_moves = match color {
+            Color::Black => vec![
+                Move::from_to(Squares::D7, Squares::D5),
+                Move::from_to(Squares::E7, Squares::E5),
+                Move::from_to(Squares::C8, Squares::H3),
+                Move::from_to(Squares::F8, Squares::A3),
+                Move::from_to(Squares::D8, Squares::D7),
+                Move::from_to(Squares::B8, Squares::C6),
+                Move::from_to(Squares::G8, Squares::F6),
+            ],
+            Color::White => vec![
+                Move::from_to(Squares::D2, Squares::D4),
+                Move::from_to(Squares::E2, Squares::E4),
+                Move::from_to(Squares::C1, Squares::H6),
+                Move::from_to(Squares::F1, Squares::A6),
+                Move::from_to(Squares::D1, Squares::D2),
+                Move::from_to(Squares::B1, Squares::C3),
+                Move::from_to(Squares::G1, Squares::F3),
+            ],
+        };
+
+        for mv in opening_moves {
+            board.move_piece(mv);
+        }
+
+        board.display();
+
+        let mut expected_moves = Vec::new();
+        expected_moves.push(queen_castle.clone());
+        expected_moves.push(king_castle.clone());
+
+        assert_available_moves(&board, expected_moves, Vec::new());
+
+        let queen_rook_move = match color {
+            Color::Black => Move::from_to(Squares::A8, Squares::B8),
+            Color::White => Move::from_to(Squares::A1, Squares::B1),
+        };
+
+        board.move_piece(queen_rook_move);
+
+        let mut expected_moves = Vec::new();
+        expected_moves.push(king_castle.clone());
+
+        let mut not_expected_moves = Vec::new();
+        not_expected_moves.push(queen_castle.clone());
+
+        board.display();
+
+        assert_available_moves(&board, expected_moves, not_expected_moves);
+
+        // King side rook moves
+        let king_rook_move = match color {
+            Color::Black => Move::from_to(Squares::H8, Squares::G8),
+            Color::White => Move::from_to(Squares::H1, Squares::G1),
+        };
+
+        board.move_piece(king_rook_move);
+
+        let mut not_expected_moves = Vec::new();
+        not_expected_moves.push(queen_castle.clone());
+        not_expected_moves.push(king_castle.clone());
+
+        board.display();
+
+        assert_available_moves(&board, Vec::new(), not_expected_moves);
+
+        assert_eq!(false, board.has_king_side_castle_right(color));
+        assert_eq!(false, board.has_queen_side_castle_right(color));
+    }
+
+    #[test]
+    fn test_get_black_king_castle_moves() {
+        let queen_castle = Move::with_flags(QUEEN_CASTLE, Squares::E8, Squares::C8);
+        let king_castle = Move::with_flags(KING_CASTLE, Squares::E8, Squares::G8);
+
+        let mut board = setup_castle_test(queen_castle.clone(), king_castle.clone());
+        play_castle_moves(&mut board, Color::Black, queen_castle, king_castle);
+    }
+
+    #[test]
+    fn test_get_white_king_castle_moves() {
+        let queen_castle = Move::with_flags(QUEEN_CASTLE, Squares::E1, Squares::C1);
+        let king_castle = Move::with_flags(KING_CASTLE, Squares::E1, Squares::G1);
+
+        let mut board = setup_castle_test(queen_castle.clone(), king_castle.clone());
+        play_castle_moves(&mut board, Color::White, queen_castle, king_castle);
     }
 
     #[test]
