@@ -7,22 +7,38 @@ use super::{
         KINGS_IDX, KNIGHTS_IDX, PAWNS_IDX, PIECE_INDEXES, QUEENS_IDX, ROOKS_IDX, WHITE_IDX,
     },
     enums::{Color, PieceType},
+    positions::BBPositions,
 };
 
 pub struct Board {
     bitboards: [u64; 8],
     en_passant_bb_position: u64,
     en_passant_bb_piece_square: u64,
+    black_king_moved: bool,
+    white_king_moved: bool,
+    // 0000 1111
+    // *Only considered the last 4 digits*
+    //
+    // Bit 4: White kingside castling
+    // Bit 5: White queenside castling.
+    // Bit 6: Black kingside castling.
+    // Bit 7: Black queenside castling.
+    castling_rights: u8,
 }
 
 impl Board {
+    const BLACK_CASTLING_RIGHTS: u8 = 0x3;
+    const BLACK_KING_SIDE_CASTLING_RIGHT: u8 = 0x2;
+    const BLACK_QUEEN_SIDE_CASTLING_RIGHT: u8 = 0x1;
+    const WHITE_CASTLING_RIGHTS: u8 = 0xC;
+    const WHITE_KING_SIDE_CASTLING_RIGHT: u8 = 0x8;
+    const WHITE_QUEEN_SIDE_CASTLING_RIGHT: u8 = 0x4;
+
     pub fn new() -> Self {
-        let mut board = Board {
-            bitboards: [0; 8],
-            en_passant_bb_position: 0,
-            en_passant_bb_piece_square: 0,
-        };
+        let mut board = Self::empty();
+
         board.reset();
+
         board
     }
 
@@ -31,6 +47,9 @@ impl Board {
             bitboards: [0; 8],
             en_passant_bb_position: 0,
             en_passant_bb_piece_square: 0,
+            black_king_moved: false,
+            white_king_moved: false,
+            castling_rights: 0,
         }
     }
 
@@ -54,6 +73,24 @@ impl Board {
 
         // Placement of kings
         self.bitboards[KINGS_IDX] = 0x1000000000000010;
+
+        self.castling_rights = 0xF;
+    }
+
+    pub fn has_king_side_castle_right(&self, color: Color) -> bool {
+        if color.is_black() {
+            return !self.black_king_moved && self.castling_rights & 0x2 != 0;
+        }
+
+        !self.white_king_moved && self.castling_rights & 0x8 != 0
+    }
+
+    pub fn has_queen_side_castle_right(&self, color: Color) -> bool {
+        if color.is_black() {
+            return !self.black_king_moved && self.castling_rights & 0x1 != 0;
+        }
+
+        !self.white_king_moved && self.castling_rights & 0x4 != 0
     }
 
     pub fn get_en_passant(&self) -> u64 { self.en_passant_bb_position }
@@ -118,6 +155,35 @@ impl Board {
         }
 
         self.place_piece(color, piece_type, to);
+
+        // Remove castling rights when king moves
+        if piece_type == PieceType::King {
+            if color.is_black() {
+                self.black_king_moved = true;
+                self.castling_rights &= 0xC;
+            } else {
+                self.white_king_moved = true;
+                self.castling_rights &= 0x3;
+            }
+        }
+
+        if piece_type != PieceType::Rook {
+            return;
+        }
+
+        if color.is_black() {
+            if from == BBPositions::A8 {
+                self.castling_rights &= !Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT;
+            } else if from == BBPositions::H8 {
+                self.castling_rights &= !Board::BLACK_KING_SIDE_CASTLING_RIGHT;
+            }
+        } else {
+            if from == BBPositions::A1 {
+                self.castling_rights &= !Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT;
+            } else if from == BBPositions::H1 {
+                self.castling_rights &= !Board::WHITE_KING_SIDE_CASTLING_RIGHT;
+            }
+        }
     }
 
     /// This function assumes that the square is not empty
@@ -166,6 +232,107 @@ mod tests {
         move_contants::{DOUBLE_PAWN_PUSH, EN_PASSANT, QUEEN_PROMOTION},
         positions::{BBPositions, Squares},
     };
+
+    #[test]
+    fn test_castling() {
+        // White side: king moved
+        println!("\nTest - White side: king moved\n");
+        let mut board = Board::new();
+
+        assert_eq!(0xF, board.castling_rights);
+
+        board.move_piece(Move::from_to(Squares::D2, Squares::D4));
+        board.move_piece(Move::from_to(Squares::E1, Squares::D2));
+
+        board.display();
+
+        assert_eq!(0x3, board.castling_rights);
+
+        // White side: towers moved
+        println!("\nTest - White side: towers moved\n");
+        let mut board = Board::new();
+
+        board.remove_piece(Color::White, PieceType::Knight, BBPositions::B1);
+        board.remove_piece(Color::White, PieceType::Bishop, BBPositions::C1);
+        board.remove_piece(Color::White, PieceType::Queen, BBPositions::D1);
+
+        board.remove_piece(Color::White, PieceType::Knight, BBPositions::G1);
+        board.remove_piece(Color::White, PieceType::Bishop, BBPositions::F1);
+
+        assert_eq!(
+            0xF, board.castling_rights,
+            "Default castling rights should be available"
+        );
+
+        board.move_piece(Move::from_to(Squares::A1, Squares::B1));
+
+        board.display();
+
+        assert_eq!(
+            0,
+            board.castling_rights & Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT
+        );
+
+        board.move_piece(Move::from_to(Squares::H1, Squares::G1));
+
+        board.display();
+
+        assert_eq!(
+            0,
+            board.castling_rights & Board::WHITE_KING_SIDE_CASTLING_RIGHT
+        );
+
+        assert_eq!(0, board.castling_rights & Board::WHITE_CASTLING_RIGHTS);
+
+        // Black side: king moved
+        println!("\nTest - Black side: king moved\n");
+        let mut board = Board::new();
+
+        assert_eq!(0xF, board.castling_rights);
+
+        board.move_piece(Move::from_to(Squares::D7, Squares::D5));
+        board.move_piece(Move::from_to(Squares::E8, Squares::D7));
+
+        board.display();
+
+        assert_eq!(0xC, board.castling_rights);
+
+        // Black side: towers moved
+        println!("\nTest - White side: towers moved\n");
+        let mut board = Board::new();
+
+        board.remove_piece(Color::Black, PieceType::Knight, BBPositions::B8);
+        board.remove_piece(Color::Black, PieceType::Bishop, BBPositions::C8);
+        board.remove_piece(Color::Black, PieceType::Queen, BBPositions::D8);
+
+        board.remove_piece(Color::Black, PieceType::Bishop, BBPositions::F8);
+        board.remove_piece(Color::Black, PieceType::Knight, BBPositions::G8);
+
+        assert_eq!(
+            0xF, board.castling_rights,
+            "Default castling rights should be available"
+        );
+
+        board.move_piece(Move::from_to(Squares::A8, Squares::B8));
+
+        board.display();
+
+        assert_eq!(
+            0,
+            board.castling_rights & Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT
+        );
+
+        board.move_piece(Move::from_to(Squares::H8, Squares::G8));
+
+        board.display();
+
+        assert_eq!(
+            0,
+            board.castling_rights & Board::BLACK_KING_SIDE_CASTLING_RIGHT
+        );
+
+        assert_eq!(0, board.castling_rights & Board::BLACK_CASTLING_RIGHTS);
+    }
 
     #[test]
     fn test_en_passant_move() {
