@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, usize};
 
 use crate::game_bit_board::{
     _move::Move,
@@ -40,30 +40,60 @@ impl MoveGenerator {
     pub fn get_moves(&self, board: &Board) -> Vec<Move> {
         let mut moves = Vec::with_capacity(64);
 
+        let mut friendly_king_square = usize::MAX;
+        let mut opponent_king_square = usize::MAX;
+
+        let mut friendly_attacks = 0;
+        let mut opponent_attacks = 0;
+
         for square in 0..64 {
             let piece_type: PieceType = board.get_piece_type(square);
             let color = board.get_piece_color(square);
 
+
+            let attacks = if board.get_side_to_move() == color {
+                &mut friendly_attacks
+            } else {
+                &mut opponent_attacks
+            };
+
             if piece_type == PieceType::Pawn {
-                MoveGenerator::get_pawn_moves(board, &mut moves, square, color);
+                MoveGenerator::get_pawn_moves(board, &mut moves, square, color, attacks);
             } else if piece_type == PieceType::Knight {
-                MoveGenerator::get_knight_moves(board, &mut moves, square, color);
+                MoveGenerator::get_knight_moves(board, &mut moves, square, color, attacks);
             } else if piece_type == PieceType::Rook {
-                self.get_rook_moves(board, &mut moves, square, color);
+                self.get_rook_moves(board, &mut moves, square, color, attacks);
             } else if piece_type == PieceType::Bishop {
-                self.get_bishop_moves(board, &mut moves, square, color);
+                self.get_bishop_moves(board, &mut moves, square, color, attacks);
             } else if piece_type == PieceType::Queen {
-                self.get_rook_moves(board, &mut moves, square, color);
-                self.get_bishop_moves(board, &mut moves, square, color);
+                self.get_rook_moves(board, &mut moves, square, color, attacks);
+                self.get_bishop_moves(board, &mut moves, square, color, attacks);
             } else if piece_type == PieceType::King {
-                MoveGenerator::get_king_moves(board, &mut moves, square, color);
+                if board.get_side_to_move() == color {
+                    friendly_king_square = square
+                } else {
+                    opponent_king_square = square
+                }
             }
+        }
+
+        let friendly_color = board.get_side_to_move();
+
+        if opponent_king_square < 64 {
+            MoveGenerator::get_king_moves(
+                board, &mut moves, opponent_king_square, friendly_color.opponent(),
+                 &friendly_attacks, &mut opponent_attacks);
+        }
+
+        if friendly_king_square < 64 {
+            MoveGenerator::get_king_moves(board, &mut moves, friendly_king_square, friendly_color, 
+                &opponent_attacks, &mut friendly_attacks);
         }
 
         moves
     }
 
-    fn get_bishop_moves(&self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color) {
+    fn get_bishop_moves(&self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, attacked_squares: &mut u64) {
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_relevant_squares =
@@ -76,6 +106,8 @@ impl MoveGenerator {
 
         attacks = attacks & !friendly_pieces_bb;
 
+        *attacked_squares |= attacks;
+
         while attacks != 0 {
             let target_square = pop_lsb(&mut attacks);
 
@@ -88,7 +120,7 @@ impl MoveGenerator {
         }
     }
 
-    fn get_rook_moves(&self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color) {
+    fn get_rook_moves(&self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, attacked_squares: &mut u64) {
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_relevant_squares =
@@ -101,6 +133,8 @@ impl MoveGenerator {
 
         attacks = attacks & !friendly_pieces_bb;
 
+        *attacked_squares |= attacks;
+
         while attacks != 0 {
             let target_square = pop_lsb(&mut attacks);
 
@@ -113,13 +147,15 @@ impl MoveGenerator {
         }
     }
 
-    fn get_knight_moves(board: &Board, moves: &mut Vec<Move>, square: usize, color: Color) {
+    fn get_knight_moves(board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, attacked_squares: &mut u64) {
         // TODO: handle pins
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
 
         let mut attacks = KNIGHT_MOVES[square] & !friendly_pieces_bb; // & PINS_BB
 
+        *attacked_squares |= attacks;
+
         while attacks != 0 {
             let target_square = pop_lsb(&mut attacks);
 
@@ -132,11 +168,13 @@ impl MoveGenerator {
         }
     }
 
-    fn get_king_moves(board: &Board, moves: &mut Vec<Move>, square: usize, color: Color) {
+    fn get_king_moves(board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, opponent_attacks: &u64, attacked_squares: &mut u64) {
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
 
-        let mut attacks = KING_MOVES[square] & !friendly_pieces_bb;
+        let mut attacks = (KING_MOVES[square] & !friendly_pieces_bb) & !opponent_attacks;
+
+        *attacked_squares |= attacks;
 
         while attacks != 0 {
             let target_square = pop_lsb(&mut attacks);
@@ -153,11 +191,15 @@ impl MoveGenerator {
             if ((friendly_pieces_bb & BLACK_QUEEN_SIDE_PATH_TO_ROOK) == 0 && color.is_black())
                 || ((friendly_pieces_bb & WHITE_QUEEN_SIDE_PATH_TO_ROOK) == 0 && color.is_white())
             {
-                let mut west_two = west_one(west_one(1 << square));
+                let _west_one = west_one(1 << square);
+                let mut west_two = west_one(_west_one);
 
-                let _move = Move::with_flags(QUEEN_CASTLE, square, pop_lsb(&mut west_two) as usize);
+                if _west_one & opponent_attacks == 0 && west_two & opponent_attacks == 0 {   
+                    let _move = Move::with_flags(QUEEN_CASTLE, square, pop_lsb(&mut west_two) as usize);
+    
+                    moves.push(_move);
+                }
 
-                moves.push(_move);
             }
         }
 
@@ -165,16 +207,19 @@ impl MoveGenerator {
             if ((friendly_pieces_bb & BLACK_KING_SIDE_PATH_TO_ROOK) == 0 && color.is_black())
                 || ((friendly_pieces_bb & WHITE_KING_SIDE_PATH_TO_ROOK) == 0 && color.is_white())
             {
-                let mut east_two = east_one(east_one(1 << square));
+                let _east_one = east_one(1 << square);
+                let mut east_two = east_one(_east_one);
 
-                let _move = Move::with_flags(KING_CASTLE, square, pop_lsb(&mut east_two) as usize);
-
-                moves.push(_move);
+                if _east_one & opponent_attacks == 0 && east_two & opponent_attacks == 0 {
+                    let _move = Move::with_flags(KING_CASTLE, square, pop_lsb(&mut east_two) as usize);
+    
+                    moves.push(_move);
+                }
             }
         }
     }
 
-    fn get_pawn_moves(board: &Board, moves: &mut Vec<Move>, square: usize, color: Color) {
+    fn get_pawn_moves(board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, attacked_squares: &mut u64) {
         // TODO: handle en passant, promotions and pins
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
@@ -183,6 +228,8 @@ impl MoveGenerator {
         let mut attacks = (MoveGenerator::look_up_pawn_attacks(color, square)
             & !friendly_pieces_bb)
             & opponent_pieces_bb;
+
+        *attacked_squares |= attacks;
 
         while attacks != 0 {
             let target_square = pop_lsb(&mut attacks);
@@ -203,6 +250,8 @@ impl MoveGenerator {
         if is_pawn_in_initial_position(bb_position, color.is_white()) && forward_one != 0 {
             let mut forward_two = offset_fn(forward_one);
 
+            *attacked_squares |= forward_two;
+
             if forward_two & !occupied_squares != 0 {
                 let en_passant_bb_piece_square = forward_two;
 
@@ -220,12 +269,16 @@ impl MoveGenerator {
                 & !friendly_pieces_bb)
                 & board.get_en_passant();
 
+            *attacked_squares |= attacks;
+
             while attacks != 0 {
                 let target_square = pop_lsb(&mut attacks);
 
                 moves.push(Move::with_flags(EN_PASSANT, square, target_square as usize));
             }
         }
+
+        *attacked_squares |= forward_one;
 
         if forward_one != 0 {
             moves.push(Move::from_to(square, pop_lsb(&mut forward_one) as usize));
@@ -255,7 +308,7 @@ mod tests {
 
     use crate::game_bit_board::{
         _move::Move,
-        board::Board,
+        board::{self, Board},
         enums::{Color, PieceType},
         move_contants::{CAPTURE, KING_CASTLE, QUEEN_CASTLE},
         positions::{BBPositions, Squares},
@@ -388,6 +441,59 @@ mod tests {
     }
 
     #[test]
+    fn test_castle_is_blocked_when_a_piece_attacks_the_path() {
+        let mut board = Board::new();
+
+        board.move_piece(Move::from_to(Squares::D7, Squares::D5));
+        board.move_piece(Move::from_to(Squares::E7, Squares::E5));
+        board.move_piece(Move::from_to(Squares::C8, Squares::H3));
+        board.move_piece(Move::from_to(Squares::F8, Squares::A3));
+        board.move_piece(Move::from_to(Squares::D8, Squares::D7));
+        board.move_piece(Move::from_to(Squares::B8, Squares::C6));
+        board.move_piece(Move::from_to(Squares::G8, Squares::F6));
+
+
+        board.move_piece(Move::from_to(Squares::D2, Squares::D4));
+        board.move_piece(Move::from_to(Squares::E2, Squares::E4));
+        board.move_piece(Move::from_to(Squares::C1, Squares::H6));
+        board.move_piece(Move::from_to(Squares::F1, Squares::A6));
+        board.move_piece(Move::from_to(Squares::D1, Squares::D2));
+        board.move_piece(Move::from_to(Squares::B1, Squares::C3));
+        board.move_piece(Move::from_to(Squares::G1, Squares::F3));
+
+        board.display();
+
+        let mut black_king_castle_moves = Vec::new();
+
+        black_king_castle_moves.push(Move::with_flags(KING_CASTLE, Squares::E8, Squares::G8));
+        black_king_castle_moves.push(Move::with_flags(QUEEN_CASTLE, Squares::E8, Squares::C8));
+
+        let mut white_king_castle_moves = Vec::new();
+
+        white_king_castle_moves.push(Move::with_flags(KING_CASTLE, Squares::E1, Squares::G1));
+        white_king_castle_moves.push(Move::with_flags(QUEEN_CASTLE, Squares::E1, Squares::C1));
+
+        assert_available_moves(&board, black_king_castle_moves.clone(), Vec::new());
+        
+        assert_available_moves(&board, white_king_castle_moves.clone(), Vec::new());
+
+        board.move_piece(Move::from_to(Squares::B2, Squares::B4));
+        board.move_piece(Move::from_to(Squares::G2, Squares::G4));
+
+        board.move_piece(Move::from_to(Squares::B7, Squares::B5));
+        board.move_piece(Move::from_to(Squares::G7, Squares::G5));
+
+        board.display();
+
+        assert_available_moves(&board, Vec::new(), black_king_castle_moves);
+
+        assert_available_moves(&board, Vec::new(), white_king_castle_moves);
+
+        assert_eq!(true, board.has_king_side_castle_right(Color::Black));
+        assert_eq!(true, board.has_king_side_castle_right(Color::White));
+    }
+
+    #[test]
     fn test_get_king_moves() {
         let mut board = Board::new();
 
@@ -410,8 +516,6 @@ mod tests {
         let mut expected_moves = Vec::new();
 
         expected_moves.push(Move::from_to(Squares::E1, Squares::D1));
-        expected_moves.push(Move::from_to(Squares::E1, Squares::D2));
-        expected_moves.push(Move::from_to(Squares::E1, Squares::E2));
         expected_moves.push(Move::with_flags(CAPTURE, Squares::E1, Squares::F2));
 
         let mut not_expected_moves = Vec::new();

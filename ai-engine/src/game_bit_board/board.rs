@@ -14,6 +14,7 @@ pub struct Board {
     bitboards: [u64; 8],
     en_passant_bb_position: u64,
     en_passant_bb_piece_square: u64,
+    side_to_move: Color,
     black_king_moved: bool,
     white_king_moved: bool,
     // 0000 1111
@@ -47,6 +48,7 @@ impl Board {
             bitboards: [0; 8],
             en_passant_bb_position: 0,
             en_passant_bb_piece_square: 0,
+            side_to_move: Color::White,
             black_king_moved: false,
             white_king_moved: false,
             castling_rights: 0,
@@ -75,6 +77,10 @@ impl Board {
         self.bitboards[KINGS_IDX] = 0x1000000000000010;
 
         self.castling_rights = 0xF;
+    }
+
+    pub fn get_side_to_move(&self) -> Color {
+        self.side_to_move
     }
 
     pub fn has_king_side_castle_right(&self, color: Color) -> bool {
