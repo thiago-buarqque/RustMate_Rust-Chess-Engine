@@ -456,6 +456,9 @@ mod tests {
         assert_eq!(false, board.has_king_side_castle_right(Color::White));
         assert_eq!(false, board.has_queen_side_castle_right(Color::White));
 
+        assert_eq!(PieceType::King, board.get_piece_type(Squares::G1));
+        assert_eq!(PieceType::Rook, board.get_piece_type(Squares::F1));
+
         board.unmake_last_move();
 
         assert_eq!(true, board.has_king_side_castle_right(Color::White));
@@ -465,6 +468,9 @@ mod tests {
 
         assert_eq!(false, board.has_king_side_castle_right(Color::White));
         assert_eq!(false, board.has_queen_side_castle_right(Color::White));
+
+        assert_eq!(PieceType::King, board.get_piece_type(Squares::C1));
+        assert_eq!(PieceType::Rook, board.get_piece_type(Squares::D1));
 
         board.unmake_last_move();
 
@@ -476,7 +482,22 @@ mod tests {
         assert_eq!(false, board.has_king_side_castle_right(Color::White));
         assert_eq!(false, board.has_queen_side_castle_right(Color::White));
 
-        // board.unmake_last_move();
+        board.unmake_last_move();
+
+        assert_eq!(true, board.has_king_side_castle_right(Color::White));
+        assert_eq!(true, board.has_queen_side_castle_right(Color::White));
+
+        board.move_piece(Move::from_to(Squares::A1, Squares::B1));
+
+        assert_eq!(true, board.has_king_side_castle_right(Color::White));
+        assert_eq!(false, board.has_queen_side_castle_right(Color::White));
+
+        board.unmake_last_move();
+
+        board.move_piece(Move::from_to(Squares::H1, Squares::G1));
+
+        assert_eq!(false, board.has_king_side_castle_right(Color::White));
+        assert_eq!(true, board.has_queen_side_castle_right(Color::White));
 
         // Black: Make sure castle rights are lost after castle is performed
 
@@ -485,12 +506,18 @@ mod tests {
         assert_eq!(false, board.has_king_side_castle_right(Color::Black));
         assert_eq!(false, board.has_queen_side_castle_right(Color::Black));
 
+        assert_eq!(PieceType::King, board.get_piece_type(Squares::G8));
+        assert_eq!(PieceType::Rook, board.get_piece_type(Squares::F8));
+
         board.unmake_last_move();
 
         assert_eq!(true, board.has_king_side_castle_right(Color::Black));
         assert_eq!(true, board.has_queen_side_castle_right(Color::Black));
 
         board.move_piece(black_queen_side_castle.clone());
+
+        assert_eq!(PieceType::King, board.get_piece_type(Squares::C8));
+        assert_eq!(PieceType::Rook, board.get_piece_type(Squares::D8));
 
         assert_eq!(false, board.has_king_side_castle_right(Color::Black));
         assert_eq!(false, board.has_queen_side_castle_right(Color::Black));
@@ -505,7 +532,24 @@ mod tests {
         assert_eq!(false, board.has_king_side_castle_right(Color::Black));
         assert_eq!(false, board.has_queen_side_castle_right(Color::Black));
 
-        // board.unmake_last_move();
+        board.unmake_last_move();
+
+        assert_eq!(true, board.has_king_side_castle_right(Color::Black));
+        assert_eq!(true, board.has_queen_side_castle_right(Color::Black));
+
+        board.move_piece(Move::from_to(Squares::A8, Squares::B8));
+
+        assert_eq!(true, board.has_king_side_castle_right(Color::Black));
+        assert_eq!(false, board.has_queen_side_castle_right(Color::Black));
+
+        board.unmake_last_move();
+
+        board.move_piece(Move::from_to(Squares::H8, Squares::G8));
+
+        assert_eq!(false, board.has_king_side_castle_right(Color::Black));
+        assert_eq!(true, board.has_queen_side_castle_right(Color::Black));
+
+        board.unmake_last_move();
     }
 
     fn set_up_castle_position() -> (Board, Move, Move, Move, Move) {
