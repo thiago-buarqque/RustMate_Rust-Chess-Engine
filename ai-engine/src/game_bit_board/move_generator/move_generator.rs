@@ -132,7 +132,7 @@ impl MoveGenerator {
 
             // board.display();
 
-            // board.move_piece(_move.clone());
+            board.move_piece(_move.clone());
 
             // board.display();
 
@@ -140,7 +140,7 @@ impl MoveGenerator {
 
             for opponent_move in opponent_moves {
                 if opponent_move.get_to() == friendly_king_square {
-                    println!("Removing {_move}");
+                    // println!("Removing pin move: {_move}");
                     moves_to_remove.push(i);
 
                     // If at least one opponent move is attacking the friendly king
@@ -149,7 +149,7 @@ impl MoveGenerator {
                 }
             }
 
-            // board.unmake_last_move();
+            board.unmake_last_move();
 
             // println!("\nAfter unmaking:\n");
 
@@ -606,6 +606,25 @@ mod tests {
             black_king_side_castle,
             black_queen_side_castle,
         )
+    }
+
+    #[test]
+    fn test_pins() {
+        let mut board = Board::new();
+
+        board.move_piece(Move::from_to(Squares::A2, Squares::A3));
+        board.move_piece(Move::from_to(Squares::E7, Squares::E6));
+        board.move_piece(Move::from_to(Squares::A3, Squares::A4));
+        board.move_piece(Move::from_to(Squares::D8, Squares::H4));
+
+        board.display();
+
+        let mut not_expected_moves = Vec::new();
+
+        not_expected_moves.push(Move::from_to(Squares::F2, Squares::F3));
+        not_expected_moves.push(Move::with_flags(DOUBLE_PAWN_PUSH, Squares::F2, Squares::F4));
+
+        assert_available_moves(&mut board, Vec::new(), not_expected_moves);
     }
 
     #[test]
