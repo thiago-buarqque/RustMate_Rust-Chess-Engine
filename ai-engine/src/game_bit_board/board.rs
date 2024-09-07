@@ -38,10 +38,18 @@ pub struct Board {
 
 impl Board {
     const BLACK_CASTLING_RIGHTS: u8 = 0x3;
+    const BLACK_KING_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::F8;
+    const BLACK_KING_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::H8;
     const BLACK_KING_SIDE_CASTLING_RIGHT: u8 = 0x2;
+    const BLACK_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::D8;
+    const BLACK_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::A8;
     const BLACK_QUEEN_SIDE_CASTLING_RIGHT: u8 = 0x1;
     const WHITE_CASTLING_RIGHTS: u8 = 0xC;
+    const WHITE_KING_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::F1;
+    const WHITE_KING_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::H1;
     const WHITE_KING_SIDE_CASTLING_RIGHT: u8 = 0x8;
+    const WHITE_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::D1;
+    const WHITE_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::A1;
     const WHITE_QUEEN_SIDE_CASTLING_RIGHT: u8 = 0x4;
 
     pub fn new() -> Self {
@@ -228,10 +236,58 @@ impl Board {
         if piece_type == PieceType::King {
             if color.is_black() {
                 self.black_king_moved = true;
-                self.castling_rights &= 0xC;
+                self.castling_rights &= Board::WHITE_CASTLING_RIGHTS;
+
+                if _move.is_king_castle() {
+                    self.remove_piece(
+                        color,
+                        PieceType::Rook,
+                        Board::BLACK_KING_SIDE_CASTLE_ROOK_INITIAL_POS,
+                    );
+                    self.place_piece(
+                        color,
+                        PieceType::Rook,
+                        Board::BLACK_KING_SIDE_CASTLE_ROOK_FINAL_POS,
+                    );
+                } else if _move.is_queen_castle() {
+                    self.remove_piece(
+                        color,
+                        PieceType::Rook,
+                        Board::BLACK_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS,
+                    );
+                    self.place_piece(
+                        color,
+                        PieceType::Rook,
+                        Board::BLACK_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS,
+                    );
+                }
             } else {
                 self.white_king_moved = true;
-                self.castling_rights &= 0x3;
+                self.castling_rights &= Board::BLACK_CASTLING_RIGHTS;
+
+                if _move.is_king_castle() {
+                    self.remove_piece(
+                        color,
+                        PieceType::Rook,
+                        Board::WHITE_KING_SIDE_CASTLE_ROOK_INITIAL_POS,
+                    );
+                    self.place_piece(
+                        color,
+                        PieceType::Rook,
+                        Board::WHITE_KING_SIDE_CASTLE_ROOK_FINAL_POS,
+                    );
+                } else if _move.is_queen_castle() {
+                    self.remove_piece(
+                        color,
+                        PieceType::Rook,
+                        Board::WHITE_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS,
+                    );
+                    self.place_piece(
+                        color,
+                        PieceType::Rook,
+                        Board::WHITE_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS,
+                    );
+                }
             }
         }
 
