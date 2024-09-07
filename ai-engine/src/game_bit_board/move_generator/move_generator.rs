@@ -37,7 +37,9 @@ impl MoveGenerator {
         }
     }
 
-    pub fn get_moves(&self, board: &Board) -> Vec<Move> {
+    pub fn get_moves(&self, board: &mut Board) -> Vec<Move> { self._get_moves(board, true) }
+
+    fn _get_moves(&self, board: &mut Board, check_for_pins: bool) -> Vec<Move> {
         let mut moves = Vec::with_capacity(64);
 
         let mut friendly_king_square = usize::MAX;
@@ -46,14 +48,17 @@ impl MoveGenerator {
         let mut friendly_attacks = 0;
         let mut opponent_attacks = 0;
 
+        let mut opponent_piece_squares = Vec::new();
+
         for square in 0..64 {
             let piece_type: PieceType = board.get_piece_type(square);
             let color = board.get_piece_color(square);
 
-
             let attacks = if board.get_side_to_move() == color {
                 &mut friendly_attacks
             } else {
+                opponent_piece_squares.push(square);
+
                 &mut opponent_attacks
             };
 
@@ -75,25 +80,95 @@ impl MoveGenerator {
                     opponent_king_square = square
                 }
             }
+
+            // Stop early if a piece is already attacking the king?
         }
 
         let friendly_color = board.get_side_to_move();
 
         if opponent_king_square < 64 {
             MoveGenerator::get_king_moves(
-                board, &mut moves, opponent_king_square, friendly_color.opponent(),
-                 &friendly_attacks, &mut opponent_attacks);
+                board,
+                &mut moves,
+                opponent_king_square,
+                friendly_color.opponent(),
+                &friendly_attacks,
+                &mut opponent_attacks,
+            );
         }
 
         if friendly_king_square < 64 {
-            MoveGenerator::get_king_moves(board, &mut moves, friendly_king_square, friendly_color, 
-                &opponent_attacks, &mut friendly_attacks);
+            MoveGenerator::get_king_moves(
+                board,
+                &mut moves,
+                friendly_king_square,
+                friendly_color,
+                &opponent_attacks,
+                &mut friendly_attacks,
+            );
+        }
+
+        if !check_for_pins {
+            moves.retain(|_move| !opponent_piece_squares.contains(&_move.get_from()));
+
+            return moves;
+        }
+
+        let mut moves_to_remove = Vec::new();
+
+        // I could only check for moves from friendly pieces that are in
+        // the same line, column or diagonal as the king. I.e.
+
+        let color = board.get_side_to_move();
+        let opponent_pieces = board.get_player_pieces_positions(color.opponent());
+
+        for (i, _move) in moves.iter().enumerate() {
+            if (1 << _move.get_from()) & opponent_pieces != 0 {
+                moves_to_remove.push(i);
+                continue;
+            }
+
+            println!("Testing move: {_move}");
+
+            board.display();
+
+            board.move_piece(_move.clone());
+
+            board.display();
+
+            let opponent_moves = self._get_moves(board, false);
+
+            for opponent_move in opponent_moves {
+                if opponent_move.get_to() == friendly_king_square {
+                    println!("Removing {_move}");
+                    moves_to_remove.push(i);
+
+                    // If at least one opponent move is attacking the friendly king
+                    // we can break the loop
+                    break;
+                }
+            }
+
+            board.unmake_last_move();
+
+            println!("\nAfter unmaking:\n");
+
+            board.display();
+        }
+
+        let mut i = 0;
+        for j in moves_to_remove {
+            moves.remove(j - i);
+            i += 1;
         }
 
         moves
     }
 
-    fn get_bishop_moves(&self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, attacked_squares: &mut u64) {
+    fn get_bishop_moves(
+        &self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color,
+        attacked_squares: &mut u64,
+    ) {
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_relevant_squares =
@@ -120,7 +195,10 @@ impl MoveGenerator {
         }
     }
 
-    fn get_rook_moves(&self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, attacked_squares: &mut u64) {
+    fn get_rook_moves(
+        &self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color,
+        attacked_squares: &mut u64,
+    ) {
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_relevant_squares =
@@ -147,7 +225,10 @@ impl MoveGenerator {
         }
     }
 
-    fn get_knight_moves(board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, attacked_squares: &mut u64) {
+    fn get_knight_moves(
+        board: &Board, moves: &mut Vec<Move>, square: usize, color: Color,
+        attacked_squares: &mut u64,
+    ) {
         // TODO: handle pins
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
@@ -168,7 +249,10 @@ impl MoveGenerator {
         }
     }
 
-    fn get_king_moves(board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, opponent_attacks: &u64, attacked_squares: &mut u64) {
+    fn get_king_moves(
+        board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, opponent_attacks: &u64,
+        attacked_squares: &mut u64,
+    ) {
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
 
@@ -194,12 +278,12 @@ impl MoveGenerator {
                 let _west_one = west_one(1 << square);
                 let mut west_two = west_one(_west_one);
 
-                if _west_one & opponent_attacks == 0 && west_two & opponent_attacks == 0 {   
-                    let _move = Move::with_flags(QUEEN_CASTLE, square, pop_lsb(&mut west_two) as usize);
-    
+                if _west_one & opponent_attacks == 0 && west_two & opponent_attacks == 0 {
+                    let _move =
+                        Move::with_flags(QUEEN_CASTLE, square, pop_lsb(&mut west_two) as usize);
+
                     moves.push(_move);
                 }
-
             }
         }
 
@@ -211,15 +295,19 @@ impl MoveGenerator {
                 let mut east_two = east_one(_east_one);
 
                 if _east_one & opponent_attacks == 0 && east_two & opponent_attacks == 0 {
-                    let _move = Move::with_flags(KING_CASTLE, square, pop_lsb(&mut east_two) as usize);
-    
+                    let _move =
+                        Move::with_flags(KING_CASTLE, square, pop_lsb(&mut east_two) as usize);
+
                     moves.push(_move);
                 }
             }
         }
     }
 
-    fn get_pawn_moves(board: &Board, moves: &mut Vec<Move>, square: usize, color: Color, attacked_squares: &mut u64) {
+    fn get_pawn_moves(
+        board: &Board, moves: &mut Vec<Move>, square: usize, color: Color,
+        attacked_squares: &mut u64,
+    ) {
         // TODO: handle en passant, promotions and pins
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
@@ -308,7 +396,7 @@ mod tests {
 
     use crate::game_bit_board::{
         _move::Move,
-        board::{self, Board},
+        board::Board,
         enums::{Color, PieceType},
         move_contants::{CAPTURE, KING_CASTLE, QUEEN_CASTLE},
         positions::{BBPositions, Squares},
@@ -319,7 +407,7 @@ mod tests {
     static MOVE_GENERATOR: Lazy<MoveGenerator> = Lazy::new(|| MoveGenerator::new());
 
     fn assert_available_moves(
-        board: &Board, expected_moves: Vec<Move>, not_expected_moves: Vec<Move>,
+        board: &mut Board, expected_moves: Vec<Move>, not_expected_moves: Vec<Move>,
     ) {
         let moves = MOVE_GENERATOR.get_moves(board);
 
@@ -340,13 +428,13 @@ mod tests {
     }
 
     fn setup_castle_test(queen_castle: Move, king_castle: Move) -> Board {
-        let board = Board::new();
+        let mut board = Board::new();
 
         let mut not_expected_moves = Vec::new();
         not_expected_moves.push(queen_castle.clone());
         not_expected_moves.push(king_castle.clone());
 
-        assert_available_moves(&board, Vec::new(), not_expected_moves);
+        assert_available_moves(&mut board, Vec::new(), not_expected_moves);
 
         board
     }
@@ -383,7 +471,7 @@ mod tests {
         expected_moves.push(queen_castle.clone());
         expected_moves.push(king_castle.clone());
 
-        assert_available_moves(&board, expected_moves, Vec::new());
+        assert_available_moves(board, expected_moves, Vec::new());
 
         let queen_rook_move = match color {
             Color::Black => Move::from_to(Squares::A8, Squares::B8),
@@ -400,7 +488,7 @@ mod tests {
 
         board.display();
 
-        assert_available_moves(&board, expected_moves, not_expected_moves);
+        assert_available_moves(board, expected_moves, not_expected_moves);
 
         // King side rook moves
         let king_rook_move = match color {
@@ -416,7 +504,7 @@ mod tests {
 
         board.display();
 
-        assert_available_moves(&board, Vec::new(), not_expected_moves);
+        assert_available_moves(board, Vec::new(), not_expected_moves);
 
         assert_eq!(false, board.has_king_side_castle_right(color));
         assert_eq!(false, board.has_queen_side_castle_right(color));
@@ -452,7 +540,6 @@ mod tests {
         board.move_piece(Move::from_to(Squares::B8, Squares::C6));
         board.move_piece(Move::from_to(Squares::G8, Squares::F6));
 
-
         board.move_piece(Move::from_to(Squares::D2, Squares::D4));
         board.move_piece(Move::from_to(Squares::E2, Squares::E4));
         board.move_piece(Move::from_to(Squares::C1, Squares::H6));
@@ -473,9 +560,9 @@ mod tests {
         white_king_castle_moves.push(Move::with_flags(KING_CASTLE, Squares::E1, Squares::G1));
         white_king_castle_moves.push(Move::with_flags(QUEEN_CASTLE, Squares::E1, Squares::C1));
 
-        assert_available_moves(&board, black_king_castle_moves.clone(), Vec::new());
-        
-        assert_available_moves(&board, white_king_castle_moves.clone(), Vec::new());
+        assert_available_moves(&mut board, black_king_castle_moves.clone(), Vec::new());
+
+        assert_available_moves(&mut board, white_king_castle_moves.clone(), Vec::new());
 
         board.move_piece(Move::from_to(Squares::B2, Squares::B4));
         board.move_piece(Move::from_to(Squares::G2, Squares::G4));
@@ -485,9 +572,9 @@ mod tests {
 
         board.display();
 
-        assert_available_moves(&board, Vec::new(), black_king_castle_moves);
+        assert_available_moves(&mut board, Vec::new(), black_king_castle_moves);
 
-        assert_available_moves(&board, Vec::new(), white_king_castle_moves);
+        assert_available_moves(&mut board, Vec::new(), white_king_castle_moves);
 
         assert_eq!(true, board.has_king_side_castle_right(Color::Black));
         assert_eq!(true, board.has_king_side_castle_right(Color::White));
@@ -505,7 +592,7 @@ mod tests {
         not_expected_moves.push(Move::with_flags(CAPTURE, Squares::E1, Squares::F2));
         not_expected_moves.push(Move::with_flags(CAPTURE, Squares::E1, Squares::F1));
 
-        assert_available_moves(&board, Vec::new(), not_expected_moves);
+        assert_available_moves(&mut board, Vec::new(), not_expected_moves);
 
         board = Board::empty();
 
@@ -522,7 +609,9 @@ mod tests {
 
         not_expected_moves.push(Move::from_to(Squares::E1, Squares::F1));
 
-        assert_available_moves(&board, expected_moves, not_expected_moves);
+        board.display();
+
+        assert_available_moves(&mut board, expected_moves, not_expected_moves);
     }
 
     #[test]
@@ -552,7 +641,7 @@ mod tests {
         not_expected_moves.push(Move::with_flags(CAPTURE, Squares::D1, Squares::C1));
         not_expected_moves.push(Move::with_flags(CAPTURE, Squares::D1, Squares::E1));
 
-        assert_available_moves(&board, expected_moves, not_expected_moves);
+        assert_available_moves(&mut board, expected_moves, not_expected_moves);
     }
 
     #[test]
@@ -568,7 +657,7 @@ mod tests {
         expected_moves.push(Move::from_to(Squares::A1, Squares::B2));
         expected_moves.push(Move::with_flags(CAPTURE, Squares::A1, Squares::C3));
 
-        assert_available_moves(&board, expected_moves, Vec::new());
+        assert_available_moves(&mut board, expected_moves, Vec::new());
     }
 
     #[test]
@@ -589,7 +678,7 @@ mod tests {
 
         not_expected_moves.push(Move::with_flags(CAPTURE, Squares::A1, Squares::C1));
 
-        assert_available_moves(&board, expected_moves, not_expected_moves);
+        assert_available_moves(&mut board, expected_moves, not_expected_moves);
     }
 
     #[test]
@@ -603,7 +692,7 @@ mod tests {
         expected_moves.push(white_knight_to_c3.clone());
         expected_moves.push(Move::from_to(Squares::B1, Squares::A3));
 
-        assert_available_moves(&board, expected_moves, Vec::new());
+        assert_available_moves(&mut board, expected_moves, Vec::new());
 
         board.move_piece(white_knight_to_c3);
         board.move_piece(Move::from_to(Squares::D7, Squares::D5));
@@ -614,7 +703,7 @@ mod tests {
 
         expected_moves.push(white_knight_to_d5.clone());
 
-        assert_available_moves(&board, expected_moves, Vec::new());
+        assert_available_moves(&mut board, expected_moves, Vec::new());
     }
 
     #[test]
@@ -636,7 +725,7 @@ mod tests {
         expected_moves.push(white_pawn_to_d4.clone());
         expected_moves.push(black_pawn_to_e5.clone());
 
-        assert_available_moves(&board, expected_moves, Vec::new());
+        assert_available_moves(&mut board, expected_moves, Vec::new());
 
         board.move_piece(white_pawn_to_d4);
         board.move_piece(black_pawn_to_e5);
@@ -651,7 +740,7 @@ mod tests {
 
         expected_moves.push(capture2);
 
-        assert_available_moves(&board, expected_moves, Vec::new());
+        assert_available_moves(&mut board, expected_moves, Vec::new());
     }
 
     #[test]
@@ -672,7 +761,7 @@ mod tests {
 
         expected_moves.push(black_double_push.clone());
 
-        assert_available_moves(&board, expected_moves, Vec::new());
+        assert_available_moves(&mut board, expected_moves, Vec::new());
 
         board.move_piece(black_double_push);
 
@@ -684,6 +773,6 @@ mod tests {
         expected_moves.push(Move::with_flags(EN_PASSANT, Squares::D5, Squares::E6));
         expected_moves.push(Move::with_flags(EN_PASSANT, Squares::F5, Squares::E6));
 
-        assert_available_moves(&board, expected_moves, Vec::new());
+        assert_available_moves(&mut board, expected_moves, Vec::new());
     }
 }
