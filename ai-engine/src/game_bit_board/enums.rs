@@ -6,6 +6,14 @@ pub enum Color {
     White,
 }
 
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+        // or, alternatively:
+        // fmt::Debug::fmt(self, f)
+    }
+}
+
 impl Color {
     pub fn is_black(&self) -> bool { *self == Color::Black }
 

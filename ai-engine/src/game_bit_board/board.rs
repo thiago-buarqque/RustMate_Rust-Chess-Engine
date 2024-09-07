@@ -25,6 +25,15 @@ pub struct Board {
     // Bit 6: Black kingside castling.
     // Bit 7: Black queenside castling.
     castling_rights: u8,
+
+    // Stacks used to unmake moves
+    castling_rights_history: Vec<u8>,
+    bitboards_history: Vec<[u64; 8]>,
+    en_passant_bb_position_history: Vec<u64>,
+    en_passant_bb_piece_square_history: Vec<u64>,
+    black_king_moved_history: Vec<bool>,
+    white_king_moved_history: Vec<bool>,
+    moves_history: Vec<Move>,
 }
 
 impl Board {
@@ -52,6 +61,14 @@ impl Board {
             black_king_moved: false,
             white_king_moved: false,
             castling_rights: 0,
+
+            castling_rights_history: Vec::new(),
+            bitboards_history: Vec::new(),
+            en_passant_bb_position_history: Vec::new(),
+            en_passant_bb_piece_square_history: Vec::new(),
+            black_king_moved_history: Vec::new(),
+            white_king_moved_history: Vec::new(),
+            moves_history: Vec::new(),
         }
     }
 
@@ -79,9 +96,7 @@ impl Board {
         self.castling_rights = 0xF;
     }
 
-    pub fn get_side_to_move(&self) -> Color {
-        self.side_to_move
-    }
+    pub fn get_side_to_move(&self) -> Color { self.side_to_move }
 
     pub fn has_king_side_castle_right(&self, color: Color) -> bool {
         if color.is_black() {
@@ -130,7 +145,50 @@ impl Board {
         self.bitboards[get_piece_type_index(piece_type)] ^= bb_position;
     }
 
+    fn save_current_state(&mut self, _move: Move) {
+        self.castling_rights_history.push(self.castling_rights);
+        self.bitboards_history.push(self.bitboards);
+        self.en_passant_bb_position_history
+            .push(self.en_passant_bb_position);
+        self.en_passant_bb_piece_square_history
+            .push(self.en_passant_bb_piece_square);
+        self.black_king_moved_history.push(self.black_king_moved);
+        self.white_king_moved_history.push(self.white_king_moved);
+        self.moves_history.push(_move);
+    }
+
+    pub fn unmake_last_move(&mut self) {
+        if self.castling_rights_history.len() == 0 {
+            return;
+        }
+
+        self.castling_rights = *self.castling_rights_history.last().unwrap();
+        self.bitboards = *self.bitboards_history.last().unwrap();
+        self.en_passant_bb_position = *self.en_passant_bb_position_history.last().unwrap();
+        self.en_passant_bb_piece_square = *self.en_passant_bb_piece_square_history.last().unwrap();
+        self.black_king_moved = *self.black_king_moved_history.last().unwrap();
+        self.white_king_moved = *self.white_king_moved_history.last().unwrap();
+
+        self.castling_rights_history
+            .remove(self.castling_rights_history.len() - 1);
+        self.bitboards_history
+            .remove(self.bitboards_history.len() - 1);
+        self.en_passant_bb_position_history
+            .remove(self.en_passant_bb_position_history.len() - 1);
+        self.en_passant_bb_piece_square_history
+            .remove(self.en_passant_bb_piece_square_history.len() - 1);
+        self.black_king_moved_history
+            .remove(self.black_king_moved_history.len() - 1);
+        self.white_king_moved_history
+            .remove(self.white_king_moved_history.len() - 1);
+        self.moves_history.remove(self.moves_history.len() - 1);
+
+        self.side_to_move = self.side_to_move.opponent();
+    }
+
     pub fn move_piece(&mut self, _move: Move) {
+        self.save_current_state(_move.clone());
+
         let color = self.get_piece_color(_move.get_from());
         let mut piece_type = self.get_piece_type(_move.get_from());
         let from: u64 = 1 << _move.get_from();
@@ -173,6 +231,8 @@ impl Board {
             }
         }
 
+        self.side_to_move = self.side_to_move.opponent();
+
         if piece_type != PieceType::Rook {
             return;
         }
@@ -213,6 +273,32 @@ impl Board {
     }
 
     pub fn display(&self) {
+        println!("\nen_passant_bb_position: {}", self.en_passant_bb_position);
+        println!(
+            "en_passant_bb_piece_square: {}",
+            self.en_passant_bb_piece_square
+        );
+        println!("side_to_move: {}", self.side_to_move);
+        println!("black_king_moved: {}", self.black_king_moved);
+        println!("white_king_moved: {}", self.white_king_moved);
+
+        println!(
+            "BLACK_KING_SIDE_CASTLING_RIGHT: {}",
+            self.castling_rights & Board::BLACK_KING_SIDE_CASTLING_RIGHT != 0
+        );
+        println!(
+            "BLACK_QUEEN_SIDE_CASTLING_RIGHT: {}",
+            self.castling_rights & Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT != 0
+        );
+        println!(
+            "WHITE_KING_SIDE_CASTLING_RIGHT: {}",
+            self.castling_rights & Board::WHITE_KING_SIDE_CASTLING_RIGHT != 0
+        );
+        println!(
+            "WHITE_QUEEN_SIDE_CASTLING_RIGHT: {}",
+            self.castling_rights & Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT != 0
+        );
+
         for row in (0..8).rev() {
             print!("{} ", row + 1);
             for col in 0..8 {
