@@ -187,6 +187,10 @@ impl Board {
     }
 
     pub fn move_piece(&mut self, _move: Move) {
+        if self.get_piece_color(_move.get_from()) != self.side_to_move {
+            panic!("Invalid player move, it's not your turn. {_move}")
+        }
+
         self.save_current_state(_move.clone());
 
         let color = self.get_piece_color(_move.get_from());
@@ -334,6 +338,7 @@ mod tests {
         assert_eq!(0xF, board.castling_rights);
 
         board.move_piece(Move::from_to(Squares::D2, Squares::D4));
+        board.move_piece(Move::from_to(Squares::D7, Squares::D5));
         board.move_piece(Move::from_to(Squares::E1, Squares::D2));
 
         board.display();
@@ -365,6 +370,7 @@ mod tests {
             board.castling_rights & Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT
         );
 
+        board.move_piece(Move::from_to(Squares::H7, Squares::H6));
         board.move_piece(Move::from_to(Squares::H1, Squares::G1));
 
         board.display();
@@ -382,7 +388,7 @@ mod tests {
 
         assert_eq!(0xF, board.castling_rights);
 
-        board.move_piece(Move::from_to(Squares::D7, Squares::D5));
+        board.move_piece(Move::from_to(Squares::E2, Squares::E3));
         board.move_piece(Move::from_to(Squares::E8, Squares::D7));
 
         board.display();
@@ -405,6 +411,7 @@ mod tests {
             "Default castling rights should be available"
         );
 
+        board.move_piece(Move::from_to(Squares::A2, Squares::A3));
         board.move_piece(Move::from_to(Squares::A8, Squares::B8));
 
         board.display();
@@ -414,6 +421,7 @@ mod tests {
             board.castling_rights & Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT
         );
 
+        board.move_piece(Move::from_to(Squares::A3, Squares::A4));
         board.move_piece(Move::from_to(Squares::H8, Squares::G8));
 
         board.display();
@@ -491,20 +499,20 @@ mod tests {
     fn test_move_piece() {
         let mut board = Board::new();
 
-        let from = BBPositions::A7;
-        let to = BBPositions::A6;
+        let from = BBPositions::A2;
+        let to = BBPositions::A4;
 
-        board.move_piece(Move::from_to(48, 40));
+        board.move_piece(Move::from_to(Squares::A2, Squares::A4));
 
         assert_eq!(
             board.bitboards[PAWNS_IDX] & to,
             to,
-            "Pawn should be moved to a6"
+            "Pawn should be moved to a4"
         );
         assert_eq!(
             board.bitboards[PAWNS_IDX] & from,
             0,
-            "Pawn should no longer be at a7"
+            "Pawn should no longer be at a2"
         );
     }
 
