@@ -393,9 +393,9 @@ mod tests {
 
         assert_eq!(0xF, board.castling_rights);
 
-        board.move_piece(Move::from_to(Squares::D2, Squares::D4));
-        board.move_piece(Move::from_to(Squares::D7, Squares::D5));
-        board.move_piece(Move::from_to(Squares::E1, Squares::D2));
+        board.move_piece(Move::dummy_from_to(Squares::D2, Squares::D4));
+        board.move_piece(Move::dummy_from_to(Squares::D7, Squares::D5));
+        board.move_piece(Move::dummy_from_to(Squares::E1, Squares::D2));
 
         board.display();
 
@@ -417,7 +417,7 @@ mod tests {
             "Default castling rights should be available"
         );
 
-        board.move_piece(Move::from_to(Squares::A1, Squares::B1));
+        board.move_piece(Move::dummy_from_to(Squares::A1, Squares::B1));
 
         board.display();
 
@@ -426,8 +426,8 @@ mod tests {
             board.castling_rights & Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT
         );
 
-        board.move_piece(Move::from_to(Squares::H7, Squares::H6));
-        board.move_piece(Move::from_to(Squares::H1, Squares::G1));
+        board.move_piece(Move::dummy_from_to(Squares::H7, Squares::H6));
+        board.move_piece(Move::dummy_from_to(Squares::H1, Squares::G1));
 
         board.display();
 
@@ -444,8 +444,8 @@ mod tests {
 
         assert_eq!(0xF, board.castling_rights);
 
-        board.move_piece(Move::from_to(Squares::E2, Squares::E3));
-        board.move_piece(Move::from_to(Squares::E8, Squares::D7));
+        board.move_piece(Move::dummy_from_to(Squares::E2, Squares::E3));
+        board.move_piece(Move::dummy_from_to(Squares::E8, Squares::D7));
 
         board.display();
 
@@ -467,8 +467,8 @@ mod tests {
             "Default castling rights should be available"
         );
 
-        board.move_piece(Move::from_to(Squares::A2, Squares::A3));
-        board.move_piece(Move::from_to(Squares::A8, Squares::B8));
+        board.move_piece(Move::dummy_from_to(Squares::A2, Squares::A3));
+        board.move_piece(Move::dummy_from_to(Squares::A8, Squares::B8));
 
         board.display();
 
@@ -477,8 +477,8 @@ mod tests {
             board.castling_rights & Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT
         );
 
-        board.move_piece(Move::from_to(Squares::A3, Squares::A4));
-        board.move_piece(Move::from_to(Squares::H8, Squares::G8));
+        board.move_piece(Move::dummy_from_to(Squares::A3, Squares::A4));
+        board.move_piece(Move::dummy_from_to(Squares::H8, Squares::G8));
 
         board.display();
 
@@ -494,11 +494,11 @@ mod tests {
     fn test_en_passant_move() {
         let mut board = Board::new();
 
-        board.move_piece(Move::from_to(Squares::D2, Squares::D4));
-        board.move_piece(Move::from_to(Squares::E7, Squares::E5));
-        board.move_piece(Move::from_to(Squares::D4, Squares::D5));
+        board.move_piece(Move::dummy_from_to(Squares::D2, Squares::D4));
+        board.move_piece(Move::dummy_from_to(Squares::E7, Squares::E5));
+        board.move_piece(Move::dummy_from_to(Squares::D4, Squares::D5));
 
-        let mut _move = Move::with_flags(DOUBLE_PAWN_PUSH, Squares::C7, Squares::C5);
+        let mut _move = Move::dummy_with_flags(DOUBLE_PAWN_PUSH, Squares::C7, Squares::C5);
 
         _move.set_en_passant_bb_position(BBPositions::C6);
         _move.set_en_passant_bb_piece_square(BBPositions::C5);
@@ -509,7 +509,7 @@ mod tests {
 
         board.display();
 
-        board.move_piece(Move::with_flags(EN_PASSANT, Squares::D5, Squares::C6));
+        board.move_piece(Move::dummy_with_flags(EN_PASSANT, Squares::D5, Squares::C6));
 
         board.display();
 
@@ -558,7 +558,7 @@ mod tests {
         let from = BBPositions::A2;
         let to = BBPositions::A4;
 
-        board.move_piece(Move::from_to(Squares::A2, Squares::A4));
+        board.move_piece(Move::dummy_from_to(Squares::A2, Squares::A4));
 
         assert_eq!(
             board.bitboards[PAWNS_IDX] & to,
@@ -580,7 +580,7 @@ mod tests {
 
         board.place_piece(Color::White, PieceType::Pawn, from);
 
-        board.move_piece(Move::with_flags(QUEEN_PROMOTION, 55, 63));
+        board.move_piece(Move::dummy_with_flags(QUEEN_PROMOTION, 55, 63));
 
         assert_eq!(
             board.bitboards[PAWNS_IDX] & to,
@@ -600,7 +600,7 @@ mod tests {
 
         board.display();
 
-        board.move_piece(Move::from_to(8, 16));
+        board.move_piece(Move::dummy_from_to(8, 16));
 
         println!("After moving white pawn from a2 to a3:");
 

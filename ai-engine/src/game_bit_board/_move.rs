@@ -2,7 +2,10 @@ use core::fmt;
 
 use crate::game_bit_board::positions::Squares;
 
-use super::move_contants::*;
+use super::{
+    enums::{Color, PieceType},
+    move_contants::*,
+};
 
 /// Encodes a move with source and destination squares and optional flags.
 ///
@@ -34,6 +37,8 @@ pub struct Move {
     _move: u16,
     en_passant_bb_position: u64,
     en_passant_bb_piece_square: u64,
+    color: Color,
+    piece_type: PieceType,
 }
 
 impl PartialEq for Move {
@@ -41,12 +46,16 @@ impl PartialEq for Move {
         self._move == other._move
             && self.en_passant_bb_position == other.en_passant_bb_position
             && self.en_passant_bb_piece_square == other.en_passant_bb_piece_square
+            && self.color == other.color
+            && self.piece_type == other.piece_type
     }
 
     fn ne(&self, other: &Self) -> bool {
         self._move != other._move
             || self.en_passant_bb_position != other.en_passant_bb_position
             || self.en_passant_bb_piece_square != other.en_passant_bb_piece_square
+            || self.color != other.color
+            || self.piece_type != other.piece_type
     }
 }
 
@@ -83,6 +92,24 @@ impl fmt::Display for Move {
 }
 
 impl Move {
+    // For test purposes
+    pub fn dummy_from_to(from: usize, to: usize) -> Self {
+        if cfg!(test) {
+            Move::with_flags(0, from, to, Color::Black, PieceType::Empty)
+        } else {
+            panic!("Can only be used in test envs");
+        }
+    }
+
+    // For test purposes
+    pub fn dummy_with_flags(flags: u16, from: usize, to: usize) -> Self {
+        if cfg!(test) {
+            Move::with_flags(flags, from, to, Color::Black, PieceType::Empty)
+        } else {
+            panic!("Can only be used in test envs");
+        }
+    }
+
     /// Encondes a normal move `from` square `to` square.
     /// # Parameters
     /// - `from`: The index of the square the piece is moving from (0-63).
@@ -90,7 +117,9 @@ impl Move {
     ///
     /// # Returns
     /// - A `Move` instance with the encoded move.
-    pub fn from_to(from: usize, to: usize) -> Self { Move::with_flags(0, from, to) }
+    pub fn from_to(from: usize, to: usize, color: Color, piece_type: PieceType) -> Self {
+        Move::with_flags(0, from, to, color, piece_type)
+    }
 
     /// Encondes a special move `from` square `to` square.
     /// # Parameters
@@ -101,11 +130,15 @@ impl Move {
     ///
     /// # Returns
     /// - A `Move` instance with the encoded move.
-    pub fn with_flags(flags: u16, from: usize, to: usize) -> Self {
+    pub fn with_flags(
+        flags: u16, from: usize, to: usize, color: Color, piece_type: PieceType,
+    ) -> Self {
         Self {
             _move: ((flags & 0xf) << 12) | ((from as u16 & 0x3f) << 6) | (to as u16 & 0x3f),
             en_passant_bb_position: 0,
             en_passant_bb_piece_square: 0,
+            color,
+            piece_type,
         }
     }
 
@@ -156,6 +189,7 @@ impl Move {
     }
 
     pub fn get_en_passant_bb_piece_square(&self) -> u64 { self.en_passant_bb_piece_square }
+
 }
 
 #[cfg(test)]
@@ -164,7 +198,7 @@ mod tests {
 
     #[test]
     fn test_from_to() {
-        let m = Move::from_to(12, 28);
+        let m = Move::dummy_from_to(12, 28);
         assert_eq!(m.get_from(), 12);
         assert_eq!(m.get_to(), 28);
         assert_eq!(m.get_flags(), 0);
@@ -172,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_with_flags() {
-        let m = Move::with_flags(KING_CASTLE, 4, 6);
+        let m = Move::dummy_with_flags(KING_CASTLE, 4, 6);
         assert_eq!(m.get_from(), 4);
         assert_eq!(m.get_to(), 6);
         assert_eq!(m.get_flags(), KING_CASTLE);
@@ -180,85 +214,85 @@ mod tests {
 
     #[test]
     fn test_is_normal() {
-        let m = Move::from_to(12, 28);
+        let m = Move::dummy_from_to(12, 28);
         assert!(m.is_normal());
     }
 
     #[test]
     fn test_is_double_pawn_push() {
-        let m = Move::with_flags(DOUBLE_PAWN_PUSH, 12, 20);
+        let m = Move::dummy_with_flags(DOUBLE_PAWN_PUSH, 12, 20);
         assert!(m.is_double_pawn_push());
     }
 
     #[test]
     fn test_is_king_castle() {
-        let m = Move::with_flags(KING_CASTLE, 4, 6);
+        let m = Move::dummy_with_flags(KING_CASTLE, 4, 6);
         assert!(m.is_king_castle());
     }
 
     #[test]
     fn test_is_queen_castle() {
-        let m = Move::with_flags(QUEEN_CASTLE, 4, 6);
+        let m = Move::dummy_with_flags(QUEEN_CASTLE, 4, 6);
         assert!(m.is_queen_castle());
     }
 
     #[test]
     fn test_is_capture() {
-        let m = Move::with_flags(CAPTURE, 12, 28);
+        let m = Move::dummy_with_flags(CAPTURE, 12, 28);
         assert!(m.is_capture());
     }
 
     #[test]
     fn test_is_en_passant() {
-        let m = Move::with_flags(EN_PASSANT, 12, 28);
+        let m = Move::dummy_with_flags(EN_PASSANT, 12, 28);
         assert!(m.is_en_passant());
     }
 
     #[test]
     fn test_is_knight_promotion() {
-        let m = Move::with_flags(KNIGHT_PROMOTION, 12, 28);
+        let m = Move::dummy_with_flags(KNIGHT_PROMOTION, 12, 28);
         assert!(m.is_knight_promotion());
     }
 
     #[test]
     fn test_is_bishop_promotion() {
-        let m = Move::with_flags(BISHOP_PROMOTION, 12, 28);
+        let m = Move::dummy_with_flags(BISHOP_PROMOTION, 12, 28);
         assert!(m.is_bishop_promotion());
     }
 
     #[test]
     fn test_is_rook_promotion() {
-        let m = Move::with_flags(ROOK_PROMOTION, 12, 28);
+        let m = Move::dummy_with_flags(ROOK_PROMOTION, 12, 28);
         assert!(m.is_rook_promotion());
     }
 
     #[test]
     fn test_is_queen_promotion() {
-        let m = Move::with_flags(QUEEN_PROMOTION, 12, 28);
+        let m = Move::dummy_with_flags(QUEEN_PROMOTION, 12, 28);
         assert!(m.is_queen_promotion());
     }
 
     #[test]
     fn test_is_knight_promo_capture() {
-        let m = Move::with_flags(KNIGHT_PROMO_CAPTURE, 12, 28);
+        let m = Move::dummy_with_flags(KNIGHT_PROMO_CAPTURE, 12, 28);
         assert!(m.is_knight_promo_capture());
     }
 
     #[test]
     fn test_is_bishop_promo_capture() {
-        let m = Move::with_flags(BISHOP_PROMO_CAPTURE, 12, 28);
+        let m = Move::dummy_with_flags(BISHOP_PROMO_CAPTURE, 12, 28);
         assert!(m.is_bishop_promo_capture());
     }
 
     #[test]
     fn test_is_rook_promo_capture() {
-        let m = Move::with_flags(ROOK_PROMO_CAPTURE, 12, 28);
+        let m = Move::dummy_with_flags(ROOK_PROMO_CAPTURE, 12, 28);
         assert!(m.is_rook_promo_capture());
     }
 
     #[test]
     fn test_is_queen_promo_capture() {
-        let m = Move::with_flags(QUEEN_PROMO_CAPTURE, 12, 28);
+        let m = Move::dummy_with_flags(QUEEN_PROMO_CAPTURE, 12, 28);
         assert!(m.is_queen_promo_capture());
     }
 }
