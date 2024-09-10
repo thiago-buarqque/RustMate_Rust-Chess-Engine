@@ -208,7 +208,7 @@ impl Board {
 
         if _move.is_en_passant() {
             // Remove the en passant enemy piece
-            self.remove_piece(color, piece_type, self.en_passant_bb_piece_square);
+            self.remove_piece(color.opponent(), piece_type, self.en_passant_bb_piece_square);
             self.en_passant_bb_position = 0;
             self.en_passant_bb_piece_square = 0;
         }
@@ -228,6 +228,12 @@ impl Board {
             // When a move is made and en passant is available, remove en passant option
             self.en_passant_bb_position = 0;
             self.en_passant_bb_piece_square = 0;
+        }
+
+        let opponent_piece = self.get_piece_type(_move.get_to());
+
+        if opponent_piece != PieceType::Empty {
+            self.remove_piece(color.opponent(), opponent_piece, to);
         }
 
         self.place_piece(color, piece_type, to);
@@ -333,6 +339,10 @@ impl Board {
     }
 
     pub fn display(&self) {
+        self.display_with_attacks(Vec::new());
+    }
+
+    pub fn display_with_attacks(&self, attack_squares: Vec<usize>) {
         println!("\nen_passant_bb_position: {}", self.en_passant_bb_position);
         println!(
             "en_passant_bb_piece_square: {}",
@@ -359,13 +369,22 @@ impl Board {
             self.castling_rights & Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT != 0
         );
 
+        println!("");
+
         for row in (0..8).rev() {
             print!("{} ", row + 1);
             for col in 0..8 {
-                let piece_char = get_piece_symbol(
-                    self.get_piece_color(row * 8 + col),
-                    self.get_piece_type(row * 8 + col),
-                );
+                let square = row * 8 + col;
+
+                let piece_char = if attack_squares.contains(&square) {
+                    "*".to_string()
+                }
+                else {
+                    get_piece_symbol(
+                        self.get_piece_color(square),
+                        self.get_piece_type(square),
+                    )
+                };
 
                 print!("{} ", piece_char);
             }
