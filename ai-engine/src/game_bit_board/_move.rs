@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::game_bit_board::positions::Squares;
+use crate::game_bit_board::{positions::Squares, utils::get_piece_symbol};
 
 use super::{
     enums::{Color, PieceType},
@@ -190,11 +190,115 @@ impl Move {
 
     pub fn get_en_passant_bb_piece_square(&self) -> u64 { self.en_passant_bb_piece_square }
 
+    pub fn to_algebraic_notation(&self) -> String {
+        let from_square = self.decode_square((self._move >> 6) & 0x3F);
+        let to_square = self.decode_square(self._move & 0x3F);
+        let move_flags = (self._move >> 12) & 0xF;
+
+        // Handle castling
+        if move_flags == KING_CASTLE {
+            return "O-O".to_string();
+        } else if move_flags == QUEEN_CASTLE {
+            return "O-O-O".to_string();
+        }
+
+        // Piece type
+        let piece = match self.piece_type {
+            PieceType::Pawn => "".to_string(),
+            _ => get_piece_symbol(self.color, self.piece_type),
+        };
+
+        // Captures
+        let capture_symbol = if move_flags == CAPTURE || move_flags >= KNIGHT_PROMO_CAPTURE {
+            "x"
+        } else {
+            ""
+        };
+
+        // Promotion
+        let promotion = if move_flags >= KNIGHT_PROMOTION {
+            format!("={}", self.promotion_piece(move_flags))
+        } else {
+            "".to_string()
+        };
+
+        // Handle pawn capture notation
+        let pawn_file = if self.piece_type == PieceType::Pawn && capture_symbol == "x" {
+            self.file_of(from_square)
+        } else {
+            "".to_string()
+        };
+
+        format!(
+            "{}{}{}{}{}",
+            pawn_file, piece, capture_symbol, to_square, promotion
+        )
+    }
+
+    fn decode_square(&self, square_index: u16) -> String {
+        let file = ((square_index % 8) as u8 + b'a') as char;
+        let rank = ((square_index / 8) + 1).to_string();
+        format!("{}{}", file, rank)
+    }
+
+    fn promotion_piece(&self, flags: u16) -> String {
+        match flags {
+            KNIGHT_PROMOTION | KNIGHT_PROMO_CAPTURE => "N".to_string(),
+            BISHOP_PROMOTION | BISHOP_PROMO_CAPTURE => "B".to_string(),
+            ROOK_PROMOTION | ROOK_PROMO_CAPTURE => "R".to_string(),
+            QUEEN_PROMOTION | QUEEN_PROMO_CAPTURE => "Q".to_string(),
+            _ => "".to_string(),
+        }
+    }
+
+    fn file_of(&self, square: String) -> String {
+        square.chars().next().unwrap().to_string() // Extracts file (first
+                                                   // character)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_algebraic_notation() {
+        // Test normal knight move from g1 to f3
+        let _move = Move::with_flags(NORMAL, Squares::G1, Squares::F3, Color::White, PieceType::Knight);
+        assert_eq!(_move.to_algebraic_notation(), "♘f3");
+
+        // Test double pawn push from e2 to e4
+        let _move = Move::with_flags(DOUBLE_PAWN_PUSH, Squares::E2, Squares::E4, Color::White, PieceType::Pawn);
+        assert_eq!(_move.to_algebraic_notation(), "e4");
+
+        // Test pawn capturing from e4 to d5
+        let _move = Move::with_flags(CAPTURE, Squares::E4, Squares::D5, Color::White, PieceType::Pawn);
+        assert_eq!(_move.to_algebraic_notation(), "exd5");
+
+        // Test king-side castle
+        let _move = Move::with_flags(KING_CASTLE, Squares::E8, Squares::G8, Color::Black, PieceType::King);
+        assert_eq!(_move.to_algebraic_notation(), "O-O");
+
+        // Test queen-side castle
+        let _move = Move::with_flags(QUEEN_CASTLE, Squares::E8, Squares::C8, Color::Black, PieceType::King);
+        assert_eq!(_move.to_algebraic_notation(), "O-O-O");
+
+        // Test knight capturing from g5 to f3
+        let _move = Move::with_flags(CAPTURE, Squares::G5, Squares::F3, Color::White, PieceType::Knight);
+        assert_eq!(_move.to_algebraic_notation(), "♘xf3");
+
+        // Test pawn promotion from e7 to e8 to queen
+        let _move = Move::with_flags(QUEEN_PROMOTION, Squares::E7, Squares::E8, Color::Black, PieceType::Pawn);
+        assert_eq!(_move.to_algebraic_notation(), "e8=Q");
+
+        // Test pawn promotion with capture from e7 to d8 to queen
+        let _move = Move::with_flags(QUEEN_PROMO_CAPTURE, Squares::E7, Squares::D8, Color::Black, PieceType::Pawn);
+        assert_eq!(_move.to_algebraic_notation(), "exd8=Q");
+
+        // Test bishop move from c1 to g5
+        let _move = Move::with_flags(NORMAL, Squares::B1, Squares::G5, Color::White, PieceType::Bishop);
+        assert_eq!(_move.to_algebraic_notation(), "♗g5");
+    }
 
     #[test]
     fn test_from_to() {
