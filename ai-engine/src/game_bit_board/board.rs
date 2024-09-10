@@ -208,7 +208,11 @@ impl Board {
 
         if _move.is_en_passant() {
             // Remove the en passant enemy piece
-            self.remove_piece(color.opponent(), piece_type, self.en_passant_bb_piece_square);
+            self.remove_piece(
+                color.opponent(),
+                piece_type,
+                self.en_passant_bb_piece_square,
+            );
             self.en_passant_bb_position = 0;
             self.en_passant_bb_piece_square = 0;
         }
@@ -338,9 +342,7 @@ impl Board {
         PieceType::Empty
     }
 
-    pub fn display(&self) {
-        self.display_with_attacks(Vec::new());
-    }
+    pub fn display(&self) { self.display_with_attacks(Vec::new()); }
 
     pub fn display_with_attacks(&self, attack_squares: Vec<usize>) {
         println!("\nen_passant_bb_position: {}", self.en_passant_bb_position);
@@ -378,12 +380,8 @@ impl Board {
 
                 let piece_char = if attack_squares.contains(&square) {
                     "*".to_string()
-                }
-                else {
-                    get_piece_symbol(
-                        self.get_piece_color(square),
-                        self.get_piece_type(square),
-                    )
+                } else {
+                    get_piece_symbol(self.get_piece_color(square), self.get_piece_type(square))
                 };
 
                 print!("{} ", piece_char);

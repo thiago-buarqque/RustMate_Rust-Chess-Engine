@@ -11,21 +11,19 @@ mod game_bit_board;
 // mod game_controller;
 // mod global_state;
 
-pub fn get_input(prompt: &str) -> String{
-    println!("{}",prompt);
+pub fn get_input(prompt: &str) -> String {
+    println!("{}", prompt);
     let mut input = String::new();
     match io::stdin().read_line(&mut input) {
-        Ok(_goes_into_input_above) => {},
-        Err(_no_updates_is_fine) => {},
+        Ok(_goes_into_input_above) => {}
+        Err(_no_updates_is_fine) => {}
     }
     input.trim().to_string()
 }
 
 use std::num::ParseIntError;
 
-fn to_usize(value: &str) -> Result<usize, ParseIntError> {
-    value.parse()
-}
+fn to_usize(value: &str) -> Result<usize, ParseIntError> { value.parse() }
 
 fn encode_square(algebraic: &str) -> u16 {
     let file = algebraic.chars().next().unwrap() as u16 - b'a' as u16;
@@ -33,7 +31,7 @@ fn encode_square(algebraic: &str) -> u16 {
     rank * 8 + file
 }
 
-fn get_piece_attacks(from: usize, moves: &Vec<Move>) -> Vec<usize>{
+fn get_piece_attacks(from: usize, moves: &Vec<Move>) -> Vec<usize> {
     let mut attacks: Vec<usize> = Vec::new();
 
     for _move in moves {
@@ -57,7 +55,7 @@ fn main() {
         // }
 
         println!();
-        
+
         board.display();
 
         let input: String = get_input("\nPiece square you want to move (e.g. a1): ");
@@ -72,7 +70,9 @@ fn main() {
 
         let to = encode_square(&input);
 
-        let _move = moves.iter().find(|_move| _move.get_from() == from.into() && _move.get_to() == to.into());
+        let _move = moves
+            .iter()
+            .find(|_move| _move.get_from() == from.into() && _move.get_to() == to.into());
 
         if _move.is_none() {
             println!("Invalid move!");
