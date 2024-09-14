@@ -1,4 +1,6 @@
-use super::{enums::PieceType, move_contants::*};
+use crate::game_bit_board::enums::PieceType;
+
+use super::move_contants::*;
 
 pub fn get_promotion_flag_from_symbol(symbol: char) -> (u16, u16) {
     match symbol {

@@ -4,7 +4,7 @@ use std::sync::{
     Arc,
 };
 
-use super::{board::Board, move_generator::move_generator::MoveGenerator};
+use crate::game_bit_board::{board::Board, move_generator::move_generator::MoveGenerator};
 
 pub fn count_moves(
     board: &mut Board, depth: usize, track_moves: bool, move_generator: &MoveGenerator,
@@ -41,7 +41,8 @@ pub fn count_moves(
 #[cfg(test)]
 mod tests {
     use crate::game_bit_board::{
-        board::Board, move_generator::move_generator::MoveGenerator, moves_counter::count_moves,
+        _move::moves_counter::count_moves, board::Board,
+        move_generator::move_generator::MoveGenerator,
     };
 
     #[test]

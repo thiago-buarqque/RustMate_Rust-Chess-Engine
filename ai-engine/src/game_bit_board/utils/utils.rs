@@ -1,8 +1,9 @@
 use std::{collections::HashMap, mem::size_of};
 
-use crate::game_bit_board::enums::Color;
-
-use super::{enums::PieceType, move_contants::*, positions::BBPositions};
+use crate::game_bit_board::{
+    enums::{Color, PieceType},
+    positions::BBPositions,
+};
 
 pub fn algebraic_to_square(algebraic: &str) -> usize {
     let file = algebraic.chars().next().unwrap() as u16 - b'a' as u16;
