@@ -5,5 +5,7 @@ mod board_utils;
 mod enums;
 mod move_contants;
 pub mod move_generator;
+pub mod move_utils;
+pub mod moves_counter;
 mod positions;
-mod utils;
+pub mod utils;

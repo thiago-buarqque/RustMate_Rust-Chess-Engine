@@ -61,33 +61,7 @@ impl PartialEq for Move {
 
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let flag = match self._move >> 12 {
-            NORMAL => "NORMAL",
-            DOUBLE_PAWN_PUSH => "DOUBLE_PAWN_PUSH",
-            KING_CASTLE => "KING_CASTLE",
-            QUEEN_CASTLE => "QUEEN_CASTLE",
-            CAPTURE => "CAPTURE",
-            EN_PASSANT => "EN_PASSANT",
-            KNIGHT_PROMOTION => "KNIGHT_PROMOTION",
-            BISHOP_PROMOTION => "BISHOP_PROMOTION",
-            ROOK_PROMOTION => "ROOK_PROMOTION",
-            QUEEN_PROMOTION => "QUEEN_PROMOTION",
-            KNIGHT_PROMO_CAPTURE => "KNIGHT_PROMO_CAPTURE",
-            BISHOP_PROMO_CAPTURE => "BISHOP_PROMO_CAPTURE",
-            ROOK_PROMO_CAPTURE => "ROOK_PROMO_CAPTURE",
-            QUEEN_PROMO_CAPTURE => "QUEEN_PROMO_CAPTURE",
-            _ => "UNKNOWN FLAG",
-        };
-
-        write!(
-            f,
-            "{} -> {} | {} | ep_position: {} | ep_square: {}",
-            Squares::to_string(self.get_from()),
-            Squares::to_string(self.get_to()),
-            flag,
-            self.en_passant_bb_position,
-            self.en_passant_bb_piece_square
-        )
+        write!(f, "{}", self.to_algebraic_notation())
     }
 }
 
@@ -142,9 +116,13 @@ impl Move {
         }
     }
 
+    pub fn get_color(&self) -> Color { self.color }
+
+    pub fn get_piece_type(&self) -> PieceType { self.piece_type }
+
     pub fn as_u64(&self) -> u64 { self._move as u64 }
 
-    fn get_flags(&self) -> u16 { (self._move >> 12) & 0x0f }
+    pub fn get_flags(&self) -> u16 { (self._move >> 12) & 0x0f }
 
     pub fn get_from(&self) -> usize { ((self._move >> 6) & 0x3f) as usize }
 
@@ -170,13 +148,17 @@ impl Move {
 
     pub fn is_queen_promotion(&self) -> bool { (self._move >> 12) == QUEEN_PROMOTION }
 
-    pub fn is_knight_promo_capture(&self) -> bool { (self._move >> 12) == KNIGHT_PROMO_CAPTURE }
+    pub fn is_knight_promo_capture(&self) -> bool { (self._move >> 12) == KNIGHT_PROMOTION_CAPTURE }
 
-    pub fn is_bishop_promo_capture(&self) -> bool { (self._move >> 12) == BISHOP_PROMO_CAPTURE }
+    pub fn is_bishop_promo_capture(&self) -> bool { (self._move >> 12) == BISHOP_PROMOTION_CAPTURE }
 
-    pub fn is_rook_promo_capture(&self) -> bool { (self._move >> 12) == ROOK_PROMO_CAPTURE }
+    pub fn is_rook_promo_capture(&self) -> bool { (self._move >> 12) == ROOK_PROMOTION_CAPTURE }
 
-    pub fn is_queen_promo_capture(&self) -> bool { (self._move >> 12) == QUEEN_PROMO_CAPTURE }
+    pub fn is_queen_promo_capture(&self) -> bool { (self._move >> 12) == QUEEN_PROMOTION_CAPTURE }
+
+    pub fn is_promo_capture(&self) -> bool { (self._move >> 12) >= KNIGHT_PROMOTION_CAPTURE }
+
+    pub fn is_promotion(&self) -> bool { (self._move >> 12) >= KNIGHT_PROMOTION }
 
     pub fn set_en_passant_bb_position(&mut self, position: u64) {
         self.en_passant_bb_position = position
@@ -196,11 +178,11 @@ impl Move {
         let move_flags = (self._move >> 12) & 0xF;
 
         // Handle castling
-        if move_flags == KING_CASTLE {
-            return "O-O".to_string();
-        } else if move_flags == QUEEN_CASTLE {
-            return "O-O-O".to_string();
-        }
+        // if move_flags == KING_CASTLE {
+        //     return "O-O".to_string();
+        // } else if move_flags == QUEEN_CASTLE {
+        //     return "O-O-O".to_string();
+        // }
 
         // Piece type
         let piece = match self.piece_type {
@@ -209,7 +191,7 @@ impl Move {
         };
 
         // Captures
-        let capture_symbol = if move_flags == CAPTURE || move_flags >= KNIGHT_PROMO_CAPTURE {
+        let capture_symbol = if move_flags == CAPTURE || move_flags >= KNIGHT_PROMOTION_CAPTURE {
             "x"
         } else {
             ""
@@ -217,22 +199,24 @@ impl Move {
 
         // Promotion
         let promotion = if move_flags >= KNIGHT_PROMOTION {
-            format!("={}", self.promotion_piece(move_flags))
+            format!("{}", self.promotion_piece(move_flags))
         } else {
             "".to_string()
         };
 
         // Handle pawn capture notation
         let pawn_file = if self.piece_type == PieceType::Pawn && capture_symbol == "x" {
-            self.file_of(from_square)
+            self.file_of(from_square.clone())
         } else {
             "".to_string()
         };
 
-        format!(
-            "{}{}{}{}{}",
-            pawn_file, piece, capture_symbol, to_square, promotion
-        )
+        format!("{}{}{}", from_square, to_square, promotion)
+
+        // format!(
+        //     "{}{}{}{}{}",
+        //     pawn_file, from_square, capture_symbol, to_square, promotion
+        // )
     }
 
     fn decode_square(&self, square_index: u16) -> String {
@@ -243,10 +227,10 @@ impl Move {
 
     fn promotion_piece(&self, flags: u16) -> String {
         match flags {
-            KNIGHT_PROMOTION | KNIGHT_PROMO_CAPTURE => "N".to_string(),
-            BISHOP_PROMOTION | BISHOP_PROMO_CAPTURE => "B".to_string(),
-            ROOK_PROMOTION | ROOK_PROMO_CAPTURE => "R".to_string(),
-            QUEEN_PROMOTION | QUEEN_PROMO_CAPTURE => "Q".to_string(),
+            KNIGHT_PROMOTION | KNIGHT_PROMOTION_CAPTURE => "n".to_string(),
+            BISHOP_PROMOTION | BISHOP_PROMOTION_CAPTURE => "b".to_string(),
+            ROOK_PROMOTION | ROOK_PROMOTION_CAPTURE => "r".to_string(),
+            QUEEN_PROMOTION | QUEEN_PROMOTION_CAPTURE => "q".to_string(),
             _ => "".to_string(),
         }
     }
@@ -335,7 +319,7 @@ mod tests {
 
         // Test pawn promotion with capture from e7 to d8 to queen
         let _move = Move::with_flags(
-            QUEEN_PROMO_CAPTURE,
+            QUEEN_PROMOTION_CAPTURE,
             Squares::E7,
             Squares::D8,
             Color::Black,
@@ -432,25 +416,25 @@ mod tests {
 
     #[test]
     fn test_is_knight_promo_capture() {
-        let m = Move::dummy_with_flags(KNIGHT_PROMO_CAPTURE, 12, 28);
+        let m = Move::dummy_with_flags(KNIGHT_PROMOTION_CAPTURE, 12, 28);
         assert!(m.is_knight_promo_capture());
     }
 
     #[test]
     fn test_is_bishop_promo_capture() {
-        let m = Move::dummy_with_flags(BISHOP_PROMO_CAPTURE, 12, 28);
+        let m = Move::dummy_with_flags(BISHOP_PROMOTION_CAPTURE, 12, 28);
         assert!(m.is_bishop_promo_capture());
     }
 
     #[test]
     fn test_is_rook_promo_capture() {
-        let m = Move::dummy_with_flags(ROOK_PROMO_CAPTURE, 12, 28);
+        let m = Move::dummy_with_flags(ROOK_PROMOTION_CAPTURE, 12, 28);
         assert!(m.is_rook_promo_capture());
     }
 
     #[test]
     fn test_is_queen_promo_capture() {
-        let m = Move::dummy_with_flags(QUEEN_PROMO_CAPTURE, 12, 28);
+        let m = Move::dummy_with_flags(QUEEN_PROMOTION_CAPTURE, 12, 28);
         assert!(m.is_queen_promo_capture());
     }
 }
