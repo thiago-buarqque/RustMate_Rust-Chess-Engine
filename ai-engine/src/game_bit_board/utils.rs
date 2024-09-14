@@ -2,7 +2,24 @@ use std::{collections::HashMap, mem::size_of};
 
 use crate::game_bit_board::enums::Color;
 
-use super::{enums::PieceType, positions::BBPositions};
+use super::{enums::PieceType, move_contants::*, positions::BBPositions};
+
+pub fn algebraic_to_square(algebraic: &str) -> usize {
+    let file = algebraic.chars().next().unwrap() as u16 - b'a' as u16;
+    let rank = algebraic.chars().nth(1).unwrap().to_digit(10).unwrap() as u16 - 1;
+    (rank * 8 + file) as usize
+}
+
+pub fn square_to_algebraic(square: usize) -> String {
+    let file = (square % 8) as u8; // Calculate file index (0 = a, 7 = h)
+    let rank = (square / 8) as u8; // Calculate rank index (0 = 1, 7 = 8)
+
+    let algebraic_file = (b'a' + file) as char; // Convert file index to letter
+    let algebraic_rank = (b'1' + rank) as char; // Convert rank index to number
+
+    format!("{}{}", algebraic_file, algebraic_rank) // Concatenate to form the
+                                                    // algebraic notation
+}
 
 pub fn get_piece_symbol(color: Color, piece_type: PieceType) -> String {
     (match (color, piece_type) {
@@ -40,6 +57,24 @@ pub fn get_piece_letter(color: Color, piece_type: PieceType) -> String {
         _ => ".",
     })
     .to_string()
+}
+
+pub fn get_piece_color_and_type_from_symbol(symbol: char) -> (Color, PieceType) {
+    match symbol {
+        'b' => (Color::Black, PieceType::Bishop),
+        'k' => (Color::Black, PieceType::King),
+        'n' => (Color::Black, PieceType::Knight),
+        'p' => (Color::Black, PieceType::Pawn),
+        'q' => (Color::Black, PieceType::Queen),
+        'r' => (Color::Black, PieceType::Rook),
+        'B' => (Color::White, PieceType::Bishop),
+        'K' => (Color::White, PieceType::King),
+        'N' => (Color::White, PieceType::Knight),
+        'P' => (Color::White, PieceType::Pawn),
+        'Q' => (Color::White, PieceType::Queen),
+        'R' => (Color::White, PieceType::Rook),
+        _ => (Color::Black, PieceType::Empty),
+    }
 }
 
 pub fn is_pawn_in_initial_position(position: u64, white: bool) -> bool {

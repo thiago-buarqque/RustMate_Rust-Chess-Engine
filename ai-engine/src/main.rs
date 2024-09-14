@@ -1,8 +1,15 @@
 #![allow(dead_code)]
 
-use std::io;
+use std::{io, num::ParseIntError};
 
-use game_bit_board::{_move::Move, board::Board, move_generator::move_generator::MoveGenerator};
+use game_bit_board::{
+    _move::Move,
+    board::Board,
+    move_generator::move_generator::MoveGenerator,
+    move_utils::get_promotion_flag_from_symbol,
+    moves_counter::{self, count_moves},
+    utils::algebraic_to_square,
+};
 // mod ai;
 // mod common;
 // mod dto;
@@ -21,15 +28,7 @@ pub fn get_input(prompt: &str) -> String {
     input.trim().to_string()
 }
 
-use std::num::ParseIntError;
-
 fn to_usize(value: &str) -> Result<usize, ParseIntError> { value.parse() }
-
-fn encode_square(algebraic: &str) -> u16 {
-    let file = algebraic.chars().next().unwrap() as u16 - b'a' as u16;
-    let rank = algebraic.chars().nth(1).unwrap().to_digit(10).unwrap() as u16 - 1;
-    rank * 8 + file
-}
 
 fn get_piece_attacks(from: usize, moves: &Vec<Move>) -> Vec<usize> {
     let mut attacks: Vec<usize> = Vec::new();
@@ -44,7 +43,15 @@ fn get_piece_attacks(from: usize, moves: &Vec<Move>) -> Vec<usize> {
 }
 
 fn main() {
-    let mut board = Board::new();
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(12)
+        .build_global()
+        .unwrap();
+
+    // "8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3"
+    // r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -
+    let mut board =
+        Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
     let move_generator = MoveGenerator::new();
 
     loop {
@@ -58,21 +65,56 @@ fn main() {
 
         board.display();
 
+        let input: String = get_input("\nSearch depth: ");
+
+        let depth = to_usize(&input);
+
+        match depth {
+            Ok(depth) => {
+                let total_moves = count_moves(&mut board, depth, true, &move_generator);
+
+                println!("Total: {total_moves}");
+            }
+            Err(_) => {
+                println!("Invalid option")
+            }
+        }
+
         let input: String = get_input("\nPiece square you want to move (e.g. a1): ");
 
-        let from = encode_square(&input);
+        let from = algebraic_to_square(&input);
 
-        let _move = moves.iter().find(|_move| _move.get_from() == from.into());
+        let _move = moves.iter().find(|_move| _move.get_from() == from);
 
-        board.display_with_attacks(get_piece_attacks(from.into(), &moves));
+        board.display_with_attacks(get_piece_attacks(from, &moves));
 
         let input: String = get_input("\nSquare you want to move to (e.g. a1): ");
 
-        let to = encode_square(&input);
+        let _move;
 
-        let _move = moves
-            .iter()
-            .find(|_move| _move.get_from() == from.into() && _move.get_to() == to.into());
+        if input.len() == 3 {
+            // It's a promotion move
+            println!("Actual move {}", &input[..2]);
+            let to = algebraic_to_square(&input[..2]);
+
+            let promotion_char = input.chars().nth(2).unwrap();
+
+            let (promotion_flag, promotion_capture_flag) =
+                get_promotion_flag_from_symbol(promotion_char);
+
+            _move = moves.iter().find(|_move| {
+                _move.get_from() == from
+                    && _move.get_to() == to
+                    && (_move.get_flags() == promotion_flag
+                        || _move.get_flags() == promotion_capture_flag)
+            });
+        } else {
+            let to = algebraic_to_square(&input);
+
+            _move = moves
+                .iter()
+                .find(|_move| _move.get_from() == from && _move.get_to() == to);
+        }
 
         if _move.is_none() {
             println!("Invalid move!");

@@ -1,15 +1,24 @@
-use crate::game_bit_board::{board_utils::get_piece_type_from_index, utils::get_piece_symbol};
+use crate::game_bit_board::{
+    board_utils::get_piece_type_from_index, positions::Squares, utils::get_piece_symbol,
+};
 
 use super::{
     _move::Move,
+    bitwise_utils::{north_one, pop_lsb, south_one, to_bitboard_position},
     board_utils::{
         get_color_index, get_piece_type_index, is_pawn_promotion, BISHOPS_IDX, BLACK_IDX,
         KINGS_IDX, KNIGHTS_IDX, PAWNS_IDX, PIECE_INDEXES, QUEENS_IDX, ROOKS_IDX, WHITE_IDX,
     },
     enums::{Color, PieceType},
+    move_utils::get_piece_type_from_promotion_flag,
     positions::BBPositions,
+    utils::{
+        algebraic_to_square, get_piece_color_and_type_from_symbol, get_piece_letter,
+        square_to_algebraic,
+    },
 };
 
+#[derive(Clone)]
 pub struct Board {
     bitboards: [u64; 8],
     en_passant_bb_position: u64,
@@ -25,6 +34,9 @@ pub struct Board {
     // Bit 6: Black kingside castling.
     // Bit 7: Black queenside castling.
     castling_rights: u8,
+    winner: Option<Color>,
+    full_move_clock: u32,
+    half_move_clock: u32,
 
     // Stacks used to unmake moves
     castling_rights_history: Vec<u8>,
@@ -69,6 +81,9 @@ impl Board {
             black_king_moved: false,
             white_king_moved: false,
             castling_rights: 0,
+            winner: None,
+            full_move_clock: 1,
+            half_move_clock: 0,
 
             castling_rights_history: Vec::new(),
             bitboards_history: Vec::new(),
@@ -103,6 +118,12 @@ impl Board {
 
         self.castling_rights = 0xF;
     }
+
+    pub fn set_winner(&mut self, winner: Option<Color>) { self.winner = winner; }
+
+    pub fn get_winner(&self) -> Option<Color> { self.winner }
+
+    pub fn is_game_finished(&self) -> bool { self.get_winner().is_some() }
 
     pub fn get_side_to_move(&self) -> Color { self.side_to_move }
 
@@ -191,7 +212,17 @@ impl Board {
             .remove(self.white_king_moved_history.len() - 1);
         self.moves_history.remove(self.moves_history.len() - 1);
 
+        if self.side_to_move.is_white() {
+            self.full_move_clock -= 1;
+        }
+
+        self.half_move_clock -= 1;
+
         self.side_to_move = self.side_to_move.opponent();
+
+        if self.winner.is_some() {
+            self.winner = None;
+        }
     }
 
     pub fn move_piece(&mut self, _move: Move) {
@@ -219,6 +250,12 @@ impl Board {
 
         self.remove_piece(color, piece_type, from);
 
+        if self.en_passant_bb_position != 0 {
+            // When a move is made and en passant is available, remove en passant option
+            self.en_passant_bb_position = 0;
+            self.en_passant_bb_piece_square = 0;
+        }
+
         if piece_type == PieceType::Pawn {
             if _move.is_double_pawn_push() {
                 // Save en passant info
@@ -226,12 +263,8 @@ impl Board {
                 self.en_passant_bb_piece_square = _move.get_en_passant_bb_piece_square();
             } else if is_pawn_promotion(color, from, to) {
                 // TODO: get promotion defined inside the move
-                piece_type = PieceType::Queen;
+                piece_type = get_piece_type_from_promotion_flag(_move.get_flags());
             }
-        } else if self.en_passant_bb_position != 0 {
-            // When a move is made and en passant is available, remove en passant option
-            self.en_passant_bb_position = 0;
-            self.en_passant_bb_piece_square = 0;
         }
 
         let opponent_piece = self.get_piece_type(_move.get_to());
@@ -301,11 +334,13 @@ impl Board {
             }
         }
 
-        self.side_to_move = self.side_to_move.opponent();
-
-        if piece_type != PieceType::Rook {
-            return;
+        if self.side_to_move.is_black() {
+            self.full_move_clock += 1;
         }
+
+        self.half_move_clock += 1;
+
+        self.side_to_move = self.side_to_move.opponent();
 
         if color.is_black() {
             if from == BBPositions::A8 {
@@ -313,11 +348,23 @@ impl Board {
             } else if from == BBPositions::H8 {
                 self.castling_rights &= !Board::BLACK_KING_SIDE_CASTLING_RIGHT;
             }
-        } else {
-            if from == BBPositions::A1 {
+
+            if to == BBPositions::A1 {
                 self.castling_rights &= !Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT;
-            } else if from == BBPositions::H1 {
+            } else if to == BBPositions::H1 {
                 self.castling_rights &= !Board::WHITE_KING_SIDE_CASTLING_RIGHT;
+            }
+        } else {
+            if from == BBPositions::A1 || to == BBPositions::A1 {
+                self.castling_rights &= !Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT;
+            } else if from == BBPositions::H1 || to == BBPositions::H1 {
+                self.castling_rights &= !Board::WHITE_KING_SIDE_CASTLING_RIGHT;
+            }
+
+            if to == BBPositions::A8 {
+                self.castling_rights &= !Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT;
+            } else if to == BBPositions::H8 {
+                self.castling_rights &= !Board::BLACK_KING_SIDE_CASTLING_RIGHT;
             }
         }
     }
@@ -342,13 +389,172 @@ impl Board {
         PieceType::Empty
     }
 
+    pub fn to_fen(&self) -> String {
+        let mut fen = String::new();
+
+        // Generate piece positions
+        for row in (0..8).rev() {
+            let mut empty_squares = 0;
+            for col in 0..8 {
+                let square = 8 * row + col;
+
+                let piece_type = self.get_piece_type(square);
+
+                if piece_type == PieceType::Empty {
+                    empty_squares += 1;
+                } else {
+                    if empty_squares > 0 {
+                        fen.push_str(&empty_squares.to_string());
+                        empty_squares = 0;
+                    }
+                    let color = self.get_piece_color(square);
+
+                    fen.push_str(&get_piece_letter(color, piece_type).as_str());
+                }
+            }
+            if empty_squares > 0 {
+                fen.push_str(&empty_squares.to_string());
+            }
+            if row > 0 {
+                fen.push('/');
+            }
+        }
+
+        // Add side to move
+        fen.push(' ');
+        fen.push_str(match self.side_to_move {
+            Color::White => "w",
+            Color::Black => "b",
+        });
+
+        // Add castling rights
+        fen.push(' ');
+        if self.castling_rights == 0 {
+            fen.push('-');
+        } else {
+            if self.castling_rights & 0x8 != 0 {
+                fen.push('K');
+            }
+            if self.castling_rights & 0x4 != 0 {
+                fen.push('Q');
+            }
+            if self.castling_rights & 0x2 != 0 {
+                fen.push('k');
+            }
+            if self.castling_rights & 0x1 != 0 {
+                fen.push('q');
+            }
+        }
+
+        // Add en passant target square
+        fen.push(' ');
+        if self.en_passant_bb_position == 0 {
+            fen.push('-');
+        } else {
+            let mut pos = self.en_passant_bb_position.clone();
+            fen.push_str(&square_to_algebraic(pop_lsb(&mut pos) as usize)); // Assuming a helper for conversion
+        }
+
+        // Add halfmove clock
+        fen.push(' ');
+        fen.push_str(&self.half_move_clock.to_string());
+
+        // Add fullmove number
+        fen.push(' ');
+        fen.push_str(&self.full_move_clock.to_string());
+
+        // Add other components like side to move, castling rights, etc.
+        // Similar to the previous code snippet...
+
+        fen
+    }
+
+    pub fn from_fen(fen: &str) -> Self {
+        let parts: Vec<&str> = fen.split_whitespace().collect();
+        // if parts.len() != 6 {
+        //     panic!("Invalid FEN string.");
+        // }
+
+        let mut board = Board::empty();
+
+        for (i, row) in parts[0].split('/').rev().enumerate() {
+            let mut col = 0;
+
+            for char in row.chars() {
+                if char.is_digit(10) {
+                    col += char.to_digit(10).unwrap() as usize;
+                } else {
+                    let (color, piece_type) = get_piece_color_and_type_from_symbol(char);
+
+                    let square = 8 * i + col;
+
+                    board.place_piece(color, piece_type, to_bitboard_position(square as u64));
+
+                    col += 1;
+                }
+            }
+        }
+
+        board.side_to_move = match parts[1] {
+            "w" => Color::White,
+            "b" => Color::Black,
+            _ => panic!("Invalid side to move in FEN string."),
+        };
+
+        // Setup castling rights
+        board.castling_rights = 0;
+        for char in parts[2].chars() {
+            match char {
+                'K' => board.castling_rights |= Board::WHITE_KING_SIDE_CASTLING_RIGHT, /* White kingside */
+                'Q' => board.castling_rights |= Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT, /* White queenside */
+                'k' => board.castling_rights |= Board::BLACK_KING_SIDE_CASTLING_RIGHT, /* Black kingside */
+                'q' => board.castling_rights |= Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT, /* Black queenside */
+                '-' => {}
+                _ => panic!("Invalid castling rights in FEN string."),
+            }
+        }
+
+        // Setup en passant target square
+        match parts[3] {
+            "-" => {
+                board.en_passant_bb_position = 0;
+            }
+            pos => {
+                let bb_position = to_bitboard_position(algebraic_to_square(pos) as u64);
+
+                board.en_passant_bb_position = bb_position;
+
+                if BBPositions::ROW_3.contains(&bb_position) {
+                    board.en_passant_bb_piece_square = north_one(bb_position);
+                } else if BBPositions::ROW_6.contains(&bb_position) {
+                    board.en_passant_bb_piece_square = south_one(bb_position);
+                }
+            }
+        };
+
+        if parts.len() > 4 {
+            // Setup halfmove clock
+            board.half_move_clock = parts[4].parse::<u32>().unwrap();
+        }
+
+        if parts.len() > 5 {
+            // Setup fullmove number
+            board.full_move_clock = parts[5].parse::<u32>().unwrap();
+        }
+
+        board
+    }
+
     pub fn display(&self) { self.display_with_attacks(Vec::new()); }
 
     pub fn display_with_attacks(&self, attack_squares: Vec<usize>) {
-        println!("\nen_passant_bb_position: {}", self.en_passant_bb_position);
+        println!(
+            "\nen_passant_bb_position: {}",
+            Squares::to_string(pop_lsb(&mut (self.en_passant_bb_position.clone())) as usize)
+        );
         println!(
             "en_passant_bb_piece_square: {}",
-            self.en_passant_bb_piece_square
+            Squares::to_string(pop_lsb(&mut (self.en_passant_bb_piece_square.clone())) as usize)
         );
         println!("side_to_move: {}", self.side_to_move);
         println!("black_king_moved: {}", self.black_king_moved);
@@ -371,7 +577,7 @@ impl Board {
             self.castling_rights & Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT != 0
         );
 
-        println!("");
+        println!("FEN: {}", self.to_fen());
 
         for row in (0..8).rev() {
             print!("{} ", row + 1);
