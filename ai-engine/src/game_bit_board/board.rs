@@ -1,20 +1,16 @@
-use crate::game_bit_board::{
-    board_utils::get_piece_type_from_index, positions::Squares, utils::get_piece_symbol,
-};
+use crate::game_bit_board::{positions::Squares, utils::utils::get_piece_symbol};
 
 use super::{
-    _move::Move,
-    bitwise_utils::{north_one, pop_lsb, south_one, to_bitboard_position},
-    board_utils::{
-        get_color_index, get_piece_type_index, is_pawn_promotion, BISHOPS_IDX, BLACK_IDX,
-        KINGS_IDX, KNIGHTS_IDX, PAWNS_IDX, PIECE_INDEXES, QUEENS_IDX, ROOKS_IDX, WHITE_IDX,
-    },
+    _move::{_move::Move, move_utils::get_piece_type_from_promotion_flag},
     enums::{Color, PieceType},
-    move_utils::get_piece_type_from_promotion_flag,
     positions::BBPositions,
     utils::{
-        algebraic_to_square, get_piece_color_and_type_from_symbol, get_piece_letter,
-        square_to_algebraic,
+        bitwise_utils::{north_one, pop_lsb, south_one, to_bitboard_position},
+        board_utils::*,
+        utils::{
+            algebraic_to_square, get_piece_color_and_type_from_symbol, get_piece_letter,
+            square_to_algebraic,
+        },
     },
 };
 
@@ -601,10 +597,9 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use crate::game_bit_board::{
-        _move::Move,
+        _move::{_move::Move, move_contants::*},
         board::{Board, PAWNS_IDX, QUEENS_IDX},
         enums::{Color, PieceType},
-        move_contants::{DOUBLE_PAWN_PUSH, EN_PASSANT, QUEEN_PROMOTION},
         positions::{BBPositions, Squares},
     };
 

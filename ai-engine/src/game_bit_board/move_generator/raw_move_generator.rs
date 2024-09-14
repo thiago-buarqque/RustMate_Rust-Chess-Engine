@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 
-use crate::game_bit_board::{
-    bitwise_utils::{east_one, west_one},
+use crate::game_bit_board::utils::{
+    bitwise_utils::{
+        east_one, no_ea_one, no_we_one, north_one, so_ea_one, so_we_one, south_one,
+        to_bitboard_position, west_one,
+    },
     utils::{get_piece_symbol, is_pawn_in_initial_position},
 };
 
 use super::{
-    super::{
-        bitwise_utils::*,
-        enums::{Color, PieceType},
-    },
+    super::enums::{Color, PieceType},
     contants::{BISHOP_RELEVANT_SQUARES, ROOK_RELEVANT_SQUARES},
 };
 
@@ -402,7 +402,7 @@ mod tests {
             raw_move_generator::print_board,
         },
         positions::BBPositions,
-        utils::memory_usage_in_kb,
+        utils::utils::memory_usage_in_kb,
     };
 
     use super::RawMoveGenerator;

@@ -1,11 +1,8 @@
 use core::fmt;
 
-use crate::game_bit_board::{positions::Squares, utils::get_piece_symbol};
+use crate::game_bit_board::enums::{Color, PieceType};
 
-use super::{
-    enums::{Color, PieceType},
-    move_contants::*,
-};
+use super::move_contants::*;
 
 /// Encodes a move with source and destination squares and optional flags.
 ///
@@ -185,17 +182,17 @@ impl Move {
         // }
 
         // Piece type
-        let piece = match self.piece_type {
-            PieceType::Pawn => "".to_string(),
-            _ => get_piece_symbol(self.color, self.piece_type),
-        };
+        // let piece = match self.piece_type {
+        //     PieceType::Pawn => "".to_string(),
+        //     _ => get_piece_symbol(self.color, self.piece_type),
+        // };
 
         // Captures
-        let capture_symbol = if move_flags == CAPTURE || move_flags >= KNIGHT_PROMOTION_CAPTURE {
-            "x"
-        } else {
-            ""
-        };
+        // let capture_symbol = if move_flags == CAPTURE || move_flags >=
+        // KNIGHT_PROMOTION_CAPTURE {     "x"
+        // } else {
+        //     ""
+        // };
 
         // Promotion
         let promotion = if move_flags >= KNIGHT_PROMOTION {
@@ -205,11 +202,11 @@ impl Move {
         };
 
         // Handle pawn capture notation
-        let pawn_file = if self.piece_type == PieceType::Pawn && capture_symbol == "x" {
-            self.file_of(from_square.clone())
-        } else {
-            "".to_string()
-        };
+        // let pawn_file = if self.piece_type == PieceType::Pawn && capture_symbol ==
+        // "x" {     self.file_of(from_square.clone())
+        // } else {
+        //     "".to_string()
+        // };
 
         format!("{}{}{}", from_square, to_square, promotion)
 
@@ -243,6 +240,8 @@ impl Move {
 
 #[cfg(test)]
 mod tests {
+    use crate::game_bit_board::positions::Squares;
+
     use super::*;
 
     #[test]

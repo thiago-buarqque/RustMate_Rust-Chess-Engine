@@ -48,8 +48,8 @@ pub fn pop_lsb(bitboard: &mut u64) -> u8 {
 #[cfg(test)]
 mod tests {
     use crate::game_bit_board::{
-        bitwise_utils::{lower_bits, to_bitboard_position, to_decimal_position, upper_bits},
         positions::BBPositions,
+        utils::bitwise_utils::{lower_bits, to_bitboard_position, to_decimal_position, upper_bits},
     };
 
     use super::{

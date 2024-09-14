@@ -1,13 +1,14 @@
-use std::{collections::HashMap, os::linux::raw, usize};
+use std::{collections::HashMap, usize};
 
 use crate::game_bit_board::{
-    _move::Move,
-    bitwise_utils::{east_one, north_one, pop_lsb, south_one, to_bitboard_position, west_one},
+    _move::{_move::Move, move_contants::*},
     board::Board,
     enums::{Color, PieceType},
-    move_contants::*,
     positions::Squares,
-    utils::is_pawn_in_initial_position,
+    utils::{
+        bitwise_utils::{east_one, north_one, pop_lsb, south_one, to_bitboard_position, west_one},
+        utils::is_pawn_in_initial_position,
+    },
 };
 
 use super::{
@@ -546,10 +547,9 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::game_bit_board::{
-        _move::Move,
+        _move::{_move::Move, move_contants::*},
         board::Board,
         enums::{Color, PieceType},
-        move_contants::{CAPTURE, KING_CASTLE, QUEEN_CASTLE},
         positions::{BBPositions, Squares},
     };
 

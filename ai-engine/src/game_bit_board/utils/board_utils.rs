@@ -1,4 +1,4 @@
-use super::{
+use crate::game_bit_board::{
     enums::{Color, PieceType},
     positions::BBPositions,
 };
@@ -67,7 +67,7 @@ pub fn get_piece_type_from_index(index: usize) -> PieceType {
 
 #[cfg(test)]
 mod tests {
-    use crate::game_bit_board::board_utils::*;
+    use crate::game_bit_board::{enums::PieceType, utils::board_utils::*};
 
     #[test]
     fn test_get_piece_type_from_index() {

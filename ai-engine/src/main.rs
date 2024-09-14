@@ -3,12 +3,10 @@
 use std::{io, num::ParseIntError};
 
 use game_bit_board::{
-    _move::Move,
+    _move::{_move::Move, move_utils::get_promotion_flag_from_symbol, moves_counter::count_moves},
     board::Board,
     move_generator::move_generator::MoveGenerator,
-    move_utils::get_promotion_flag_from_symbol,
-    moves_counter::{self, count_moves},
-    utils::algebraic_to_square,
+    utils::utils::algebraic_to_square,
 };
 // mod ai;
 // mod common;
