@@ -12,7 +12,14 @@ use super::{
             square_to_algebraic,
         },
     },
+    zobrist::zobrist::Zobrist,
 };
+
+#[derive(Clone, Copy)]
+enum Side {
+    KingSide,
+    QueenSide,
+}
 
 #[derive(Clone)]
 pub struct Board {
@@ -42,6 +49,8 @@ pub struct Board {
     black_king_moved_history: Vec<bool>,
     white_king_moved_history: Vec<bool>,
     moves_history: Vec<Move>,
+    zobrist_history: Vec<Zobrist>,
+    zobrist: Zobrist,
 }
 
 impl Board {
@@ -69,7 +78,7 @@ impl Board {
     }
 
     pub fn empty() -> Self {
-        Board {
+        let mut board = Board {
             bitboards: [0; 8],
             en_passant_bb_position: 0,
             en_passant_bb_piece_square: 0,
@@ -88,7 +97,99 @@ impl Board {
             black_king_moved_history: Vec::new(),
             white_king_moved_history: Vec::new(),
             moves_history: Vec::new(),
+            zobrist_history: Vec::new(),
+
+            zobrist: Zobrist::new(),
+        };
+
+        let mut zobrist = board.zobrist.clone();
+
+        zobrist.compute_hash(&board);
+
+        board.zobrist = zobrist;
+
+        board
+    }
+
+    pub fn from_fen(fen: &str) -> Self {
+        let parts: Vec<&str> = fen.split_whitespace().collect();
+        // if parts.len() != 6 {
+        //     panic!("Invalid FEN string.");
+        // }
+
+        let mut board = Board::empty();
+
+        for (i, row) in parts[0].split('/').rev().enumerate() {
+            let mut col = 0;
+
+            for char in row.chars() {
+                if char.is_digit(10) {
+                    col += char.to_digit(10).unwrap() as usize;
+                } else {
+                    let (color, piece_type) = get_piece_color_and_type_from_symbol(char);
+
+                    let square = 8 * i + col;
+
+                    board.place_piece(color, piece_type, to_bitboard_position(square as u64));
+
+                    col += 1;
+                }
+            }
         }
+
+        // Setup side to move
+        board.side_to_move = match parts[1] {
+            "w" => Color::White,
+            "b" => Color::Black,
+            _ => panic!("Invalid side to move in FEN string."),
+        };
+
+        // Setup castling rights
+        board.castling_rights = 0;
+        for char in parts[2].chars() {
+            match char {
+                'K' => board.castling_rights |= Board::WHITE_KING_SIDE_CASTLING_RIGHT,
+                'Q' => board.castling_rights |= Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT,
+                'k' => board.castling_rights |= Board::BLACK_KING_SIDE_CASTLING_RIGHT,
+                'q' => board.castling_rights |= Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT,
+                '-' => {}
+                _ => panic!("Invalid castling rights in FEN string."),
+            }
+        }
+
+        // Setup en passant target square
+        match parts[3] {
+            "-" => {
+                board.en_passant_bb_position = 0;
+            }
+            pos => {
+                let bb_position = to_bitboard_position(algebraic_to_square(pos) as u64);
+
+                board.en_passant_bb_position = bb_position;
+
+                if BBPositions::ROW_3.contains(&bb_position) {
+                    board.en_passant_bb_piece_square = north_one(bb_position);
+                } else if BBPositions::ROW_6.contains(&bb_position) {
+                    board.en_passant_bb_piece_square = south_one(bb_position);
+                }
+            }
+        };
+
+        if parts.len() > 4 {
+            board.half_move_clock = parts[4].parse::<u32>().unwrap();
+        }
+
+        if parts.len() > 5 {
+            board.full_move_clock = parts[5].parse::<u32>().unwrap();
+        }
+
+        let mut zobrist = board.zobrist.clone();
+
+        zobrist.compute_hash(&board);
+
+        board.zobrist = zobrist;
+
+        board
     }
 
     pub fn reset(&mut self) {
@@ -180,6 +281,7 @@ impl Board {
         self.black_king_moved_history.push(self.black_king_moved);
         self.white_king_moved_history.push(self.white_king_moved);
         self.moves_history.push(_move);
+        self.zobrist_history.push(self.zobrist.clone());
     }
 
     pub fn unmake_last_move(&mut self) {
@@ -187,26 +289,39 @@ impl Board {
             return;
         }
 
-        self.castling_rights = *self.castling_rights_history.last().unwrap();
-        self.bitboards = *self.bitboards_history.last().unwrap();
-        self.en_passant_bb_position = *self.en_passant_bb_position_history.last().unwrap();
-        self.en_passant_bb_piece_square = *self.en_passant_bb_piece_square_history.last().unwrap();
-        self.black_king_moved = *self.black_king_moved_history.last().unwrap();
-        self.white_king_moved = *self.white_king_moved_history.last().unwrap();
-
-        self.castling_rights_history
+        self.castling_rights = self
+            .castling_rights_history
             .remove(self.castling_rights_history.len() - 1);
-        self.bitboards_history
+        self.bitboards = self
+            .bitboards_history
             .remove(self.bitboards_history.len() - 1);
-        self.en_passant_bb_position_history
+        self.en_passant_bb_position = self
+            .en_passant_bb_position_history
             .remove(self.en_passant_bb_position_history.len() - 1);
-        self.en_passant_bb_piece_square_history
+        self.en_passant_bb_piece_square = self
+            .en_passant_bb_piece_square_history
             .remove(self.en_passant_bb_piece_square_history.len() - 1);
-        self.black_king_moved_history
+        self.black_king_moved = self
+            .black_king_moved_history
             .remove(self.black_king_moved_history.len() - 1);
-        self.white_king_moved_history
+        self.white_king_moved = self
+            .white_king_moved_history
             .remove(self.white_king_moved_history.len() - 1);
-        self.moves_history.remove(self.moves_history.len() - 1);
+        self.zobrist = self.zobrist_history.remove(self.zobrist_history.len() - 1);
+
+        // self.castling_rights_history
+        //     .remove(self.castling_rights_history.len() - 1);
+        // self.bitboards_history
+        //     .remove(self.bitboards_history.len() - 1);
+        // self.en_passant_bb_position_history
+        //     .remove(self.en_passant_bb_position_history.len() - 1);
+        // self.en_passant_bb_piece_square_history
+        //     .remove(self.en_passant_bb_piece_square_history.len() - 1);
+        // self.black_king_moved_history
+        //     .remove(self.black_king_moved_history.len() - 1);
+        // self.white_king_moved_history
+        //     .remove(self.white_king_moved_history.len() - 1);
+        // self.moves_history.remove(self.moves_history.len() - 1);
 
         if self.side_to_move.is_white() {
             self.full_move_clock -= 1;
@@ -230,8 +345,12 @@ impl Board {
 
         let color = self.get_piece_color(_move.get_from());
         let mut piece_type = self.get_piece_type(_move.get_from());
-        let from: u64 = 1 << _move.get_from();
-        let to: u64 = 1 << _move.get_to();
+
+        let from_square = _move.get_from();
+        let to_square = _move.get_to();
+
+        let from: u64 = 1 << from_square;
+        let to: u64 = 1 << to_square;
 
         if _move.is_en_passant() {
             // Remove the en passant enemy piece
@@ -254,11 +373,9 @@ impl Board {
 
         if piece_type == PieceType::Pawn {
             if _move.is_double_pawn_push() {
-                // Save en passant info
                 self.en_passant_bb_position = _move.get_en_passant_bb_position();
                 self.en_passant_bb_piece_square = _move.get_en_passant_bb_piece_square();
             } else if is_pawn_promotion(color, from, to) {
-                // TODO: get promotion defined inside the move
                 piece_type = get_piece_type_from_promotion_flag(_move.get_flags());
             }
         }
@@ -271,63 +388,8 @@ impl Board {
 
         self.place_piece(color, piece_type, to);
 
-        // Remove castling rights when king moves
         if piece_type == PieceType::King {
-            if color.is_black() {
-                self.black_king_moved = true;
-                self.castling_rights &= Board::WHITE_CASTLING_RIGHTS;
-
-                if _move.is_king_castle() {
-                    self.remove_piece(
-                        color,
-                        PieceType::Rook,
-                        Board::BLACK_KING_SIDE_CASTLE_ROOK_INITIAL_POS,
-                    );
-                    self.place_piece(
-                        color,
-                        PieceType::Rook,
-                        Board::BLACK_KING_SIDE_CASTLE_ROOK_FINAL_POS,
-                    );
-                } else if _move.is_queen_castle() {
-                    self.remove_piece(
-                        color,
-                        PieceType::Rook,
-                        Board::BLACK_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS,
-                    );
-                    self.place_piece(
-                        color,
-                        PieceType::Rook,
-                        Board::BLACK_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS,
-                    );
-                }
-            } else {
-                self.white_king_moved = true;
-                self.castling_rights &= Board::BLACK_CASTLING_RIGHTS;
-
-                if _move.is_king_castle() {
-                    self.remove_piece(
-                        color,
-                        PieceType::Rook,
-                        Board::WHITE_KING_SIDE_CASTLE_ROOK_INITIAL_POS,
-                    );
-                    self.place_piece(
-                        color,
-                        PieceType::Rook,
-                        Board::WHITE_KING_SIDE_CASTLE_ROOK_FINAL_POS,
-                    );
-                } else if _move.is_queen_castle() {
-                    self.remove_piece(
-                        color,
-                        PieceType::Rook,
-                        Board::WHITE_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS,
-                    );
-                    self.place_piece(
-                        color,
-                        PieceType::Rook,
-                        Board::WHITE_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS,
-                    );
-                }
-            }
+            self.handle_king_move(color, _move);
         }
 
         if self.side_to_move.is_black() {
@@ -338,29 +400,108 @@ impl Board {
 
         self.side_to_move = self.side_to_move.opponent();
 
-        if color.is_black() {
-            if from == BBPositions::A8 {
-                self.castling_rights &= !Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT;
-            } else if from == BBPositions::H8 {
-                self.castling_rights &= !Board::BLACK_KING_SIDE_CASTLING_RIGHT;
+        self.handle_castling(color, from, to);
+
+        self.zobrist
+            .update_hash_on_move(opponent_piece, color, from_square, piece_type, to_square);
+    }
+
+    fn handle_castling(&mut self, color: Color, from: u64, to: u64) {
+        for &side in &[Side::KingSide, Side::QueenSide] {
+            let (friendly_rook_pos, opponent_rook_pos) = match (color, side) {
+                (Color::White, Side::KingSide) => (BBPositions::H1, BBPositions::H8),
+                (Color::White, Side::QueenSide) => (BBPositions::A1, BBPositions::A8),
+                (Color::Black, Side::KingSide) => (BBPositions::H8, BBPositions::H1),
+                (Color::Black, Side::QueenSide) => (BBPositions::A8, BBPositions::A1),
+            };
+
+            let friendly_castling_right = get_castling_right_flag(color, side);
+
+            if from == friendly_rook_pos && (self.castling_rights & friendly_castling_right) != 0 {
+                self.castling_rights &= !friendly_castling_right;
+                self.update_hash_on_lose_castle(color, side);
             }
 
-            if to == BBPositions::A1 {
-                self.castling_rights &= !Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT;
-            } else if to == BBPositions::H1 {
-                self.castling_rights &= !Board::WHITE_KING_SIDE_CASTLING_RIGHT;
+            let opponent_castling_right = get_castling_right_flag(color.opponent(), side);
+
+            if to == opponent_rook_pos && (self.castling_rights & opponent_castling_right) != 0 {
+                self.castling_rights &= !opponent_castling_right;
+                self.update_hash_on_lose_castle(color.opponent(), side);
+            }
+        }
+    }
+
+    fn update_hash_on_lose_castle(&mut self, color: Color, side: Side) {
+        match (color, side) {
+            (Color::White, Side::KingSide) => {
+                self.zobrist.update_hash_on_white_lose_king_side_castle()
+            }
+            (Color::White, Side::QueenSide) => {
+                self.zobrist.update_hash_on_white_lose_queen_side_castle()
+            }
+            (Color::Black, Side::KingSide) => {
+                self.zobrist.update_hash_on_black_lose_king_side_castle()
+            }
+            (Color::Black, Side::QueenSide) => {
+                self.zobrist.update_hash_on_black_lose_queen_side_castle()
+            }
+        }
+    }
+
+    fn handle_king_move(&mut self, color: Color, _move: Move) {
+        if color.is_black() {
+            self.black_king_moved = true;
+            self.castling_rights &= Board::WHITE_CASTLING_RIGHTS;
+
+            if _move.is_king_castle() {
+                self.remove_piece(
+                    color,
+                    PieceType::Rook,
+                    Board::BLACK_KING_SIDE_CASTLE_ROOK_INITIAL_POS,
+                );
+                self.place_piece(
+                    color,
+                    PieceType::Rook,
+                    Board::BLACK_KING_SIDE_CASTLE_ROOK_FINAL_POS,
+                );
+            } else if _move.is_queen_castle() {
+                self.remove_piece(
+                    color,
+                    PieceType::Rook,
+                    Board::BLACK_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS,
+                );
+                self.place_piece(
+                    color,
+                    PieceType::Rook,
+                    Board::BLACK_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS,
+                );
             }
         } else {
-            if from == BBPositions::A1 || to == BBPositions::A1 {
-                self.castling_rights &= !Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT;
-            } else if from == BBPositions::H1 || to == BBPositions::H1 {
-                self.castling_rights &= !Board::WHITE_KING_SIDE_CASTLING_RIGHT;
-            }
+            self.white_king_moved = true;
+            self.castling_rights &= Board::BLACK_CASTLING_RIGHTS;
 
-            if to == BBPositions::A8 {
-                self.castling_rights &= !Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT;
-            } else if to == BBPositions::H8 {
-                self.castling_rights &= !Board::BLACK_KING_SIDE_CASTLING_RIGHT;
+            if _move.is_king_castle() {
+                self.remove_piece(
+                    color,
+                    PieceType::Rook,
+                    Board::WHITE_KING_SIDE_CASTLE_ROOK_INITIAL_POS,
+                );
+                self.place_piece(
+                    color,
+                    PieceType::Rook,
+                    Board::WHITE_KING_SIDE_CASTLE_ROOK_FINAL_POS,
+                );
+            } else if _move.is_queen_castle() {
+                self.remove_piece(
+                    color,
+                    PieceType::Rook,
+                    Board::WHITE_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS,
+                );
+                self.place_piece(
+                    color,
+                    PieceType::Rook,
+                    Board::WHITE_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS,
+                );
             }
         }
     }
@@ -459,120 +600,44 @@ impl Board {
         fen.push(' ');
         fen.push_str(&self.full_move_clock.to_string());
 
-        // Add other components like side to move, castling rights, etc.
-        // Similar to the previous code snippet...
-
         fen
     }
 
-    pub fn from_fen(fen: &str) -> Self {
-        let parts: Vec<&str> = fen.split_whitespace().collect();
-        // if parts.len() != 6 {
-        //     panic!("Invalid FEN string.");
-        // }
-
-        let mut board = Board::empty();
-
-        for (i, row) in parts[0].split('/').rev().enumerate() {
-            let mut col = 0;
-
-            for char in row.chars() {
-                if char.is_digit(10) {
-                    col += char.to_digit(10).unwrap() as usize;
-                } else {
-                    let (color, piece_type) = get_piece_color_and_type_from_symbol(char);
-
-                    let square = 8 * i + col;
-
-                    board.place_piece(color, piece_type, to_bitboard_position(square as u64));
-
-                    col += 1;
-                }
-            }
-        }
-
-        board.side_to_move = match parts[1] {
-            "w" => Color::White,
-            "b" => Color::Black,
-            _ => panic!("Invalid side to move in FEN string."),
-        };
-
-        // Setup castling rights
-        board.castling_rights = 0;
-        for char in parts[2].chars() {
-            match char {
-                'K' => board.castling_rights |= Board::WHITE_KING_SIDE_CASTLING_RIGHT, /* White kingside */
-                'Q' => board.castling_rights |= Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT, /* White queenside */
-                'k' => board.castling_rights |= Board::BLACK_KING_SIDE_CASTLING_RIGHT, /* Black kingside */
-                'q' => board.castling_rights |= Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT, /* Black queenside */
-                '-' => {}
-                _ => panic!("Invalid castling rights in FEN string."),
-            }
-        }
-
-        // Setup en passant target square
-        match parts[3] {
-            "-" => {
-                board.en_passant_bb_position = 0;
-            }
-            pos => {
-                let bb_position = to_bitboard_position(algebraic_to_square(pos) as u64);
-
-                board.en_passant_bb_position = bb_position;
-
-                if BBPositions::ROW_3.contains(&bb_position) {
-                    board.en_passant_bb_piece_square = north_one(bb_position);
-                } else if BBPositions::ROW_6.contains(&bb_position) {
-                    board.en_passant_bb_piece_square = south_one(bb_position);
-                }
-            }
-        };
-
-        if parts.len() > 4 {
-            // Setup halfmove clock
-            board.half_move_clock = parts[4].parse::<u32>().unwrap();
-        }
-
-        if parts.len() > 5 {
-            // Setup fullmove number
-            board.full_move_clock = parts[5].parse::<u32>().unwrap();
-        }
-
-        board
-    }
+    pub fn get_zobrist_hash(&self) -> u64 { self.zobrist.get_hash() }
 
     pub fn display(&self) { self.display_with_attacks(Vec::new()); }
 
     pub fn display_with_attacks(&self, attack_squares: Vec<usize>) {
-        println!(
-            "\nen_passant_bb_position: {}",
-            Squares::to_string(pop_lsb(&mut (self.en_passant_bb_position.clone())) as usize)
-        );
-        println!(
-            "en_passant_bb_piece_square: {}",
-            Squares::to_string(pop_lsb(&mut (self.en_passant_bb_piece_square.clone())) as usize)
-        );
-        println!("side_to_move: {}", self.side_to_move);
-        println!("black_king_moved: {}", self.black_king_moved);
-        println!("white_king_moved: {}", self.white_king_moved);
+        // println!(
+        //     "\nen_passant_bb_position: {}",
+        //     Squares::to_string(pop_lsb(&mut (self.en_passant_bb_position.clone())) as
+        // usize) );
+        // println!(
+        //     "en_passant_bb_piece_square: {}",
+        //     Squares::to_string(pop_lsb(&mut
+        // (self.en_passant_bb_piece_square.clone())) as usize) );
+        // println!("side_to_move: {}", self.side_to_move);
+        // println!("black_king_moved: {}", self.black_king_moved);
+        // println!("white_king_moved: {}", self.white_king_moved);
 
-        println!(
-            "BLACK_KING_SIDE_CASTLING_RIGHT: {}",
-            self.castling_rights & Board::BLACK_KING_SIDE_CASTLING_RIGHT != 0
-        );
-        println!(
-            "BLACK_QUEEN_SIDE_CASTLING_RIGHT: {}",
-            self.castling_rights & Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT != 0
-        );
-        println!(
-            "WHITE_KING_SIDE_CASTLING_RIGHT: {}",
-            self.castling_rights & Board::WHITE_KING_SIDE_CASTLING_RIGHT != 0
-        );
-        println!(
-            "WHITE_QUEEN_SIDE_CASTLING_RIGHT: {}",
-            self.castling_rights & Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT != 0
-        );
+        // println!(
+        //     "BLACK_KING_SIDE_CASTLING_RIGHT: {}",
+        //     self.castling_rights & Board::BLACK_KING_SIDE_CASTLING_RIGHT != 0
+        // );
+        // println!(
+        //     "BLACK_QUEEN_SIDE_CASTLING_RIGHT: {}",
+        //     self.castling_rights & Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT != 0
+        // );
+        // println!(
+        //     "WHITE_KING_SIDE_CASTLING_RIGHT: {}",
+        //     self.castling_rights & Board::WHITE_KING_SIDE_CASTLING_RIGHT != 0
+        // );
+        // println!(
+        //     "WHITE_QUEEN_SIDE_CASTLING_RIGHT: {}",
+        //     self.castling_rights & Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT != 0
+        // );
 
+        println!("Zobrist: {:b}", self.zobrist.get_hash());
         println!("FEN: {}", self.to_fen());
 
         for row in (0..8).rev() {
@@ -592,6 +657,16 @@ impl Board {
         }
         println!("  a b c d e f g h");
     }
+}
+
+fn get_castling_right_flag(color: Color, side: Side) -> u8 {
+    let castling_right = match (color, side) {
+        (Color::White, Side::KingSide) => Board::WHITE_KING_SIDE_CASTLING_RIGHT,
+        (Color::White, Side::QueenSide) => Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT,
+        (Color::Black, Side::KingSide) => Board::BLACK_KING_SIDE_CASTLING_RIGHT,
+        (Color::Black, Side::QueenSide) => Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT,
+    };
+    castling_right
 }
 
 #[cfg(test)]

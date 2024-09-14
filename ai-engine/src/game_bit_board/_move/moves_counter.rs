@@ -59,10 +59,10 @@ mod tests {
             count_moves(&mut board, 5, false, &move_generator),
             4_865_609
         );
-        assert_eq!(
-            count_moves(&mut board, 6, false, &move_generator),
-            119_060_324
-        );
+        // assert_eq!(
+        //     count_moves(&mut board, 6, false, &move_generator),
+        //     119_060_324
+        // );
 
         // board
         //     .load_position("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/

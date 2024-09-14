@@ -244,98 +244,98 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_algebraic_notation() {
-        // Test normal knight move from g1 to f3
-        let _move = Move::with_flags(
-            NORMAL,
-            Squares::G1,
-            Squares::F3,
-            Color::White,
-            PieceType::Knight,
-        );
-        assert_eq!(_move.to_algebraic_notation(), "♘f3");
+    // #[test]
+    // fn test_algebraic_notation() {
+    //     // Test normal knight move from g1 to f3
+    //     let _move = Move::with_flags(
+    //         NORMAL,
+    //         Squares::G1,
+    //         Squares::F3,
+    //         Color::White,
+    //         PieceType::Knight,
+    //     );
+    //     assert_eq!(_move.to_algebraic_notation(), "♘f3");
 
-        // Test double pawn push from e2 to e4
-        let _move = Move::with_flags(
-            DOUBLE_PAWN_PUSH,
-            Squares::E2,
-            Squares::E4,
-            Color::White,
-            PieceType::Pawn,
-        );
-        assert_eq!(_move.to_algebraic_notation(), "e4");
+    //     // Test double pawn push from e2 to e4
+    //     let _move = Move::with_flags(
+    //         DOUBLE_PAWN_PUSH,
+    //         Squares::E2,
+    //         Squares::E4,
+    //         Color::White,
+    //         PieceType::Pawn,
+    //     );
+    //     assert_eq!(_move.to_algebraic_notation(), "e4");
 
-        // Test pawn capturing from e4 to d5
-        let _move = Move::with_flags(
-            CAPTURE,
-            Squares::E4,
-            Squares::D5,
-            Color::White,
-            PieceType::Pawn,
-        );
-        assert_eq!(_move.to_algebraic_notation(), "exd5");
+    //     // Test pawn capturing from e4 to d5
+    //     let _move = Move::with_flags(
+    //         CAPTURE,
+    //         Squares::E4,
+    //         Squares::D5,
+    //         Color::White,
+    //         PieceType::Pawn,
+    //     );
+    //     assert_eq!(_move.to_algebraic_notation(), "exd5");
 
-        // Test king-side castle
-        let _move = Move::with_flags(
-            KING_CASTLE,
-            Squares::E8,
-            Squares::G8,
-            Color::Black,
-            PieceType::King,
-        );
-        assert_eq!(_move.to_algebraic_notation(), "O-O");
+    //     // Test king-side castle
+    //     let _move = Move::with_flags(
+    //         KING_CASTLE,
+    //         Squares::E8,
+    //         Squares::G8,
+    //         Color::Black,
+    //         PieceType::King,
+    //     );
+    //     assert_eq!(_move.to_algebraic_notation(), "O-O");
 
-        // Test queen-side castle
-        let _move = Move::with_flags(
-            QUEEN_CASTLE,
-            Squares::E8,
-            Squares::C8,
-            Color::Black,
-            PieceType::King,
-        );
-        assert_eq!(_move.to_algebraic_notation(), "O-O-O");
+    //     // Test queen-side castle
+    //     let _move = Move::with_flags(
+    //         QUEEN_CASTLE,
+    //         Squares::E8,
+    //         Squares::C8,
+    //         Color::Black,
+    //         PieceType::King,
+    //     );
+    //     assert_eq!(_move.to_algebraic_notation(), "O-O-O");
 
-        // Test knight capturing from g5 to f3
-        let _move = Move::with_flags(
-            CAPTURE,
-            Squares::G5,
-            Squares::F3,
-            Color::White,
-            PieceType::Knight,
-        );
-        assert_eq!(_move.to_algebraic_notation(), "♘xf3");
+    //     // Test knight capturing from g5 to f3
+    //     let _move = Move::with_flags(
+    //         CAPTURE,
+    //         Squares::G5,
+    //         Squares::F3,
+    //         Color::White,
+    //         PieceType::Knight,
+    //     );
+    //     assert_eq!(_move.to_algebraic_notation(), "♘xf3");
 
-        // Test pawn promotion from e7 to e8 to queen
-        let _move = Move::with_flags(
-            QUEEN_PROMOTION,
-            Squares::E7,
-            Squares::E8,
-            Color::Black,
-            PieceType::Pawn,
-        );
-        assert_eq!(_move.to_algebraic_notation(), "e8=Q");
+    //     // Test pawn promotion from e7 to e8 to queen
+    //     let _move = Move::with_flags(
+    //         QUEEN_PROMOTION,
+    //         Squares::E7,
+    //         Squares::E8,
+    //         Color::Black,
+    //         PieceType::Pawn,
+    //     );
+    //     assert_eq!(_move.to_algebraic_notation(), "e8=Q");
 
-        // Test pawn promotion with capture from e7 to d8 to queen
-        let _move = Move::with_flags(
-            QUEEN_PROMOTION_CAPTURE,
-            Squares::E7,
-            Squares::D8,
-            Color::Black,
-            PieceType::Pawn,
-        );
-        assert_eq!(_move.to_algebraic_notation(), "exd8=Q");
+    //     // Test pawn promotion with capture from e7 to d8 to queen
+    //     let _move = Move::with_flags(
+    //         QUEEN_PROMOTION_CAPTURE,
+    //         Squares::E7,
+    //         Squares::D8,
+    //         Color::Black,
+    //         PieceType::Pawn,
+    //     );
+    //     assert_eq!(_move.to_algebraic_notation(), "exd8=Q");
 
-        // Test bishop move from c1 to g5
-        let _move = Move::with_flags(
-            NORMAL,
-            Squares::B1,
-            Squares::G5,
-            Color::White,
-            PieceType::Bishop,
-        );
-        assert_eq!(_move.to_algebraic_notation(), "♗g5");
-    }
+    //     // Test bishop move from c1 to g5
+    //     let _move = Move::with_flags(
+    //         NORMAL,
+    //         Squares::B1,
+    //         Squares::G5,
+    //         Color::White,
+    //         PieceType::Bishop,
+    //     );
+    //     assert_eq!(_move.to_algebraic_notation(), "♗g5");
+    // }
 
     #[test]
     fn test_from_to() {

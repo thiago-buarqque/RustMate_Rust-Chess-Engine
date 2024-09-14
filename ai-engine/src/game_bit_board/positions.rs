@@ -1,3 +1,5 @@
+use super::enums::Color;
+
 pub struct Squares;
 
 impl Squares {
@@ -239,4 +241,11 @@ impl BBPositions {
   pub const ROW_2: [u64; 8] = [BBPositions::A2, BBPositions::B2, BBPositions::C2, BBPositions::D2, BBPositions::E2, BBPositions::F2, BBPositions::G2, BBPositions::H2];
   pub const ROW_1: [u64; 8] = [BBPositions::A1, BBPositions::B1, BBPositions::C1, BBPositions::D1, BBPositions::E1, BBPositions::F1, BBPositions::G1, BBPositions::H1];
 
+  pub fn is_en_passant_position(color: Color, bb_position: u64) -> bool {
+    if color.is_white() {
+      BBPositions::ROW_3.contains(&bb_position)
+    } else {
+      BBPositions::ROW_6.contains(&bb_position)
+    }
+  }
 }
