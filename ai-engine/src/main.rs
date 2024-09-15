@@ -48,8 +48,7 @@ fn main() {
 
     // "8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3"
     // r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -
-    let mut board =
-        Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
+    let mut board = Board::new();
     let move_generator = MoveGenerator::new();
 
     loop {
@@ -70,8 +69,6 @@ fn main() {
         match depth {
             Ok(depth) => {
                 let total_moves = count_moves(&mut board, depth, true, &move_generator);
-
-                println!("Total: {total_moves}");
             }
             Err(_) => {
                 println!("Invalid option")
