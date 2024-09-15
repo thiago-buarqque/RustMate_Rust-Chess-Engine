@@ -70,8 +70,8 @@ mod tests {
         assert_eq!(count_moves(&mut board, 1, false, &move_generator), 20);
         assert_eq!(count_moves(&mut board, 2, false, &move_generator), 400);
         assert_eq!(count_moves(&mut board, 3, false, &move_generator), 8_902);
-        // assert_eq!(count_moves(&mut board, 4, false, &move_generator), 197_281);
-        // assert_eq!(
+        // assert_eq!(count_moves(&mut board, 4, false, &move_generator),
+        // 197_281); assert_eq!(
         //     count_moves(&mut board, 5, false, &move_generator),
         //     4_865_609
         // );
