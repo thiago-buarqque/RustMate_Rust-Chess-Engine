@@ -1,4 +1,5 @@
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use std::time::{Duration, Instant};
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
@@ -7,6 +8,19 @@ use std::sync::{
 use crate::game_bit_board::{board::Board, move_generator::move_generator::MoveGenerator};
 
 pub fn count_moves(
+    board: &mut Board, depth: usize, track_moves: bool, move_generator: &MoveGenerator,
+) -> u64 {
+    let start = Instant::now();
+
+    let result = _count_moves(board, depth, track_moves, move_generator);
+    println!("Total: {result}");
+
+    println!("\nTime spend: {:#?}", start.elapsed());
+
+    result
+}
+
+fn _count_moves(
     board: &mut Board, depth: usize, track_moves: bool, move_generator: &MoveGenerator,
 ) -> u64 {
     if depth == 0 || board.is_game_finished() {
@@ -24,7 +38,7 @@ pub fn count_moves(
         let mut board = board.clone();
         let _ = board.move_piece(_move.clone());
 
-        let moves_count = count_moves(&mut board, depth - 1, false, move_generator);
+        let moves_count = _count_moves(&mut board, depth - 1, false, move_generator);
 
         num_positions.fetch_add(moves_count, Ordering::SeqCst);
 
@@ -51,18 +65,18 @@ mod tests {
         let move_generator = MoveGenerator::new();
         // Positions for initial FEN
 
-        assert_eq!(count_moves(&mut board, 1, false, &move_generator), 20);
-        assert_eq!(count_moves(&mut board, 2, false, &move_generator), 400);
-        assert_eq!(count_moves(&mut board, 3, false, &move_generator), 8_902);
-        assert_eq!(count_moves(&mut board, 4, false, &move_generator), 197_281);
-        assert_eq!(
-            count_moves(&mut board, 5, false, &move_generator),
-            4_865_609
-        );
+        // assert_eq!(count_moves(&mut board, 1, false, &move_generator), 20);
+        // assert_eq!(count_moves(&mut board, 2, false, &move_generator), 400);
+        // assert_eq!(count_moves(&mut board, 3, false, &move_generator), 8_902);
+        // assert_eq!(count_moves(&mut board, 4, false, &move_generator), 197_281);
         // assert_eq!(
-        //     count_moves(&mut board, 6, false, &move_generator),
-        //     119_060_324
+        //     count_moves(&mut board, 5, false, &move_generator),
+        //     4_865_609
         // );
+        assert_eq!(
+            count_moves(&mut board, 6, false, &move_generator),
+            119_060_324
+        );
 
         // board
         //     .load_position("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/
