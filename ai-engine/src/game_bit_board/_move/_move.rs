@@ -240,7 +240,7 @@ impl Move {
 
 #[cfg(test)]
 mod tests {
-    use crate::game_bit_board::positions::Squares;
+    // use crate::game_bit_board::positions::Squares;
 
     use super::*;
 
