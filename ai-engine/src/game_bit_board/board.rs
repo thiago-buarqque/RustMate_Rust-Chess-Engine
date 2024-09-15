@@ -1,4 +1,4 @@
-use crate::game_bit_board::{positions::Squares, utils::utils::get_piece_symbol};
+use crate::game_bit_board::utils::utils::get_piece_symbol;
 
 use super::{
     _move::{_move::Move, move_utils::get_piece_type_from_promotion_flag},

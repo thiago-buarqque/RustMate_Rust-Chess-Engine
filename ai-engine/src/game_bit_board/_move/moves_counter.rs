@@ -1,8 +1,10 @@
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use std::time::{Duration, Instant};
-use std::sync::{
-    atomic::{AtomicU64, Ordering},
-    Arc,
+use std::{
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    time::Instant,
 };
 
 use crate::game_bit_board::{board::Board, move_generator::move_generator::MoveGenerator};
