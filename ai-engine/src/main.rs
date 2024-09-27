@@ -49,11 +49,11 @@ fn main() {
     // "8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3"
     // r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -
     let mut board =
-        Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
-    let move_generator = MoveGenerator::new();
+        Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q2/PPPBBPpP/R4K1R w kq - 2 2");
+    let mut move_generator = MoveGenerator::new();
 
     loop {
-        let moves = move_generator.get_moves(&mut board);
+        let  moves = move_generator.get_moves(&mut board);
 
         // for (i, _move) in moves.iter().enumerate() {
         //     println!("{}: {}", i+1, _move.to_algebraic_notation());
@@ -69,7 +69,7 @@ fn main() {
 
         match depth {
             Ok(depth) => {
-                count_moves(&mut board, depth, true, &move_generator);
+                count_moves(&mut board, depth, true, &mut move_generator);
             }
             Err(_) => {
                 println!("Invalid option")
@@ -115,7 +115,7 @@ fn main() {
         if _move.is_none() {
             println!("Invalid move!");
         } else {
-            board.move_piece(_move.unwrap().clone());
+            board.move_piece(_move.unwrap());
         }
     }
 }

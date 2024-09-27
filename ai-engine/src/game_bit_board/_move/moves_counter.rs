@@ -1,57 +1,67 @@
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+
 use std::{
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        Arc,
-    },
-    time::Instant,
+    collections::HashMap, time::Instant
 };
 
 use crate::game_bit_board::{board::Board, move_generator::move_generator::MoveGenerator};
 
 pub fn count_moves(
-    board: &mut Board, depth: usize, track_moves: bool, move_generator: &MoveGenerator,
+    board: &mut Board, depth: usize, track_moves: bool, move_generator: &mut MoveGenerator,
 ) -> u64 {
+    
+    let mut lookup_table = HashMap::new();
+
     let start = Instant::now();
 
-    let result = _count_moves(board, depth, track_moves, move_generator);
+    let result = _count_moves(board, depth, track_moves, move_generator, &mut lookup_table);
+
     println!("Total: {result}");
 
-    println!("\nTime spend: {:#?}", start.elapsed());
+    println!("\nTime spent: {:#?}", start.elapsed());
 
     result
 }
 
 fn _count_moves(
-    board: &mut Board, depth: usize, track_moves: bool, move_generator: &MoveGenerator,
+    board: &mut Board, depth: usize, track_moves: bool, move_generator: &mut MoveGenerator,
+    lookup_table: &mut HashMap<(u64, usize), u64>
 ) -> u64 {
+ 
     if depth == 0 || board.is_game_finished() {
+        lookup_table.insert((board.get_zobrist_hash(), depth), 1);
+        
         return 1;
     }
 
     let moves = move_generator.get_moves(board);
 
-    // moves.sort_by(|a, b|
-    // a.to_algebraic_notation().cmp(&b.to_algebraic_notation()));
+    let mut num_positions = 0;
 
-    let num_positions = Arc::new(AtomicU64::new(0));
+    let new_depth = depth - 1;
 
-    moves.par_iter().for_each(|_move| {
-        let mut board = board.clone();
-        let _ = board.move_piece(_move.clone());
+    moves.iter().for_each(|_move| {
+        board.move_piece(_move);
 
-        let moves_count = _count_moves(&mut board, depth - 1, false, move_generator);
+        let table_key = (board.get_zobrist_hash(), new_depth);
 
-        num_positions.fetch_add(moves_count, Ordering::SeqCst);
+        let moves_count = if lookup_table.contains_key(&table_key) {
+            *lookup_table.get(&table_key).unwrap()
+        } else {
+            _count_moves(board, new_depth, false, move_generator, lookup_table)
+        };
+
+        num_positions += moves_count;
 
         if track_moves {
-            println!("{}: {}", _move.to_algebraic_notation(), moves_count)
+            println!("{}: {}", _move.to_algebraic_notation(), moves_count);
         }
 
         board.unmake_last_move();
     });
 
-    num_positions.load(Ordering::SeqCst)
+    lookup_table.insert((board.get_zobrist_hash(), depth), num_positions);
+
+    num_positions
 }
 
 #[cfg(test)]
@@ -64,12 +74,12 @@ mod tests {
     #[test]
     fn test_move_generation_count() {
         let mut board = Board::new();
-        let move_generator = MoveGenerator::new();
+        let mut move_generator = MoveGenerator::new();
         // Positions for initial FEN
 
-        assert_eq!(count_moves(&mut board, 1, false, &move_generator), 20);
-        assert_eq!(count_moves(&mut board, 2, false, &move_generator), 400);
-        assert_eq!(count_moves(&mut board, 3, false, &move_generator), 8_902);
+        assert_eq!(count_moves(&mut board, 1, false, &mut move_generator), 20);
+        assert_eq!(count_moves(&mut board, 2, false, &mut move_generator), 400);
+        assert_eq!(count_moves(&mut board, 3, false, &mut move_generator), 8_902);
         // assert_eq!(count_moves(&mut board, 4, false, &move_generator),
         // 197_281); assert_eq!(
         //     count_moves(&mut board, 5, false, &move_generator),

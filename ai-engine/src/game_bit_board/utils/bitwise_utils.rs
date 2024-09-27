@@ -1,3 +1,26 @@
+pub fn get_direction_to_square(from: usize, to: usize) -> fn(u64) -> u64 {
+    let from_rank = from / 8;
+    let from_file = from % 8;
+    let to_rank = to / 8;
+    let to_file = to % 8;
+
+    let rank_diff = to_rank as isize - from_rank as isize;
+    let file_diff = to_file as isize - from_file as isize;
+
+    match (rank_diff, file_diff) {
+        (0, f) if f > 0 => east_one,
+        (0, f) if f < 0 => west_one,
+        (r, 0) if r > 0 => north_one,
+        (r, 0) if r < 0 => south_one,
+        (r, f) if r > 0 && f > 0 => no_ea_one,
+        (r, f) if r > 0 && f < 0 => no_we_one,
+        (r, f) if r < 0 && f > 0 => so_ea_one,
+        (r, f) if r < 0 && f < 0 => so_we_one,
+        _ => |bb| bb,
+    }
+}
+
+
 pub fn to_bitboard_position(square: u64) -> u64 { 1 << square }
 
 pub fn to_decimal_position(square: u64) -> u64 { 1 >> square }
@@ -34,16 +57,68 @@ pub fn upper_bits(square: u64) -> u64 { !1 << square }
 
 pub fn lower_bits(square: u64) -> u64 { (1 << square) - 1 }
 
-pub fn pop_lsb(bitboard: &mut u64) -> u8 {
-    if *bitboard == 0 {
-        u8::MAX
-    } else {
-        let lsb_index = bitboard.trailing_zeros();
-        *bitboard &= *bitboard - 1;
+pub fn get_direction_name(f: fn(u64) -> u64) -> &'static str {
+    let f = f as fn(u64) -> u64;
 
-        lsb_index as u8
+    if f == east_one as fn(u64) -> u64{
+        "east"
+    }
+    else if f == no_ea_one as fn(u64) -> u64 {
+        "north east"
+    }
+    else if f == so_ea_one as fn(u64) -> u64 {
+        "so east"
+    }
+    else if f == west_one as fn(u64) -> u64 {
+        "west"
+    }
+    else if f == so_we_one as fn(u64) -> u64 {
+        "so west"
+    }
+    else if f == no_we_one as fn(u64) -> u64 {
+        "north west"
+    }
+    else if f == south_one as fn(u64) -> u64 {
+        "south"
+    }
+    else if f == north_one as fn(u64) -> u64 {
+        "north"
+    }
+    else {
+        "unkwnown direction"
     }
 }
+
+static DEBRUIJ_T: &'static [u8] = &[
+    0, 47,  1, 56, 48, 27,  2, 60,
+    57, 49, 41, 37, 28, 16,  3, 61,
+    54, 58, 35, 52, 50, 42, 21, 44,
+    38, 32, 29, 23, 17, 11,  4, 62,
+    46, 55, 26, 59, 40, 36, 15, 53,
+    34, 51, 20, 43, 31, 22, 10, 45,
+    25, 39, 14, 33, 19, 30,  9, 24,
+    13, 18,  8, 12,  7,  6,  5, 63
+];
+
+const DEBRUIJ_M: u64 = 0x03f7_9d71_b4cb_0a89;
+
+#[inline(always)]
+pub fn pop_lsb(bits: &mut u64) -> u8 {
+    let bitss = *bits;
+    *bits &= *bits - 1;
+    DEBRUIJ_T[(((bitss ^ bitss.wrapping_sub(1)).wrapping_mul(DEBRUIJ_M)).wrapping_shr(58)) as usize]
+}
+
+// pub fn pop_lsb(bitboard: &mut u64) -> u8 {
+//     if *bitboard == 0 {
+//         u8::MAX
+//     } else {
+//         let lsb_index = bitboard.trailing_zeros();
+//         *bitboard &= *bitboard - 1;
+
+//         lsb_index as u8
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

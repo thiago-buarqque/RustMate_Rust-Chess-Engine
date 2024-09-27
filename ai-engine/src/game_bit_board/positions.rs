@@ -249,3 +249,69 @@ impl BBPositions {
     }
   }
 }
+
+pub fn same_rank(sq1: usize, sq2: usize) -> bool {
+    sq1 / 8 == sq2 / 8 // Divide by 8 to get the rank (row)
+}
+
+pub fn same_file(sq1: usize, sq2: usize) -> bool {
+    sq1 % 8 == sq2 % 8 // Modulo 8 to get the file (column)
+}
+
+pub fn same_diagonal(sq1: usize, sq2: usize) -> bool {
+    (sq1 / 8) as isize - (sq1 % 8) as isize == (sq2 / 8) as isize - (sq2 % 8) as isize
+}
+
+pub fn same_anti_diagonal(sq1: usize, sq2: usize) -> bool {
+    (sq1 / 8) as isize + (sq1 % 8) as isize == (sq2 / 8) as isize + (sq2 % 8) as isize
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_same_rank() {
+        // A1 and H1 are on the same rank
+        assert!(same_rank(Squares::A1, Squares::H1));
+        // A1 and A2 are not on the same rank
+        assert!(!same_rank(Squares::A1, Squares::A2));
+        // D4 and G4 are on the same rank
+        assert!(same_rank(Squares::D4, Squares::G4));
+    }
+
+    #[test]
+    fn test_same_file() {
+        // A1 and A8 are on the same file
+        assert!(same_file(Squares::A1, Squares::A8));
+        // A1 and B1 are not on the same file
+        assert!(!same_file(Squares::A1, Squares::H1));
+        // D4 and D7 are on the same file
+        assert!(same_file(Squares::D4, Squares::D4 + 24)); // D4 (27) and D7 (27 + 24)
+    }
+
+    #[test]
+    fn test_same_diagonal() {
+        // A1 and H8 are on the same diagonal
+        assert!(same_diagonal(Squares::A1, Squares::H8));
+        // A2 and B3 are on the same diagonal
+        assert!(same_diagonal(Squares::A2, Squares::B3));
+        // A1 and A8 are not on the same diagonal
+        assert!(!same_diagonal(Squares::A1, Squares::A8));
+        // C1 and E3 are on the same diagonal
+        assert!(same_diagonal(Squares::C1, Squares::E3));
+        assert!(same_diagonal(Squares::A3, Squares::E7));
+    }
+
+    #[test]
+    fn test_same_anti_diagonal() {
+        // H1 and A8 are on the same anti-diagonal
+        assert!(same_anti_diagonal(Squares::H1, Squares::A8));
+        // A2 and B1 are on the same anti-diagonal
+        assert!(same_anti_diagonal(Squares::A2, Squares::B1)); // A2 (0) and B1 (9)
+        // A1 and A8 are not on the same anti-diagonal
+        assert!(!same_anti_diagonal(Squares::A1, Squares::A8));
+        // G2 and E4 are on the same anti-diagonal
+        assert!(same_anti_diagonal(Squares::G2, Squares::E4));
+    }
+}
