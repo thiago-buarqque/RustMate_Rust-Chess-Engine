@@ -5,13 +5,10 @@ use crate::game_bit_board::utils::{
         east_one, no_ea_one, no_we_one, north_one, so_ea_one, so_we_one, south_one,
         to_bitboard_position, west_one,
     },
-    utils::{get_piece_symbol, is_pawn_in_initial_position},
+    utils::is_pawn_in_initial_position,
 };
 
-use super::{
-    super::enums::{Color, PieceType},
-    contants::{BISHOP_RELEVANT_SQUARES, ROOK_RELEVANT_SQUARES},
-};
+use super::contants::{BISHOP_RELEVANT_SQUARES, ROOK_RELEVANT_SQUARES};
 
 pub struct RawMoveGenerator {}
 
@@ -366,40 +363,13 @@ impl RawMoveGenerator {
     }
 }
 
-fn print_board(color: Color, piece_square: u64, piece_type: PieceType, bb_position: u64) {
-    println!("  a b c d e f g h");
-    for rank in (0..8).rev() {
-        print!("{} ", rank + 1);
-
-        for file in 0..8 {
-            let square = 1 << (rank * 8 + file);
-
-            if square == 1 << piece_square {
-                let symbol = get_piece_symbol(color, piece_type);
-
-                print!("{symbol} ");
-            } else if bb_position & square != 0 {
-                print!("1 ");
-            } else {
-                print!(". ");
-            }
-        }
-
-        println!("{}", rank + 1);
-    }
-
-    println!("  a b c d e f g h");
-    println!("{:#018X}", bb_position)
-}
-
 #[cfg(test)]
 mod tests {
 
     use crate::game_bit_board::{
         enums::{Color, PieceType},
         move_generator::{
-            contants::{BISHOP_RELEVANT_SQUARES, ROOK_RELEVANT_SQUARES},
-            raw_move_generator::print_board,
+            contants::{BISHOP_RELEVANT_SQUARES, ROOK_RELEVANT_SQUARES}, utils::print_board,
         },
         positions::BBPositions,
         utils::utils::memory_usage_in_kb,
