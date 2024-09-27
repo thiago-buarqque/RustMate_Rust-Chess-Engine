@@ -2,10 +2,10 @@ use crate::game_bit_board::{
     board::Board,
     enums::{Color, PieceType},
     move_generator::utils::print_board,
-    positions::{same_anti_diagonal, same_diagonal, same_file, same_rank},
+    positions::{same_anti_diagonal, same_diagonal, same_file, same_rank, Squares},
     utils::bitwise_utils::{
-        east_one, get_direction_to_square, no_ea_one, no_we_one, north_one, pop_lsb,
-        to_bitboard_position, west_one,
+        get_direction_to_square, pop_lsb,
+        to_bitboard_position
     },
 };
 
@@ -32,7 +32,7 @@ impl AttackData {
         Self {
             attack_bb: 0,
             defenders_bb: 0,
-            friendly_pins_moves_bbs: [0; 64],
+            friendly_pins_moves_bbs: [u64::MAX; 64],
             in_check: false,
             in_double_check: false,
             king_allowed_squares: 0,
@@ -45,7 +45,7 @@ impl AttackData {
     fn init(&mut self, board: &mut Board) {
         self.attack_bb = 0;
         self.defenders_bb = 0;
-        self.friendly_pins_moves_bbs = [0; 64];
+        self.friendly_pins_moves_bbs = [u64::MAX; 64];
         self.in_check = false;
         self.in_double_check = false;
         self.king_allowed_squares = u64::MAX;
@@ -78,34 +78,38 @@ impl AttackData {
             self.attack_bb = u64::MAX;
         }
 
-        if self.defenders_bb != 0 {
-            println!("\nPush bb");
+        // if self.defenders_bb != u64::MAX {
+        //     println!("\nPush bb");
 
-            print_board(
-                Color::White,
-                self.king_square as u64,
-                PieceType::King,
-                self.defenders_bb,
-            );
-        }
+        //     print_board(
+        //         Color::White,
+        //         self.king_square as u64,
+        //         PieceType::King,
+        //         self.defenders_bb,
+        //     );
+        // }
 
-        println!("\nAttack bb");
+        // if self.attack_bb != u64::MAX {
+        //     println!("\nAttack bb");
 
-        print_board(
-            Color::White,
-            self.king_square as u64,
-            PieceType::King,
-            self.attack_bb,
-        );
+        //     print_board(
+        //         Color::White,
+        //         self.king_square as u64,
+        //         PieceType::King,
+        //         self.attack_bb,
+        //     );
+        // }
 
-        println!("\nKing allowed squares");
+        // if self.king_allowed_squares != u64::MAX {
+        //     println!("\nKing allowed squares");
 
-        print_board(
-            Color::White,
-            self.king_square as u64,
-            PieceType::King,
-            self.king_allowed_squares,
-        );
+        //     print_board(
+        //         Color::White,
+        //         self.king_square as u64,
+        //         PieceType::King,
+        //         self.king_allowed_squares,
+        //     );
+        // }
 
         // println!("\nOpponent pins");
 
@@ -120,9 +124,13 @@ impl AttackData {
         // *bb);     }
         // });
 
-        // println!("In Check: {}", self.in_check);
+        // if self.in_check {
+        //     println!("In Check: {}", self.in_check);
+        // }
 
-        // println!("In Double Check: {}", self.in_double_check);
+        // if self.in_double_check {
+        //     println!("In Double Check: {}", self.in_double_check);
+        // }
 
         // (defenders_bb, in_check, double_check)
     }
@@ -194,6 +202,7 @@ impl AttackData {
         let opponent = self.side_to_move.opponent();
 
         let mut opponent_pieces = board.get_piece_positions(opponent, piece_type);
+        let friendly_pieces_bb = board.get_player_pieces_positions(self.side_to_move);
 
         while opponent_pieces != 0 {
             if self.in_double_check {
@@ -210,21 +219,36 @@ impl AttackData {
             let same_diagonal_ray = same_diagonal(square, self.king_square)
                 || same_anti_diagonal(square, self.king_square);
 
-            if piece_type == PieceType::Queen && (same_orthogonal_ray || same_diagonal_ray) {
-                attacks |= move_generator.get_orthogonal_attacks(board, opponent, square);
-                attacks |= move_generator.get_diagonal_attacks(board, opponent, square);
-            } else if piece_type == PieceType::Rook && same_orthogonal_ray {
-                attacks |= move_generator.get_orthogonal_attacks(board, opponent, square);
-            } else if piece_type == PieceType::Bishop && same_diagonal_ray {
-                attacks |= move_generator.get_diagonal_attacks(board, opponent, square);
+            if piece_type == PieceType::Queen {
+                attacks |= move_generator.get_orthogonal_attacks(board, opponent, square, &friendly_pieces_bb);
+                attacks |= move_generator.get_diagonal_attacks(board, opponent, square, &friendly_pieces_bb);
+                if !same_orthogonal_ray && !same_diagonal_ray {
+                    self.king_allowed_squares &= !attacks;
+                    continue;
+                }
+            } else if piece_type == PieceType::Rook {
+                attacks |= move_generator.get_orthogonal_attacks(board, opponent, square, &friendly_pieces_bb);
+                if !same_orthogonal_ray {
+                    self.king_allowed_squares &= !attacks;
+                    continue;
+                }
+            } else if piece_type == PieceType::Bishop {
+                attacks |= move_generator.get_diagonal_attacks(board, opponent, square, &friendly_pieces_bb);
+                if !same_diagonal_ray {
+                    self.king_allowed_squares &= !attacks;
+                    continue;
+                }
             } else {
+                self.king_allowed_squares &= !attacks;
                 continue;
             }
+
+            self.king_allowed_squares &= !attacks;
 
             if attacks & self.king_bb_position != 0 {
                 self.handle_sliding_check(square);
             } else {
-                self.handle_pins(board, square, self.king_square);
+                self.handle_pins(board, square);
             }
         }
     }
@@ -254,12 +278,10 @@ impl AttackData {
         self.defenders_bb |= path_to_king;
     }
 
-    fn handle_pins(&mut self, board: &mut Board, square: usize, king_square: usize) {
-        let direction_fn = get_direction_to_square(square, king_square);
+    fn handle_pins(&mut self, board: &mut Board, square: usize) {
+        let direction_fn = get_direction_to_square(square, self.king_square);
 
         let attacker_bb_pos = 1 << square;
-
-        let king_bb_pos = 1 << king_square;
 
         let mut path_to_king = attacker_bb_pos;
         let mut current_pos = direction_fn(path_to_king);
@@ -269,7 +291,7 @@ impl AttackData {
         let mut friendly_pin_bb_pos = 0;
         let mut opponent_pin_bb_pos = 0;
         while current_pos != 0 {
-            if king_bb_pos == current_pos {
+            if self.king_bb_position == current_pos {
                 break;
             }
 
@@ -300,9 +322,12 @@ impl AttackData {
         }
 
         if friendly_pin_bb_pos != 0 {
-            self.friendly_pins_moves_bbs[pop_lsb(&mut friendly_pin_bb_pos) as usize] = path_to_king;
-            // self.defenders_bb |= path_to_king;
+            let square = pop_lsb(&mut friendly_pin_bb_pos) as usize;
+
+            self.friendly_pins_moves_bbs[square] = path_to_king;
         }
+
+        // Maybe the else below will matter for en passant
         // else if opponent_pin_bb_pos != 0 {
         //     self.opponent_pin_bb_pos |= opponent_pin_bb_pos;
         // }
@@ -316,7 +341,7 @@ mod attack_data_tests {
     use once_cell::sync::Lazy;
 
     use crate::game_bit_board::{
-        board::Board, move_generator::move_generator::MoveGenerator, positions::Squares,
+        board::Board, move_generator::move_generator::MoveGenerator
     };
 
     use super::AttackData;
