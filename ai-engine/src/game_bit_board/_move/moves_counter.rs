@@ -1,14 +1,10 @@
-
-use std::{
-    collections::HashMap, time::Instant
-};
+use std::{collections::HashMap, time::Instant};
 
 use crate::game_bit_board::{board::Board, move_generator::move_generator::MoveGenerator};
 
 pub fn count_moves(
     board: &mut Board, depth: usize, track_moves: bool, move_generator: &mut MoveGenerator,
 ) -> u64 {
-    
     let mut lookup_table = HashMap::new();
 
     let start = Instant::now();
@@ -24,12 +20,11 @@ pub fn count_moves(
 
 fn _count_moves(
     board: &mut Board, depth: usize, track_moves: bool, move_generator: &mut MoveGenerator,
-    lookup_table: &mut HashMap<(u64, usize), u64>
+    lookup_table: &mut HashMap<(u64, usize), u64>,
 ) -> u64 {
- 
     if depth == 0 || board.is_game_finished() {
         lookup_table.insert((board.get_zobrist_hash(), depth), 1);
-        
+
         return 1;
     }
 
@@ -79,7 +74,10 @@ mod tests {
 
         assert_eq!(count_moves(&mut board, 1, false, &mut move_generator), 20);
         assert_eq!(count_moves(&mut board, 2, false, &mut move_generator), 400);
-        assert_eq!(count_moves(&mut board, 3, false, &mut move_generator), 8_902);
+        assert_eq!(
+            count_moves(&mut board, 3, false, &mut move_generator),
+            8_902
+        );
         // assert_eq!(count_moves(&mut board, 4, false, &move_generator),
         // 197_281); assert_eq!(
         //     count_moves(&mut board, 5, false, &move_generator),

@@ -20,7 +20,6 @@ pub fn get_direction_to_square(from: usize, to: usize) -> fn(u64) -> u64 {
     }
 }
 
-
 pub fn to_bitboard_position(square: u64) -> u64 { 1 << square }
 
 pub fn to_decimal_position(square: u64) -> u64 { 1 >> square }
@@ -60,44 +59,31 @@ pub fn lower_bits(square: u64) -> u64 { (1 << square) - 1 }
 pub fn get_direction_name(f: fn(u64) -> u64) -> &'static str {
     let f = f as fn(u64) -> u64;
 
-    if f == east_one as fn(u64) -> u64{
+    if f == east_one as fn(u64) -> u64 {
         "east"
-    }
-    else if f == no_ea_one as fn(u64) -> u64 {
+    } else if f == no_ea_one as fn(u64) -> u64 {
         "north east"
-    }
-    else if f == so_ea_one as fn(u64) -> u64 {
+    } else if f == so_ea_one as fn(u64) -> u64 {
         "so east"
-    }
-    else if f == west_one as fn(u64) -> u64 {
+    } else if f == west_one as fn(u64) -> u64 {
         "west"
-    }
-    else if f == so_we_one as fn(u64) -> u64 {
+    } else if f == so_we_one as fn(u64) -> u64 {
         "so west"
-    }
-    else if f == no_we_one as fn(u64) -> u64 {
+    } else if f == no_we_one as fn(u64) -> u64 {
         "north west"
-    }
-    else if f == south_one as fn(u64) -> u64 {
+    } else if f == south_one as fn(u64) -> u64 {
         "south"
-    }
-    else if f == north_one as fn(u64) -> u64 {
+    } else if f == north_one as fn(u64) -> u64 {
         "north"
-    }
-    else {
+    } else {
         "unkwnown direction"
     }
 }
 
 static DEBRUIJ_T: &'static [u8] = &[
-    0, 47,  1, 56, 48, 27,  2, 60,
-    57, 49, 41, 37, 28, 16,  3, 61,
-    54, 58, 35, 52, 50, 42, 21, 44,
-    38, 32, 29, 23, 17, 11,  4, 62,
-    46, 55, 26, 59, 40, 36, 15, 53,
-    34, 51, 20, 43, 31, 22, 10, 45,
-    25, 39, 14, 33, 19, 30,  9, 24,
-    13, 18,  8, 12,  7,  6,  5, 63
+    0, 47, 1, 56, 48, 27, 2, 60, 57, 49, 41, 37, 28, 16, 3, 61, 54, 58, 35, 52, 50, 42, 21, 44, 38,
+    32, 29, 23, 17, 11, 4, 62, 46, 55, 26, 59, 40, 36, 15, 53, 34, 51, 20, 43, 31, 22, 10, 45, 25,
+    39, 14, 33, 19, 30, 9, 24, 13, 18, 8, 12, 7, 6, 5, 63,
 ];
 
 const DEBRUIJ_M: u64 = 0x03f7_9d71_b4cb_0a89;

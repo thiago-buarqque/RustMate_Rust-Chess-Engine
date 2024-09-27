@@ -1,6 +1,19 @@
-use crate::game_bit_board::{board::Board, enums::{Color, PieceType}, move_generator::utils::print_board, positions::{same_anti_diagonal, same_diagonal, same_file, same_rank}, utils::bitwise_utils::{east_one, get_direction_to_square, no_ea_one, no_we_one, north_one, pop_lsb, to_bitboard_position, west_one}};
+use crate::game_bit_board::{
+    board::Board,
+    enums::{Color, PieceType},
+    move_generator::utils::print_board,
+    positions::{same_anti_diagonal, same_diagonal, same_file, same_rank},
+    utils::bitwise_utils::{
+        east_one, get_direction_to_square, no_ea_one, no_we_one, north_one, pop_lsb,
+        to_bitboard_position, west_one,
+    },
+};
 
-use super::{contants::{BLACK_PAWN_ATTACKS, KNIGHT_MOVES, WHITE_PAWN_ATTACKS}, move_generator::MoveGenerator, utils::get_king_relevant_squares_related_to_enemy_pawns};
+use super::{
+    contants::{BLACK_PAWN_ATTACKS, KNIGHT_MOVES, WHITE_PAWN_ATTACKS},
+    move_generator::MoveGenerator,
+    utils::get_king_relevant_squares_related_to_enemy_pawns,
+};
 
 pub struct AttackData {
     pub attack_bb: u64,
@@ -11,7 +24,7 @@ pub struct AttackData {
     pub king_allowed_squares: u64,
     pub king_bb_position: u64,
     pub king_square: usize,
-    pub side_to_move: Color
+    pub side_to_move: Color,
 }
 
 impl AttackData {
@@ -25,7 +38,7 @@ impl AttackData {
             king_allowed_squares: 0,
             king_bb_position: 0,
             king_square: 0,
-            side_to_move: Color::White
+            side_to_move: Color::White,
         }
     }
 
@@ -45,17 +58,11 @@ impl AttackData {
     pub fn calculate_attack_data(&mut self, board: &mut Board, move_generator: &MoveGenerator) {
         self.init(board);
 
-        self.check_sliding_attacks(
-            board, PieceType::Rook, move_generator
-        );
+        self.check_sliding_attacks(board, PieceType::Rook, move_generator);
 
-        self.check_sliding_attacks(
-            board, PieceType::Bishop, move_generator
-        );
+        self.check_sliding_attacks(board, PieceType::Bishop, move_generator);
 
-        self.check_sliding_attacks(
-            board, PieceType::Queen, move_generator
-        );
+        self.check_sliding_attacks(board, PieceType::Queen, move_generator);
 
         self.handle_knight_checks(board);
 
@@ -63,8 +70,7 @@ impl AttackData {
 
         if self.in_double_check {
             self.defenders_bb = 0;
-        }
-        else if self.defenders_bb == 0 && self.attack_bb == 0 {
+        } else if self.defenders_bb == 0 && self.attack_bb == 0 {
             self.defenders_bb = u64::MAX;
         }
 
@@ -75,27 +81,43 @@ impl AttackData {
         if self.defenders_bb != 0 {
             println!("\nPush bb");
 
-            print_board(Color::White, self.king_square as u64, PieceType::King, self.defenders_bb);
+            print_board(
+                Color::White,
+                self.king_square as u64,
+                PieceType::King,
+                self.defenders_bb,
+            );
         }
 
         println!("\nAttack bb");
 
-        print_board(Color::White, self.king_square as u64, PieceType::King, self.attack_bb);
+        print_board(
+            Color::White,
+            self.king_square as u64,
+            PieceType::King,
+            self.attack_bb,
+        );
 
         println!("\nKing allowed squares");
 
-        print_board(Color::White, self.king_square as u64, PieceType::King, self.king_allowed_squares);
+        print_board(
+            Color::White,
+            self.king_square as u64,
+            PieceType::King,
+            self.king_allowed_squares,
+        );
 
         // println!("\nOpponent pins");
 
-        // print_board(Color::White, u64::MAX, PieceType::Empty, self.opponent_pin_bb_pos);
+        // print_board(Color::White, u64::MAX, PieceType::Empty,
+        // self.opponent_pin_bb_pos);
 
         // self.friendly_pins_moves_bbs.iter().enumerate().for_each(|(i, bb)| {
         //     if *bb != u64::MAX {
         //         println!("\nFriendly pin at {}", Squares::to_string(i));
 
-        //         print_board(Color::White, i as u64, board.get_piece_type(i), *bb);
-        //     }
+        //         print_board(Color::White, i as u64, board.get_piece_type(i),
+        // *bb);     }
         // });
 
         // println!("In Check: {}", self.in_check);
@@ -108,7 +130,8 @@ impl AttackData {
     fn handle_knight_checks(&mut self, board: &mut Board) {
         let possible_attackers = KNIGHT_MOVES[self.king_square];
 
-        let opponent_knights = board.get_piece_positions(self.side_to_move.opponent(), PieceType::Knight);
+        let opponent_knights =
+            board.get_piece_positions(self.side_to_move.opponent(), PieceType::Knight);
 
         let mut attackers = opponent_knights & possible_attackers;
 
@@ -133,9 +156,11 @@ impl AttackData {
             WHITE_PAWN_ATTACKS
         };
 
-        let relevant_squares = get_king_relevant_squares_related_to_enemy_pawns(self.king_bb_position);
+        let relevant_squares =
+            get_king_relevant_squares_related_to_enemy_pawns(self.king_bb_position);
 
-        let opponent_pawns = board.get_piece_positions(self.side_to_move.opponent(), PieceType::Pawn);
+        let opponent_pawns =
+            board.get_piece_positions(self.side_to_move.opponent(), PieceType::Pawn);
 
         let mut possible_attackers = opponent_pawns & relevant_squares;
 
@@ -160,7 +185,7 @@ impl AttackData {
     }
 
     fn check_sliding_attacks(
-        &mut self, board: &mut Board, piece_type: PieceType, move_generator: &MoveGenerator
+        &mut self, board: &mut Board, piece_type: PieceType, move_generator: &MoveGenerator,
     ) {
         if self.in_double_check {
             return;
@@ -179,17 +204,16 @@ impl AttackData {
 
             let mut attacks = 0;
 
-            let same_orthogonal_ray = same_rank(square, self.king_square) ||
-                same_file(square, self.king_square);
+            let same_orthogonal_ray =
+                same_rank(square, self.king_square) || same_file(square, self.king_square);
 
-            let same_diagonal_ray = same_diagonal(square, self.king_square) ||
-                same_anti_diagonal(square, self.king_square);
+            let same_diagonal_ray = same_diagonal(square, self.king_square)
+                || same_anti_diagonal(square, self.king_square);
 
             if piece_type == PieceType::Queen && (same_orthogonal_ray || same_diagonal_ray) {
                 attacks |= move_generator.get_orthogonal_attacks(board, opponent, square);
                 attacks |= move_generator.get_diagonal_attacks(board, opponent, square);
-            }
-            else if piece_type == PieceType::Rook && same_orthogonal_ray {
+            } else if piece_type == PieceType::Rook && same_orthogonal_ray {
                 attacks |= move_generator.get_orthogonal_attacks(board, opponent, square);
             } else if piece_type == PieceType::Bishop && same_diagonal_ray {
                 attacks |= move_generator.get_diagonal_attacks(board, opponent, square);
@@ -291,11 +315,14 @@ mod attack_data_tests {
 
     use once_cell::sync::Lazy;
 
-    use crate::game_bit_board::{board::Board, move_generator::move_generator::MoveGenerator, positions::Squares};
+    use crate::game_bit_board::{
+        board::Board, move_generator::move_generator::MoveGenerator, positions::Squares,
+    };
 
     use super::AttackData;
 
-    static MOVE_GENERATOR: Lazy<Mutex<MoveGenerator>> = Lazy::new(|| Mutex::new(MoveGenerator::new()));
+    static MOVE_GENERATOR: Lazy<Mutex<MoveGenerator>> =
+        Lazy::new(|| Mutex::new(MoveGenerator::new()));
 
     #[test]
     fn test_pawn_check() {
@@ -322,7 +349,8 @@ mod attack_data_tests {
 
         let mut attack_data = AttackData::new();
 
-        let mut board = Board::from_fen("rnbqkbnr/pp3ppp/2pN4/3p4/8/5p2/PPPPQPPP/R1B1KB1R b KQkq - 1 1");
+        let mut board =
+            Board::from_fen("rnbqkbnr/pp3ppp/2pN4/3p4/8/5p2/PPPPQPPP/R1B1KB1R b KQkq - 1 1");
 
         board.display();
 

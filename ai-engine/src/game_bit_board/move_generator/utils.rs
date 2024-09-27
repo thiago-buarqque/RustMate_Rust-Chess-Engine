@@ -1,4 +1,14 @@
-use crate::game_bit_board::{_move::{_move::Move, move_contants::CAPTURE}, enums::{Color, PieceType}, utils::{bitwise_utils::{east_one, no_ea_one, no_we_one, north_one, pop_lsb, so_ea_one, so_we_one, south_one, to_bitboard_position, west_one}, utils::get_piece_symbol}};
+use crate::game_bit_board::{
+    _move::{_move::Move, move_contants::CAPTURE},
+    enums::{Color, PieceType},
+    utils::{
+        bitwise_utils::{
+            east_one, no_ea_one, no_we_one, north_one, pop_lsb, so_ea_one, so_we_one, south_one,
+            to_bitboard_position, west_one,
+        },
+        utils::get_piece_symbol,
+    },
+};
 
 pub fn print_board(color: Color, piece_square: u64, piece_type: PieceType, bb_position: u64) {
     println!("  a b c d e f g h");
@@ -27,7 +37,10 @@ pub fn print_board(color: Color, piece_square: u64, piece_type: PieceType, bb_po
     println!("{:#018X}", bb_position)
 }
 
-pub fn create_moves(mut attacks: u64, opponent_pieces_bb: u64, moves: &mut Vec<Move>, square: usize, color: Color, piece_type: PieceType) {
+pub fn create_moves(
+    mut attacks: u64, opponent_pieces_bb: u64, moves: &mut Vec<Move>, square: usize, color: Color,
+    piece_type: PieceType,
+) {
     while attacks != 0 {
         let target_square = pop_lsb(&mut attacks);
 
@@ -124,12 +137,20 @@ pub fn get_king_relevant_squares_related_to_enemy_pawns(inital_pos: u64) -> u64 
 
 #[cfg(test)]
 mod tests {
-    use crate::game_bit_board::{enums::{Color, PieceType}, positions::{BBPositions, Squares}};
+    use crate::game_bit_board::{
+        enums::{Color, PieceType},
+        positions::{BBPositions, Squares},
+    };
 
     use super::{get_king_relevant_squares_related_to_enemy_pawns, print_board};
 
     #[test]
     fn test_get_king_relevant_squares_related_to_enemy_pawns() {
-        print_board(Color::White, Squares::E1 as u64, PieceType::King, get_king_relevant_squares_related_to_enemy_pawns(BBPositions::E1));
+        print_board(
+            Color::White,
+            Squares::E1 as u64,
+            PieceType::King,
+            get_king_relevant_squares_related_to_enemy_pawns(BBPositions::E1),
+        );
     }
 }
