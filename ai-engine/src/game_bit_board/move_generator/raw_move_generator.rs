@@ -369,7 +369,8 @@ mod tests {
     use crate::game_bit_board::{
         enums::{Color, PieceType},
         move_generator::{
-            contants::{BISHOP_RELEVANT_SQUARES, ROOK_RELEVANT_SQUARES}, utils::print_board,
+            contants::{BISHOP_RELEVANT_SQUARES, ROOK_RELEVANT_SQUARES},
+            utils::print_board,
         },
         positions::BBPositions,
         utils::utils::memory_usage_in_kb,

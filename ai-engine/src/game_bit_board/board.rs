@@ -798,7 +798,11 @@ mod tests {
 
         board.display();
 
-        board.move_piece(&Move::dummy_with_flags(EN_PASSANT, Squares::D5, Squares::C6));
+        board.move_piece(&Move::dummy_with_flags(
+            EN_PASSANT,
+            Squares::D5,
+            Squares::C6,
+        ));
 
         board.display();
 

@@ -53,7 +53,7 @@ fn main() {
     let mut move_generator = MoveGenerator::new();
 
     loop {
-        let  moves = move_generator.get_moves(&mut board);
+        let moves = move_generator.get_moves(&mut board);
 
         // for (i, _move) in moves.iter().enumerate() {
         //     println!("{}: {}", i+1, _move.to_algebraic_notation());
