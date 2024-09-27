@@ -172,7 +172,17 @@ impl MoveGenerator {
         &self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color,
         attacked_squares: &mut u64, piece_type: PieceType, attack_data: &AttackData,
     ) {
-        let attacks = self.get_diagonal_attacks(board, color, square)
+        // if square == Squares::F3 {
+        //     println!("DEBUG::::");
+        //     print_board(color, square as u64, piece_type, self.get_diagonal_attacks(board, color, square));
+        //     print_board(color, square as u64, piece_type, attack_data.friendly_pins_moves_bbs[square]);
+        //     print_board(color, square as u64, piece_type, attack_data.defenders_bb | attack_data.attack_bb);
+        // }
+
+        let friendly_pieces_bb = board.get_player_pieces_positions(color);
+
+        let attacks = self.get_diagonal_attacks(board, color, square, &friendly_pieces_bb)
+            & !friendly_pieces_bb
             & attack_data.friendly_pins_moves_bbs[square]
             & (attack_data.defenders_bb | attack_data.attack_bb);
 
@@ -188,8 +198,7 @@ impl MoveGenerator {
         );
     }
 
-    pub fn get_diagonal_attacks(&self, board: &Board, color: Color, square: usize) -> u64 {
-        let friendly_pieces_bb = board.get_player_pieces_positions(color);
+    pub fn get_diagonal_attacks(&self, board: &Board, color: Color, square: usize, friendly_pieces_bb: &u64) -> u64 {
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_relevant_squares =
             (friendly_pieces_bb | opponent_pieces_bb) & BISHOP_RELEVANT_SQUARES[square];
@@ -199,14 +208,17 @@ impl MoveGenerator {
             .get(&(square as u8, occupied_relevant_squares))
             .unwrap();
 
-        (attacks & !friendly_pieces_bb)
+        attacks
     }
 
     fn get_orthogonal_moves(
         &self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color,
         attacked_squares: &mut u64, piece_type: PieceType, attack_data: &AttackData,
     ) {
-        let attacks = self.get_orthogonal_attacks(board, color, square)
+        let friendly_pieces_bb = board.get_player_pieces_positions(color);
+
+        let attacks = self.get_orthogonal_attacks(board, color, square, &friendly_pieces_bb)
+            & !friendly_pieces_bb
             & attack_data.friendly_pins_moves_bbs[square]
             & (attack_data.defenders_bb | attack_data.attack_bb);
 
@@ -222,8 +234,7 @@ impl MoveGenerator {
         );
     }
 
-    pub fn get_orthogonal_attacks(&self, board: &Board, color: Color, square: usize) -> u64 {
-        let friendly_pieces_bb = board.get_player_pieces_positions(color);
+    pub fn get_orthogonal_attacks(&self, board: &Board, color: Color, square: usize, friendly_pieces_bb: &u64) -> u64 {
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_relevant_squares =
             (friendly_pieces_bb | opponent_pieces_bb) & ROOK_RELEVANT_SQUARES[square];
@@ -233,7 +244,7 @@ impl MoveGenerator {
             .get(&(square as u8, occupied_relevant_squares))
             .unwrap();
 
-        (attacks & !friendly_pieces_bb)
+        attacks
     }
 
     fn get_knight_moves(
