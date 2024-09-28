@@ -7,13 +7,13 @@ use super::{
         WHITE_QUEEN_SIDE_PATH_TO_ROOK,
     },
     raw_move_generator::RawMoveGenerator,
-    utils::create_moves,
+    utils::{create_moves, print_board},
 };
 use crate::game_bit_board::{
     _move::{_move::Move, move_contants::*},
     board::Board,
     enums::{Color, PieceType},
-    positions::Squares,
+    positions::{same_rank, BBPositions, Squares},
     utils::{
         bitwise_utils::{east_one, north_one, pop_lsb, south_one, to_bitboard_position, west_one},
         utils::is_pawn_in_initial_position,
@@ -254,11 +254,13 @@ impl MoveGenerator {
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
 
-        let attacks = (KNIGHT_MOVES[square] & !friendly_pieces_bb)
+        let raw_attacks = KNIGHT_MOVES[square];
+
+        *attacked_squares |= raw_attacks;
+
+        let attacks = (raw_attacks & !friendly_pieces_bb)
             & attack_data.friendly_pins_moves_bbs[square]
             & (attack_data.defenders_bb | attack_data.attack_bb);
-
-        *attacked_squares |= attacks;
 
         create_moves(
             attacks,
@@ -294,7 +296,7 @@ impl MoveGenerator {
             PieceType::King,
         );
 
-        if to_bitboard_position(square as u64) & opponent_attacks != 0 && attacks == 0 {
+        if attack_data.in_check || (to_bitboard_position(square as u64) & opponent_attacks != 0 && attacks == 0) {
             return;
         }
 
@@ -383,7 +385,6 @@ impl MoveGenerator {
         &self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color,
         attacked_squares: &mut u64, attack_data: &AttackData,
     ) {
-        // TODO: promotions
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_squares = friendly_pieces_bb | opponent_pieces_bb;
@@ -392,11 +393,6 @@ impl MoveGenerator {
             & !friendly_pieces_bb)
             & attack_data.friendly_pins_moves_bbs[square]
             & (attack_data.defenders_bb | attack_data.attack_bb);
-
-        // if self.friendly_pins_moves_bbs[square] != u64::MAX {
-        //     println!("Pins moves bb is not all!! Generating for square {}",
-        // Squares::to_string(square));     print_board(color, square as u64,
-        // PieceType::Pawn, self.friendly_pins_moves_bbs[square]); }
 
         *attacked_squares |= raw_attacks;
 
@@ -469,9 +465,11 @@ impl MoveGenerator {
                 & attack_data.friendly_pins_moves_bbs[square]
                 & (attack_data.defenders_bb | attack_data.attack_bb);
 
-            // *attacked_squares |= attacks;
+            // A pawn will never be able to have more than one
+            // en passant move at the same time
+            while attacks != 0
+                && !is_en_passant_discovered_check(color, attack_data, square, board) {
 
-            while attacks != 0 {
                 let target_square = pop_lsb(&mut attacks);
 
                 moves.push(Move::with_flags(
@@ -523,6 +521,89 @@ impl MoveGenerator {
             BLACK_PAWN_MOVES[square]
         }
     }
+}
+
+fn is_en_passant_discovered_check(color: Color, attack_data: &AttackData, square: usize, board: &Board) -> bool {
+    if color != attack_data.side_to_move || !same_rank(square, attack_data.king_square) {
+        return false;
+    }
+
+    let row = BBPositions::get_row_bb(attack_data.king_bb_position);
+
+    let opponent = attack_data.side_to_move.opponent();
+
+    let opponent_queens = board.get_piece_positions(
+        opponent, PieceType::Queen)
+        & row;
+
+    let opponent_rooks = board.get_piece_positions(
+        opponent, PieceType::Rook)
+        & row;
+
+    if opponent_rooks == 0 && opponent_queens == 0 {
+        return false;
+    }
+
+    let friendly_pieces = board.get_player_pieces_positions(attack_data.side_to_move);
+    let opponent_pieces = board.get_player_pieces_positions(opponent);
+    let mut row_occupied_squares = (friendly_pieces | opponent_pieces) & row;
+
+    // Remove friendly and enemy pawns involved in en passant
+    row_occupied_squares &= !board.get_en_passant_square();
+    row_occupied_squares &= !to_bitboard_position(square as u64);
+
+    let mut squares_between_rook_and_king = 0;
+    if opponent_rooks != 0 {
+        let closest_rook_square = get_closest_square(attack_data.king_square, opponent_rooks);
+
+        squares_between_rook_and_king = squares_between(
+            attack_data.king_square, closest_rook_square);
+    }
+
+    let mut squares_between_queen_and_king = 0;
+    if opponent_queens != 0 {
+        let closest_queen_square = get_closest_square(attack_data.king_square, opponent_queens);
+
+        if closest_queen_square != 0 {
+            squares_between_queen_and_king = squares_between(
+                attack_data.king_square, closest_queen_square);
+        }
+
+    }
+
+    let squares_between_king = squares_between_rook_and_king | squares_between_queen_and_king;
+
+    // After removing all those pieces, if the row is empty, it means there aren't
+    // other pieces (either friendly or not) that would protect the king
+    if squares_between_king & row_occupied_squares == 0 {
+        return true;
+    }
+
+    false
+}
+
+fn squares_between(sq1: usize, sq2: usize) -> u64 {
+    if sq1 < sq2 {
+        ((sq1 + 1)..sq2).fold(0, |acc, sq| acc | (1 << sq))
+    } else {
+        ((sq2 + 1)..sq1).fold(0, |acc, sq| acc | (1 << sq))
+    }
+}
+
+fn get_closest_square(base_square: usize, pieces: u64) -> usize {
+    let mut closest_square = usize::MAX;
+
+    let mut pieces = pieces.clone();
+
+    while pieces != 0 {
+        let square = pop_lsb(&mut pieces) as usize;
+
+        if base_square.abs_diff(square) < closest_square {
+            closest_square = square;
+        }
+    }
+
+    closest_square
 }
 
 #[cfg(test)]
