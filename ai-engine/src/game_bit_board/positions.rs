@@ -241,6 +241,27 @@ impl BBPositions {
   pub const ROW_2: [u64; 8] = [BBPositions::A2, BBPositions::B2, BBPositions::C2, BBPositions::D2, BBPositions::E2, BBPositions::F2, BBPositions::G2, BBPositions::H2];
   pub const ROW_1: [u64; 8] = [BBPositions::A1, BBPositions::B1, BBPositions::C1, BBPositions::D1, BBPositions::E1, BBPositions::F1, BBPositions::G1, BBPositions::H1];
 
+  pub const ROW_8_BB: u64 = 0xff00000000000000;
+  pub const ROW_7_BB: u64 = 0xff000000000000;
+  pub const ROW_6_BB: u64 = 0xff0000000000;
+  pub const ROW_5_BB: u64 = 0xff00000000;
+  pub const ROW_4_BB: u64 = 0xff000000;
+  pub const ROW_3_BB: u64 = 0xff0000;
+  pub const ROW_2_BB: u64 = 0xff00;
+  pub const ROW_1_BB: u64 = 0xff;
+
+  pub fn get_row_bb(bb: u64) -> u64 {
+      for row in [BBPositions::ROW_8_BB, BBPositions::ROW_7_BB, BBPositions::ROW_6_BB,
+       BBPositions::ROW_5_BB, BBPositions::ROW_4_BB, BBPositions::ROW_3_BB,
+       BBPositions::ROW_2_BB,BBPositions::ROW_1_BB] {
+           if bb & row != 0 {
+               return row;
+           }
+       }
+
+       0
+  }
+
   pub fn is_en_passant_position(color: Color, bb_position: u64) -> bool {
     if color.is_white() {
       BBPositions::ROW_3.contains(&bb_position)

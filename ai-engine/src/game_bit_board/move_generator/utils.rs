@@ -3,8 +3,7 @@ use crate::game_bit_board::{
     enums::{Color, PieceType},
     utils::{
         bitwise_utils::{
-            east_one, no_ea_one, no_we_one, north_one, pop_lsb,
-            to_bitboard_position, west_one,
+            east_one, no_ea_one, no_we_one, north_one, pop_lsb, so_ea_one, so_we_one, south_one, to_bitboard_position, west_one
         },
         utils::get_piece_symbol,
     },
@@ -131,6 +130,58 @@ pub fn get_king_relevant_squares_related_to_enemy_pawns(inital_pos: u64) -> u64 
     let _no_no_ea_ea = east_one(_no_no_ea);
 
     positions |= _no_no_ea_ea;
+
+    // South one
+
+    let _south_one = south_one(inital_pos);
+
+    positions |= _south_one;
+
+    // South west
+
+    let _so_we_one = so_we_one(inital_pos);
+
+    positions |= _so_we_one;
+
+    let _so_we_we = west_one(_so_we_one);
+
+    positions |= _so_we_we;
+
+    // South east
+
+    let _so_ea_one = so_ea_one(inital_pos);
+
+    positions |= _so_ea_one;
+
+    let _so_ea_ea = east_one(_so_ea_one);
+
+    positions |= _so_ea_ea;
+
+    // South two
+
+    let _south_two = south_one(_south_one);
+
+    positions |= _south_two;
+
+    // South south west
+
+    let _so_so_we = west_one(_south_two);
+
+    positions |= _so_so_we;
+
+    let _so_so_we_we = west_one(_so_so_we);
+
+    positions |= _so_so_we_we;
+
+    // South south east
+
+    let _so_so_ea = east_one(_south_two);
+
+    positions |= _so_so_ea;
+
+    let _so_so_ea_ea = east_one(_so_so_ea);
+
+    positions |= _so_so_ea_ea;
 
     positions
 }

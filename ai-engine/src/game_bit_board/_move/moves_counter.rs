@@ -23,7 +23,7 @@ fn _count_moves(
     lookup_table: &mut HashMap<(u64, usize), u64>,
 ) -> u64 {
     if depth == 0 || board.is_game_finished() {
-        lookup_table.insert((board.get_zobrist_hash(), depth), 1);
+        // lookup_table.insert((board.get_zobrist_hash(), depth), 1);
 
         return 1;
     }

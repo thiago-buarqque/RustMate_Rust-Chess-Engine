@@ -161,6 +161,7 @@ impl Board {
         match parts[3] {
             "-" => {
                 board.en_passant_bb_position = 0;
+                board.en_passant_bb_piece_square = 0;
             }
             pos => {
                 let bb_position = to_bitboard_position(algebraic_to_square(pos) as u64);
