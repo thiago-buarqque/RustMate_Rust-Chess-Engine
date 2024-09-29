@@ -15,20 +15,16 @@ use super::{
     zobrist::zobrist::Zobrist,
 };
 
-#[derive(Clone, Copy)]
-enum Side {
-    KingSide,
-    QueenSide,
-}
-
 #[derive(Clone)]
 pub struct Board {
     bitboards: [u64; 8],
     en_passant_bb_position: u64,
-    en_passant_bb_piece_square: u64,
+    en_passant_piece_square_bb: u64,
     side_to_move: Color,
     black_king_moved: bool,
     white_king_moved: bool,
+
+    // Castling rights
     // 0000 1111
     // *Only considered the last 4 digits*
     //
@@ -37,6 +33,7 @@ pub struct Board {
     // Bit 6: Black kingside castling.
     // Bit 7: Black queenside castling.
     castling_rights: u8,
+
     winner: Option<Color>,
     full_move_clock: u32,
     half_move_clock: u32,
@@ -54,20 +51,20 @@ pub struct Board {
 }
 
 impl Board {
-    const BLACK_CASTLING_RIGHTS: u8 = 0x3;
-    const BLACK_KING_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::F8;
-    const BLACK_KING_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::H8;
-    const BLACK_KING_SIDE_CASTLING_RIGHT: u8 = 0x2;
-    const BLACK_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::D8;
-    const BLACK_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::A8;
-    const BLACK_QUEEN_SIDE_CASTLING_RIGHT: u8 = 0x1;
-    const WHITE_CASTLING_RIGHTS: u8 = 0xC;
-    const WHITE_KING_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::F1;
-    const WHITE_KING_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::H1;
-    const WHITE_KING_SIDE_CASTLING_RIGHT: u8 = 0x8;
-    const WHITE_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::D1;
-    const WHITE_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::A1;
-    const WHITE_QUEEN_SIDE_CASTLING_RIGHT: u8 = 0x4;
+    pub const BLACK_CASTLING_RIGHTS: u8 = 0x3;
+    pub const BLACK_KING_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::F8;
+    pub const BLACK_KING_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::H8;
+    pub const BLACK_KING_SIDE_CASTLING_RIGHT: u8 = 0x2;
+    pub const BLACK_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::D8;
+    pub const BLACK_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::A8;
+    pub const BLACK_QUEEN_SIDE_CASTLING_RIGHT: u8 = 0x1;
+    pub const WHITE_CASTLING_RIGHTS: u8 = 0xC;
+    pub const WHITE_KING_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::F1;
+    pub const WHITE_KING_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::H1;
+    pub const WHITE_KING_SIDE_CASTLING_RIGHT: u8 = 0x8;
+    pub const WHITE_QUEEN_SIDE_CASTLE_ROOK_FINAL_POS: u64 = BBPositions::D1;
+    pub const WHITE_QUEEN_SIDE_CASTLE_ROOK_INITIAL_POS: u64 = BBPositions::A1;
+    pub const WHITE_QUEEN_SIDE_CASTLING_RIGHT: u8 = 0x4;
 
     pub fn new() -> Self {
         let mut board = Self::empty();
@@ -81,7 +78,7 @@ impl Board {
         let mut board = Board {
             bitboards: [0; 8],
             en_passant_bb_position: 0,
-            en_passant_bb_piece_square: 0,
+            en_passant_piece_square_bb: 0,
             side_to_move: Color::White,
             black_king_moved: false,
             white_king_moved: false,
@@ -161,7 +158,7 @@ impl Board {
         match parts[3] {
             "-" => {
                 board.en_passant_bb_position = 0;
-                board.en_passant_bb_piece_square = 0;
+                board.en_passant_piece_square_bb = 0;
             }
             pos => {
                 let bb_position = to_bitboard_position(algebraic_to_square(pos) as u64);
@@ -169,9 +166,9 @@ impl Board {
                 board.en_passant_bb_position = bb_position;
 
                 if BBPositions::ROW_3.contains(&bb_position) {
-                    board.en_passant_bb_piece_square = north_one(bb_position);
+                    board.en_passant_piece_square_bb = north_one(bb_position);
                 } else if BBPositions::ROW_6.contains(&bb_position) {
-                    board.en_passant_bb_piece_square = south_one(bb_position);
+                    board.en_passant_piece_square_bb = south_one(bb_position);
                 }
             }
         };
@@ -241,9 +238,9 @@ impl Board {
         !self.white_king_moved && self.castling_rights & 0x4 != 0
     }
 
-    pub fn get_en_passant(&self) -> u64 { self.en_passant_bb_position }
+    pub fn get_en_passant_bb_position(&self) -> u64 { self.en_passant_bb_position }
 
-    pub fn get_en_passant_square(&self) -> u64 { self.en_passant_bb_piece_square }
+    pub fn get_en_passant_piece_square_bb(&self) -> u64 { self.en_passant_piece_square_bb }
 
     pub fn get_piece_positions(&self, color: Color, piece_type: PieceType) -> u64 {
         self.bitboards[get_piece_type_index(piece_type)] & self.bitboards[get_color_index(color)]
@@ -265,7 +262,7 @@ impl Board {
         self.bitboards[get_piece_type_index(piece_type)] |= bb_position;
     }
 
-    /// This function assumes the piece exist on the specified position.
+    /// This function assumes the piece exists
     fn remove_piece(&mut self, color: Color, piece_type: PieceType, bb_position: u64) {
         self.bitboards[get_color_index(color)] ^= bb_position;
 
@@ -278,7 +275,7 @@ impl Board {
         self.en_passant_bb_position_history
             .push(self.en_passant_bb_position);
         self.en_passant_bb_piece_square_history
-            .push(self.en_passant_bb_piece_square);
+            .push(self.en_passant_piece_square_bb);
         self.black_king_moved_history.push(self.black_king_moved);
         self.white_king_moved_history.push(self.white_king_moved);
         // self.moves_history.push(_move);
@@ -299,7 +296,7 @@ impl Board {
         self.en_passant_bb_position = self
             .en_passant_bb_position_history
             .remove(self.en_passant_bb_position_history.len() - 1);
-        self.en_passant_bb_piece_square = self
+        self.en_passant_piece_square_bb = self
             .en_passant_bb_piece_square_history
             .remove(self.en_passant_bb_piece_square_history.len() - 1);
         self.black_king_moved = self
@@ -345,16 +342,16 @@ impl Board {
             self.remove_piece(
                 color.opponent(),
                 piece_type,
-                self.en_passant_bb_piece_square,
+                self.en_passant_piece_square_bb,
             );
             self.en_passant_bb_position = 0;
-            self.en_passant_bb_piece_square = 0;
+            self.en_passant_piece_square_bb = 0;
         }
 
         if self.en_passant_bb_position != 0 {
-            // When a move is made and en passant is available, remove en passant option
+            // When a move is made and en passant is available, remove it
             self.en_passant_bb_position = 0;
-            self.en_passant_bb_piece_square = 0;
+            self.en_passant_piece_square_bb = 0;
         }
 
         self.remove_piece(color, piece_type, from);
@@ -362,8 +359,8 @@ impl Board {
         if piece_type == PieceType::Pawn {
             if _move.is_double_pawn_push() {
                 self.en_passant_bb_position = _move.get_en_passant_bb_position();
-                self.en_passant_bb_piece_square = _move.get_en_passant_bb_piece_square();
-            } else if is_pawn_promotion(color, from, to) {
+                self.en_passant_piece_square_bb = _move.get_en_passant_bb_piece_square();
+            } else if _move.is_promotion() {
                 piece_type = get_piece_type_from_promotion_flag(_move.get_flags());
             }
         }
@@ -499,7 +496,7 @@ impl Board {
         self.get_piece_color_by_bb_pos(1 << square)
     }
 
-    /// This function assumes that the square is not empty
+    /// This function assumes that the position is not empty
     pub fn get_piece_color_by_bb_pos(&self, bb_position: u64) -> Color {
         if self.bitboards[WHITE_IDX] & bb_position != 0 {
             return Color::White;
@@ -508,12 +505,10 @@ impl Board {
         return Color::Black;
     }
 
-    /// This function assumes that the square is not empty
     pub fn get_piece_type(&self, square: usize) -> PieceType {
         self.get_piece_type_by_bb_pos(1 << square)
     }
 
-    /// This function assumes that the square is not empty
     pub fn get_piece_type_by_bb_pos(&self, bb_position: u64) -> PieceType {
         for piece_index in PIECE_INDEXES {
             if self.bitboards[piece_index] & bb_position != 0 {
@@ -606,35 +601,6 @@ impl Board {
     pub fn display(&self) { self.display_with_attacks(Vec::new()); }
 
     pub fn display_with_attacks(&self, attack_squares: Vec<usize>) {
-        // println!(
-        //     "\nen_passant_bb_position: {}",
-        //     Squares::to_string(pop_lsb(&mut (self.en_passant_bb_position.clone())) as
-        // usize) );
-        // println!(
-        //     "en_passant_bb_piece_square: {}",
-        //     Squares::to_string(pop_lsb(&mut
-        // (self.en_passant_bb_piece_square.clone())) as usize) );
-        // println!("side_to_move: {}", self.side_to_move);
-        // println!("black_king_moved: {}", self.black_king_moved);
-        // println!("white_king_moved: {}", self.white_king_moved);
-
-        // println!(
-        //     "BLACK_KING_SIDE_CASTLING_RIGHT: {}",
-        //     self.castling_rights & Board::BLACK_KING_SIDE_CASTLING_RIGHT != 0
-        // );
-        // println!(
-        //     "BLACK_QUEEN_SIDE_CASTLING_RIGHT: {}",
-        //     self.castling_rights & Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT != 0
-        // );
-        // println!(
-        //     "WHITE_KING_SIDE_CASTLING_RIGHT: {}",
-        //     self.castling_rights & Board::WHITE_KING_SIDE_CASTLING_RIGHT != 0
-        // );
-        // println!(
-        //     "WHITE_QUEEN_SIDE_CASTLING_RIGHT: {}",
-        //     self.castling_rights & Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT != 0
-        // );
-
         println!("Zobrist: {:b}", self.zobrist.get_hash());
         println!("FEN: {}", self.to_fen());
 
@@ -655,16 +621,6 @@ impl Board {
         }
         println!("  a b c d e f g h");
     }
-}
-
-fn get_castling_right_flag(color: Color, side: Side) -> u8 {
-    let castling_right = match (color, side) {
-        (Color::White, Side::KingSide) => Board::WHITE_KING_SIDE_CASTLING_RIGHT,
-        (Color::White, Side::QueenSide) => Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT,
-        (Color::Black, Side::KingSide) => Board::BLACK_KING_SIDE_CASTLING_RIGHT,
-        (Color::Black, Side::QueenSide) => Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT,
-    };
-    castling_right
 }
 
 #[cfg(test)]

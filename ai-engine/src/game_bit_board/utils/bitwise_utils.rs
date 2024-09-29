@@ -1,4 +1,4 @@
-pub fn get_direction_to_square(from: usize, to: usize) -> fn(u64) -> u64 {
+pub fn get_direction_fn_to_square(from: usize, to: usize) -> fn(u64) -> u64 {
     let from_rank = from / 8;
     let from_file = from % 8;
     let to_rank = to / 8;
@@ -20,9 +20,8 @@ pub fn get_direction_to_square(from: usize, to: usize) -> fn(u64) -> u64 {
     }
 }
 
+#[inline(always)]
 pub fn to_bitboard_position(square: u64) -> u64 { 1 << square }
-
-pub fn to_decimal_position(square: u64) -> u64 { 1 >> square }
 
 const NOT_A_FILE: u64 = 0xfefefefefefefefe;
 const NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f;
@@ -36,24 +35,34 @@ const H1_A8_ANTIDIAGONAL: u64 = 0x0102040810204080;
 const LIGHT_SQUARES: u64 = 0x55AA55AA55AA55AA;
 const DARK_SQUARES: u64 = 0xAA55AA55AA55AA55;
 
+#[inline(always)]
 pub fn east_one(bb: u64) -> u64 { (bb << 1) & NOT_A_FILE }
 
+#[inline(always)]
 pub fn no_ea_one(bb: u64) -> u64 { (bb << 9) & NOT_A_FILE }
 
+#[inline(always)]
 pub fn so_ea_one(bb: u64) -> u64 { (bb >> 7) & NOT_A_FILE }
 
+#[inline(always)]
 pub fn west_one(bb: u64) -> u64 { (bb >> 1) & NOT_H_FILE }
 
+#[inline(always)]
 pub fn so_we_one(bb: u64) -> u64 { (bb >> 9) & NOT_H_FILE }
 
+#[inline(always)]
 pub fn no_we_one(bb: u64) -> u64 { (bb << 7) & NOT_H_FILE }
 
+#[inline(always)]
 pub fn south_one(bb: u64) -> u64 { bb >> 8 }
 
+#[inline(always)]
 pub fn north_one(bb: u64) -> u64 { bb << 8 }
 
+#[inline(always)]
 pub fn upper_bits(square: u64) -> u64 { !1 << square }
 
+#[inline(always)]
 pub fn lower_bits(square: u64) -> u64 { (1 << square) - 1 }
 
 pub fn get_direction_name(f: fn(u64) -> u64) -> &'static str {
@@ -80,6 +89,7 @@ pub fn get_direction_name(f: fn(u64) -> u64) -> &'static str {
     }
 }
 
+// Boworred from someone on StackOverflow, I missed the link
 static DEBRUIJ_T: &'static [u8] = &[
     0, 47, 1, 56, 48, 27, 2, 60, 57, 49, 41, 37, 28, 16, 3, 61, 54, 58, 35, 52, 50, 42, 21, 44, 38,
     32, 29, 23, 17, 11, 4, 62, 46, 55, 26, 59, 40, 36, 15, 53, 34, 51, 20, 43, 31, 22, 10, 45, 25,
@@ -110,7 +120,7 @@ pub fn pop_lsb(bits: &mut u64) -> u8 {
 mod tests {
     use crate::game_bit_board::{
         positions::BBPositions,
-        utils::bitwise_utils::{lower_bits, to_bitboard_position, to_decimal_position, upper_bits},
+        utils::bitwise_utils::{lower_bits, to_bitboard_position, upper_bits},
     };
 
     use super::{
@@ -120,11 +130,6 @@ mod tests {
     #[test]
     fn test_to_bitboard_position() {
         assert_eq!(BBPositions::A1, to_bitboard_position(0));
-    }
-
-    #[test]
-    fn test_to_decimal_position() {
-        assert_eq!(0, to_decimal_position(BBPositions::A1));
     }
 
     #[test]
