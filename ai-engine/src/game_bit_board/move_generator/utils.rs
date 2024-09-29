@@ -3,7 +3,8 @@ use crate::game_bit_board::{
     enums::{Color, PieceType},
     utils::{
         bitwise_utils::{
-            east_one, no_ea_one, no_we_one, north_one, pop_lsb, so_ea_one, so_we_one, south_one, to_bitboard_position, west_one
+            east_one, no_ea_one, no_we_one, north_one, pop_lsb, so_ea_one, so_we_one, south_one,
+            to_bitboard_position, west_one,
         },
         utils::get_piece_symbol,
     },
