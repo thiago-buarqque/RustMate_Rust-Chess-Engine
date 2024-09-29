@@ -1,8 +1,9 @@
 use crate::game_bit_board::{
-    board::Board, enums::{Color, PieceType}, move_generator::utils::print_board, positions::{same_anti_diagonal, same_diagonal, same_file, same_rank, Squares}, utils::bitwise_utils::{
-        get_direction_to_square, pop_lsb,
-        to_bitboard_position
-    }
+    board::Board,
+    enums::{Color, PieceType},
+    move_generator::utils::print_board,
+    positions::{same_anti_diagonal, same_diagonal, same_file, same_rank, Squares},
+    utils::bitwise_utils::{get_direction_to_square, pop_lsb, to_bitboard_position},
 };
 
 use super::{
@@ -125,8 +126,8 @@ impl AttackData {
         //     if *bb != u64::MAX {
         //         println!("\nFriendly pin at {}", Squares::to_string(i));
 
-        //         print_board(Color::White, i as u64, board.get_piece_type(i), *bb);
-        //     }
+        //         print_board(Color::White, i as u64, board.get_piece_type(i),
+        // *bb);     }
         // });
 
         // println!("\nOpponent pins");
@@ -224,22 +225,42 @@ impl AttackData {
             // println!("There is a {} at {}", piece_type, Squares::to_string(square));
 
             if piece_type == PieceType::Queen {
-                attacks |= move_generator.get_orthogonal_attacks(board, opponent, square, &opponent_pieces_bb);
-                attacks |= move_generator.get_diagonal_attacks(board, opponent, square, &opponent_pieces_bb);
+                attacks |= move_generator.get_orthogonal_attacks(
+                    board,
+                    opponent,
+                    square,
+                    &opponent_pieces_bb,
+                );
+                attacks |= move_generator.get_diagonal_attacks(
+                    board,
+                    opponent,
+                    square,
+                    &opponent_pieces_bb,
+                );
                 self.king_allowed_squares &= !attacks;
 
                 if !same_orthogonal_ray && !same_diagonal_ray {
                     continue;
                 }
             } else if piece_type == PieceType::Rook {
-                attacks |= move_generator.get_orthogonal_attacks(board, opponent, square, &opponent_pieces_bb);
+                attacks |= move_generator.get_orthogonal_attacks(
+                    board,
+                    opponent,
+                    square,
+                    &opponent_pieces_bb,
+                );
                 self.king_allowed_squares &= !attacks;
 
                 if !same_orthogonal_ray {
                     continue;
                 }
             } else if piece_type == PieceType::Bishop {
-                attacks |= move_generator.get_diagonal_attacks(board, opponent, square, &opponent_pieces_bb);
+                attacks |= move_generator.get_diagonal_attacks(
+                    board,
+                    opponent,
+                    square,
+                    &opponent_pieces_bb,
+                );
                 self.king_allowed_squares &= !attacks;
 
                 if !same_diagonal_ray {
@@ -256,7 +277,8 @@ impl AttackData {
                 //     Squares::to_string(square), Squares::to_string(self.king_square));
                 self.handle_sliding_check(square);
             } else {
-                // println!("Will handle pins for possible pinner at {}", Squares::to_string(square));
+                // println!("Will handle pins for possible pinner at {}",
+                // Squares::to_string(square));
                 self.handle_pins(board, square);
             }
         }
@@ -349,9 +371,7 @@ mod attack_data_tests {
 
     use once_cell::sync::Lazy;
 
-    use crate::game_bit_board::{
-        board::Board, move_generator::move_generator::MoveGenerator
-    };
+    use crate::game_bit_board::{board::Board, move_generator::move_generator::MoveGenerator};
 
     use super::AttackData;
 

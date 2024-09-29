@@ -155,7 +155,8 @@ impl MoveGenerator {
         moves.retain(|_move| !opponent_piece_squares.contains(&_move.get_from()));
 
         if attack_data.in_double_check {
-            // println!("Is in double check, removing invalid moves. King is at {}", Squares::to_string(friendly_king_square));
+            // println!("Is in double check, removing invalid moves. King is at {}",
+            // Squares::to_string(friendly_king_square));
             moves.retain(|_move| _move.get_from() == friendly_king_square);
         }
 
@@ -175,9 +176,11 @@ impl MoveGenerator {
     ) {
         // if square == Squares::F3 {
         //     println!("DEBUG::::");
-        //     print_board(color, square as u64, piece_type, self.get_diagonal_attacks(board, color, square));
-        //     print_board(color, square as u64, piece_type, attack_data.friendly_pins_moves_bbs[square]);
-        //     print_board(color, square as u64, piece_type, attack_data.defenders_bb | attack_data.attack_bb);
+        //     print_board(color, square as u64, piece_type,
+        // self.get_diagonal_attacks(board, color, square));
+        //     print_board(color, square as u64, piece_type,
+        // attack_data.friendly_pins_moves_bbs[square]);     print_board(color,
+        // square as u64, piece_type, attack_data.defenders_bb | attack_data.attack_bb);
         // }
 
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
@@ -191,7 +194,6 @@ impl MoveGenerator {
             & attack_data.friendly_pins_moves_bbs[square]
             & (attack_data.defenders_bb | attack_data.attack_bb);
 
-
         create_moves(
             attacks,
             board.get_player_pieces_positions(color.opponent()),
@@ -202,7 +204,9 @@ impl MoveGenerator {
         );
     }
 
-    pub fn get_diagonal_attacks(&self, board: &Board, color: Color, square: usize, friendly_pieces_bb: &u64) -> u64 {
+    pub fn get_diagonal_attacks(
+        &self, board: &Board, color: Color, square: usize, friendly_pieces_bb: &u64,
+    ) -> u64 {
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_relevant_squares =
             (friendly_pieces_bb | opponent_pieces_bb) & BISHOP_RELEVANT_SQUARES[square];
@@ -230,7 +234,6 @@ impl MoveGenerator {
             & attack_data.friendly_pins_moves_bbs[square]
             & (attack_data.defenders_bb | attack_data.attack_bb);
 
-
         create_moves(
             attacks,
             board.get_player_pieces_positions(color.opponent()),
@@ -241,7 +244,9 @@ impl MoveGenerator {
         );
     }
 
-    pub fn get_orthogonal_attacks(&self, board: &Board, color: Color, square: usize, friendly_pieces_bb: &u64) -> u64 {
+    pub fn get_orthogonal_attacks(
+        &self, board: &Board, color: Color, square: usize, friendly_pieces_bb: &u64,
+    ) -> u64 {
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_relevant_squares =
             (friendly_pieces_bb | opponent_pieces_bb) & ROOK_RELEVANT_SQUARES[square];
@@ -315,7 +320,9 @@ impl MoveGenerator {
             PieceType::King,
         );
 
-        if attack_data.in_check || (to_bitboard_position(square as u64) & opponent_attacks != 0 && attacks == 0) {
+        if attack_data.in_check
+            || (to_bitboard_position(square as u64) & opponent_attacks != 0 && attacks == 0)
+        {
             return;
         }
 
@@ -412,10 +419,10 @@ impl MoveGenerator {
 
         *attacked_squares |= raw_attacks;
 
-        let mut attacks = (raw_attacks
-            & !friendly_pieces_bb)
+        let mut attacks = (raw_attacks & !friendly_pieces_bb)
             & attack_data.friendly_pins_moves_bbs[square]
-            & (attack_data.defenders_bb | attack_data.attack_bb) & opponent_pieces_bb;
+            & (attack_data.defenders_bb | attack_data.attack_bb)
+            & opponent_pieces_bb;
 
         while attacks != 0 {
             let target_square = pop_lsb(&mut attacks);
@@ -484,7 +491,9 @@ impl MoveGenerator {
                 & attack_data.friendly_pins_moves_bbs[square];
 
             // King is under attack and en passant captures the attacking pawn
-            if attack_data.defenders_bb == 0 && (attack_data.attack_bb & board.get_en_passant_square() != 0) {
+            if attack_data.defenders_bb == 0
+                && (attack_data.attack_bb & board.get_en_passant_square() != 0)
+            {
                 attacks &= board.get_en_passant();
             } else {
                 attacks &= attack_data.defenders_bb | attack_data.attack_bb
@@ -492,9 +501,8 @@ impl MoveGenerator {
 
             // A pawn will never be able to have more than one
             // en passant move at the same time
-            while attacks != 0
-                && !is_en_passant_discovered_check(color, attack_data, square, board) {
-
+            while attacks != 0 && !is_en_passant_discovered_check(color, attack_data, square, board)
+            {
                 let target_square = pop_lsb(&mut attacks);
 
                 moves.push(Move::with_flags(
@@ -548,7 +556,9 @@ impl MoveGenerator {
     }
 }
 
-fn is_en_passant_discovered_check(color: Color, attack_data: &AttackData, square: usize, board: &Board) -> bool {
+fn is_en_passant_discovered_check(
+    color: Color, attack_data: &AttackData, square: usize, board: &Board,
+) -> bool {
     if color != attack_data.side_to_move || !same_rank(square, attack_data.king_square) {
         return false;
     }
@@ -557,13 +567,9 @@ fn is_en_passant_discovered_check(color: Color, attack_data: &AttackData, square
 
     let opponent = attack_data.side_to_move.opponent();
 
-    let opponent_queens = board.get_piece_positions(
-        opponent, PieceType::Queen)
-        & row;
+    let opponent_queens = board.get_piece_positions(opponent, PieceType::Queen) & row;
 
-    let opponent_rooks = board.get_piece_positions(
-        opponent, PieceType::Rook)
-        & row;
+    let opponent_rooks = board.get_piece_positions(opponent, PieceType::Rook) & row;
 
     if opponent_rooks == 0 && opponent_queens == 0 {
         return false;
@@ -581,8 +587,8 @@ fn is_en_passant_discovered_check(color: Color, attack_data: &AttackData, square
     if opponent_rooks != 0 {
         let closest_rook_square = get_closest_square(attack_data.king_square, opponent_rooks);
 
-        squares_between_rook_and_king = squares_between(
-            attack_data.king_square, closest_rook_square);
+        squares_between_rook_and_king =
+            squares_between(attack_data.king_square, closest_rook_square);
     }
 
     let mut squares_between_queen_and_king = 0;
@@ -590,10 +596,9 @@ fn is_en_passant_discovered_check(color: Color, attack_data: &AttackData, square
         let closest_queen_square = get_closest_square(attack_data.king_square, opponent_queens);
 
         if closest_queen_square != 0 {
-            squares_between_queen_and_king = squares_between(
-                attack_data.king_square, closest_queen_square);
+            squares_between_queen_and_king =
+                squares_between(attack_data.king_square, closest_queen_square);
         }
-
     }
 
     let squares_between_king = squares_between_rook_and_king | squares_between_queen_and_king;
