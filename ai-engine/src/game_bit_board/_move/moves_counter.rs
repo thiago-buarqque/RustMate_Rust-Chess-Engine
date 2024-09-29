@@ -3,7 +3,7 @@ use std::{collections::HashMap, time::Instant};
 use crate::game_bit_board::{board::Board, move_generator::move_generator::MoveGenerator};
 
 pub fn count_moves(
-    board: &mut Board, depth: usize, track_moves: bool, move_generator: &mut MoveGenerator,
+    board: &mut Board, depth: usize, track_moves: bool, move_generator: &MoveGenerator,
 ) -> u64 {
     let mut lookup_table = HashMap::new();
 
@@ -19,7 +19,7 @@ pub fn count_moves(
 }
 
 fn _count_moves(
-    board: &mut Board, depth: usize, track_moves: bool, move_generator: &mut MoveGenerator,
+    board: &mut Board, depth: usize, track_moves: bool, move_generator: &MoveGenerator,
     lookup_table: &mut HashMap<(u64, usize), u64>,
 ) -> u64 {
     if depth == 0 || board.is_game_finished() {
@@ -37,13 +37,15 @@ fn _count_moves(
     moves.iter().for_each(|_move| {
         board.move_piece(_move);
 
-        let table_key = (board.get_zobrist_hash(), new_depth);
+        // let table_key = (board.get_zobrist_hash(), new_depth);
 
-        let moves_count = if lookup_table.contains_key(&table_key) {
-            *lookup_table.get(&table_key).unwrap()
-        } else {
-            _count_moves(board, new_depth, false, move_generator, lookup_table)
-        };
+        // let moves_count = if lookup_table.contains_key(&table_key) {
+        //     *lookup_table.get(&table_key).unwrap()
+        // } else {
+        //     _count_moves(board, new_depth, false, move_generator, lookup_table)
+        // };
+
+        let moves_count = _count_moves(board, new_depth, false, move_generator, lookup_table);
 
         num_positions += moves_count;
 
@@ -54,7 +56,7 @@ fn _count_moves(
         board.unmake_last_move();
     });
 
-    lookup_table.insert((board.get_zobrist_hash(), depth), num_positions);
+    // lookup_table.insert((board.get_zobrist_hash(), depth), num_positions);
 
     num_positions
 }

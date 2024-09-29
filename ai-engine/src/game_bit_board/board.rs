@@ -281,7 +281,7 @@ impl Board {
             .push(self.en_passant_bb_piece_square);
         self.black_king_moved_history.push(self.black_king_moved);
         self.white_king_moved_history.push(self.white_king_moved);
-        self.moves_history.push(_move);
+        // self.moves_history.push(_move);
         self.zobrist_history.push(self.zobrist.clone());
     }
 
@@ -324,13 +324,14 @@ impl Board {
     }
 
     pub fn move_piece(&mut self, _move: &Move) {
-        if self.get_piece_color(_move.get_from()) != self.side_to_move {
+        let color = self.get_piece_color(_move.get_from());
+
+        if color != self.side_to_move {
             panic!("Invalid player move, it's not your turn. {_move}")
         }
 
         self.save_current_state(_move.clone());
 
-        let color = self.get_piece_color(_move.get_from());
         let mut piece_type = self.get_piece_type(_move.get_from());
 
         let from_square = _move.get_from();
