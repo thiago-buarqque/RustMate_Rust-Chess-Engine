@@ -18,8 +18,8 @@ pub fn square_to_algebraic(square: usize) -> String {
     let algebraic_file = (b'a' + file) as char; // Convert file index to letter
     let algebraic_rank = (b'1' + rank) as char; // Convert rank index to number
 
-    format!("{}{}", algebraic_file, algebraic_rank) // Concatenate to form the
-                                                    // algebraic notation
+    // Concatenate to form the algebraic notation
+    format!("{}{}", algebraic_file, algebraic_rank)
 }
 
 pub fn get_piece_symbol(color: Color, piece_type: PieceType) -> String {

@@ -120,7 +120,7 @@ impl Zobrist {
             hash ^= self.black_can_queen_castle;
         }
 
-        let en_passant_bb_position = board.get_en_passant();
+        let en_passant_bb_position = board.get_en_passant_bb_position();
 
         if BBPositions::is_en_passant_position(Color::Black, en_passant_bb_position) {
             hash ^= self.black_pawn_en_passant;

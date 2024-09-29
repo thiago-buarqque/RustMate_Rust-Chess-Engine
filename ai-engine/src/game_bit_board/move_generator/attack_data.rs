@@ -1,9 +1,8 @@
 use crate::game_bit_board::{
     board::Board,
     enums::{Color, PieceType},
-    move_generator::utils::print_board,
-    positions::{same_anti_diagonal, same_diagonal, same_file, same_rank, Squares},
-    utils::bitwise_utils::{get_direction_to_square, pop_lsb, to_bitboard_position},
+    positions::{same_anti_diagonal, same_diagonal, same_file, same_rank},
+    utils::bitwise_utils::{get_direction_fn_to_square, pop_lsb, to_bitboard_position},
 };
 
 use super::{
@@ -61,13 +60,16 @@ impl AttackData {
 
         self.check_sliding_attacks(board, PieceType::Queen, move_generator);
 
-        self.handle_knight_checks(board);
+        self.check_knight_checks(board);
 
-        self.handle_pawn_attacks(board);
+        self.check_pawn_attacks(board);
 
         if self.in_double_check {
             self.defenders_bb = 0;
-        } else if self.defenders_bb == 0 && self.attack_bb == 0 {
+            return;
+        }
+
+        if self.defenders_bb == 0 && self.attack_bb == 0 {
             self.defenders_bb = u64::MAX;
         }
 
@@ -129,16 +131,9 @@ impl AttackData {
         //         print_board(Color::White, i as u64, board.get_piece_type(i),
         // *bb);     }
         // });
-
-        // println!("\nOpponent pins");
-
-        // print_board(Color::White, u64::MAX, PieceType::Empty,
-        // self.opponent_pin_bb_pos);
-
-        // (defenders_bb, in_check, double_check)
     }
 
-    fn handle_knight_checks(&mut self, board: &mut Board) {
+    fn check_knight_checks(&mut self, board: &mut Board) {
         let possible_attackers = KNIGHT_MOVES[self.king_square];
 
         let opponent_knights =
@@ -160,7 +155,7 @@ impl AttackData {
         }
     }
 
-    fn handle_pawn_attacks(&mut self, board: &mut Board) {
+    fn check_pawn_attacks(&mut self, board: &mut Board) {
         let pawn_attacks = if self.side_to_move.is_white() {
             BLACK_PAWN_ATTACKS
         } else {
@@ -198,20 +193,12 @@ impl AttackData {
     fn check_sliding_attacks(
         &mut self, board: &mut Board, piece_type: PieceType, move_generator: &MoveGenerator,
     ) {
-        // if self.in_double_check {
-        //     return;
-        // }
-
         let opponent = self.side_to_move.opponent();
 
         let mut opponent_pieces = board.get_piece_positions(opponent, piece_type);
         let opponent_pieces_bb = board.get_player_pieces_positions(opponent);
 
         while opponent_pieces != 0 {
-            // if self.in_double_check {
-            //     break;
-            // }
-
             let square = pop_lsb(&mut opponent_pieces) as usize;
 
             let mut attacks = 0;
@@ -221,8 +208,6 @@ impl AttackData {
 
             let same_diagonal_ray = same_diagonal(square, self.king_square)
                 || same_anti_diagonal(square, self.king_square);
-
-            // println!("There is a {} at {}", piece_type, Squares::to_string(square));
 
             if piece_type == PieceType::Queen {
                 attacks |= move_generator.get_orthogonal_attacks(
@@ -267,50 +252,42 @@ impl AttackData {
                     continue;
                 }
             }
-            // else {
-            //     self.king_allowed_squares &= !attacks;
-            //     continue;
-            // }
 
             if attacks & self.king_bb_position != 0 {
-                // println!("Piece at {} is checking king at {}",
-                //     Squares::to_string(square), Squares::to_string(self.king_square));
-                self.handle_sliding_check(square);
+                self.check_sliding_check(square);
             } else {
-                // println!("Will handle pins for possible pinner at {}",
-                // Squares::to_string(square));
-                self.handle_pins(board, square);
+                self.check_for_pins(board, square);
             }
         }
     }
 
-    fn handle_sliding_check(&mut self, square: usize) {
+    fn check_sliding_check(&mut self, square: usize) {
         self.attack_bb |= 1 << square;
         self.in_double_check = self.in_check;
         self.in_check = true;
 
-        let direction = get_direction_to_square(square, self.king_square);
-        let mut path_to_king = direction(1 << square);
+        let direction_fn = get_direction_fn_to_square(square, self.king_square);
+        let mut path_to_king = direction_fn(1 << square);
         let mut current_pos = path_to_king;
 
         while current_pos & self.king_bb_position == 0 {
             path_to_king |= current_pos;
-            current_pos = direction(current_pos);
+            current_pos = direction_fn(current_pos);
         }
 
-        current_pos = direction(current_pos);
+        current_pos = direction_fn(current_pos);
 
         while current_pos != 0 {
             self.king_allowed_squares &= !current_pos;
 
-            current_pos = direction(current_pos);
+            current_pos = direction_fn(current_pos);
         }
 
         self.defenders_bb |= path_to_king;
     }
 
-    fn handle_pins(&mut self, board: &mut Board, square: usize) {
-        let direction_fn = get_direction_to_square(square, self.king_square);
+    fn check_for_pins(&mut self, board: &mut Board, square: usize) {
+        let direction_fn = get_direction_fn_to_square(square, self.king_square);
 
         let attacker_bb_pos = 1 << square;
 
@@ -327,23 +304,15 @@ impl AttackData {
             let piece_type = board.get_piece_type_by_bb_pos(current_pos);
 
             if piece_type != PieceType::Empty {
-                // let square = pop_lsb(&mut (current_pos.clone())) as usize;
-
                 let piece_color = board.get_piece_color_by_bb_pos(current_pos);
-                // println!("Found a {} {} at {}", piece_color, piece_type, square);
 
                 if friendly_pin_bb_pos != 0 || opponent_pin_bb_pos != 0 {
-                    // println!("Turns out king is not pinned");
-                    // println!("friendly_pin_bb_pos = {friendly_pin_bb_pos}");
-                    // println!("opponent_pin_bb_pos = {opponent_pin_bb_pos}");
                     return;
                 }
 
                 if piece_color == self.side_to_move {
-                    // println!("Found a friendly pin at {}", Squares::to_string(square));
                     friendly_pin_bb_pos = current_pos;
                 } else {
-                    // println!("Found an enemy pin at {}", Squares::to_string(square));
                     opponent_pin_bb_pos = current_pos;
                 }
             }
@@ -357,11 +326,6 @@ impl AttackData {
 
             self.friendly_pins_moves_bbs[square] = path_to_king;
         }
-
-        // Maybe the else below will matter for en passant
-        // else if opponent_pin_bb_pos != 0 {
-        //     self.opponent_pin_bb_pos |= opponent_pin_bb_pos;
-        // }
     }
 }
 

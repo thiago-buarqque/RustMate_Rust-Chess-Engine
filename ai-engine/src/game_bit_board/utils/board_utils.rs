@@ -1,6 +1,6 @@
 use crate::game_bit_board::{
+    board::Board,
     enums::{Color, PieceType},
-    positions::BBPositions,
 };
 
 pub const BLACK_IDX: usize = 0;
@@ -21,18 +21,6 @@ pub const PIECE_INDEXES: [usize; 6] = [
     QUEENS_IDX,
     ROOKS_IDX,
 ];
-
-pub fn is_white_pawn_promotion(color: Color, from: u64, to: u64) -> bool {
-    color == Color::White && BBPositions::ROW_7.contains(&from) && BBPositions::ROW_8.contains(&to)
-}
-
-pub fn is_black_pawn_promotion(color: Color, from: u64, to: u64) -> bool {
-    color == Color::Black && BBPositions::ROW_2.contains(&from) && BBPositions::ROW_1.contains(&to)
-}
-
-pub fn is_pawn_promotion(color: Color, from: u64, to: u64) -> bool {
-    is_black_pawn_promotion(color, from, to) || is_white_pawn_promotion(color, from, to)
-}
 
 pub fn get_color_index(color: Color) -> usize {
     match color {
@@ -63,6 +51,22 @@ pub fn get_piece_type_from_index(index: usize) -> PieceType {
         ROOKS_IDX => PieceType::Rook,
         _ => PieceType::Empty,
     }
+}
+
+#[derive(Clone, Copy)]
+pub enum Side {
+    KingSide,
+    QueenSide,
+}
+
+pub fn get_castling_right_flag(color: Color, side: Side) -> u8 {
+    let castling_right = match (color, side) {
+        (Color::White, Side::KingSide) => Board::WHITE_KING_SIDE_CASTLING_RIGHT,
+        (Color::White, Side::QueenSide) => Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT,
+        (Color::Black, Side::KingSide) => Board::BLACK_KING_SIDE_CASTLING_RIGHT,
+        (Color::Black, Side::QueenSide) => Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT,
+    };
+    castling_right
 }
 
 #[cfg(test)]
