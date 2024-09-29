@@ -39,7 +39,7 @@ impl MoveGenerator {
         }
     }
 
-    pub fn get_moves(&mut self, board: &mut Board) -> Vec<Move> {
+    pub fn get_moves(&self, board: &mut Board) -> Vec<Move> {
         if board.is_game_finished() {
             panic!("Can't generate moves. Game has already ended.");
         }
@@ -155,7 +155,8 @@ impl MoveGenerator {
         moves.retain(|_move| !opponent_piece_squares.contains(&_move.get_from()));
 
         if attack_data.in_double_check {
-            moves.retain(|_move| _move.get_from() != friendly_king_square);
+            // println!("Is in double check, removing invalid moves. King is at {}", Squares::to_string(friendly_king_square));
+            moves.retain(|_move| _move.get_from() == friendly_king_square);
         }
 
         let side_to_move = board.get_side_to_move();
@@ -181,12 +182,15 @@ impl MoveGenerator {
 
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
 
-        let attacks = self.get_diagonal_attacks(board, color, square, &friendly_pieces_bb)
+        let raw_attacks = self.get_diagonal_attacks(board, color, square, &friendly_pieces_bb);
+
+        *attacked_squares |= raw_attacks;
+
+        let attacks = raw_attacks
             & !friendly_pieces_bb
             & attack_data.friendly_pins_moves_bbs[square]
             & (attack_data.defenders_bb | attack_data.attack_bb);
 
-        *attacked_squares |= attacks;
 
         create_moves(
             attacks,
@@ -217,12 +221,15 @@ impl MoveGenerator {
     ) {
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
 
-        let attacks = self.get_orthogonal_attacks(board, color, square, &friendly_pieces_bb)
+        let raw_attacks = self.get_orthogonal_attacks(board, color, square, &friendly_pieces_bb);
+
+        *attacked_squares |= raw_attacks;
+
+        let attacks = raw_attacks
             & !friendly_pieces_bb
             & attack_data.friendly_pins_moves_bbs[square]
             & (attack_data.defenders_bb | attack_data.attack_bb);
 
-        *attacked_squares |= attacks;
 
         create_moves(
             attacks,
@@ -273,19 +280,31 @@ impl MoveGenerator {
     }
 
     fn get_king_moves(
-        &mut self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color,
+        &self, board: &Board, moves: &mut Vec<Move>, square: usize, color: Color,
         opponent_attacks: &u64, attacked_squares: &mut u64, attack_data: &AttackData,
     ) {
         let friendly_pieces_bb = board.get_player_pieces_positions(color);
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_squares = friendly_pieces_bb | opponent_pieces_bb;
 
+        let raw_attacks = KING_MOVES[square];
+
+        *attacked_squares |= raw_attacks;
+
         // I guess I can just use & self.friendly_pins_moves_bbs[square] instead of
         // having a king allowed squares var
-        let attacks = ((KING_MOVES[square] & !friendly_pieces_bb) & !opponent_attacks)
+        let attacks = ((raw_attacks & !friendly_pieces_bb) & !opponent_attacks)
             & attack_data.king_allowed_squares;
 
-        *attacked_squares |= attacks;
+        // if color == board.get_side_to_move() {
+        //     println!("\nOpponent attacks");
+        //     print_board(color, square as u64, PieceType::King, *opponent_attacks);
+        // }
+
+        // if color == board.get_side_to_move() {
+        //     println!("\nKing attacks");
+        //     print_board(color, square as u64, PieceType::King, attacks);
+        // }
 
         create_moves(
             attacks,
@@ -389,14 +408,14 @@ impl MoveGenerator {
         let opponent_pieces_bb = board.get_player_pieces_positions(color.opponent());
         let occupied_squares = friendly_pieces_bb | opponent_pieces_bb;
 
-        let raw_attacks = (MoveGenerator::look_up_pawn_attacks(color, square)
-            & !friendly_pieces_bb)
-            & attack_data.friendly_pins_moves_bbs[square]
-            & (attack_data.defenders_bb | attack_data.attack_bb);
+        let raw_attacks = MoveGenerator::look_up_pawn_attacks(color, square);
 
         *attacked_squares |= raw_attacks;
 
-        let mut attacks = raw_attacks & opponent_pieces_bb;
+        let mut attacks = (raw_attacks
+            & !friendly_pieces_bb)
+            & attack_data.friendly_pins_moves_bbs[square]
+            & (attack_data.defenders_bb | attack_data.attack_bb) & opponent_pieces_bb;
 
         while attacks != 0 {
             let target_square = pop_lsb(&mut attacks);
@@ -462,8 +481,14 @@ impl MoveGenerator {
             let mut attacks = (MoveGenerator::look_up_pawn_attacks(color, square)
                 & !friendly_pieces_bb)
                 & board.get_en_passant()
-                & attack_data.friendly_pins_moves_bbs[square]
-                & (attack_data.defenders_bb | attack_data.attack_bb);
+                & attack_data.friendly_pins_moves_bbs[square];
+
+            // King is under attack and en passant captures the attacking pawn
+            if attack_data.defenders_bb == 0 && (attack_data.attack_bb & board.get_en_passant_square() != 0) {
+                attacks &= board.get_en_passant();
+            } else {
+                attacks &= attack_data.defenders_bb | attack_data.attack_bb
+            }
 
             // A pawn will never be able to have more than one
             // en passant move at the same time
@@ -627,7 +652,7 @@ mod tests {
     fn assert_available_moves(
         board: &mut Board, expected_moves: Vec<Move>, not_expected_moves: Vec<Move>,
     ) {
-        let mut move_generator = MOVE_GENERATOR.lock().unwrap();
+        let move_generator = MOVE_GENERATOR.lock().unwrap();
 
         let moves = move_generator.get_moves(board);
 

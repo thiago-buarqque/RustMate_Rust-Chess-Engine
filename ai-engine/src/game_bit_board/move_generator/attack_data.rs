@@ -1,12 +1,8 @@
 use crate::game_bit_board::{
-    board::Board,
-    enums::{Color, PieceType},
-    move_generator::utils::print_board,
-    positions::{same_anti_diagonal, same_diagonal, same_file, same_rank, Squares},
-    utils::bitwise_utils::{
+    board::Board, enums::{Color, PieceType}, move_generator::utils::print_board, positions::{same_anti_diagonal, same_diagonal, same_file, same_rank, Squares}, utils::bitwise_utils::{
         get_direction_to_square, pop_lsb,
         to_bitboard_position
-    },
+    }
 };
 
 use super::{
@@ -74,6 +70,12 @@ impl AttackData {
             self.defenders_bb = u64::MAX;
         }
 
+        // if self.in_check && self.defenders_bb == 0
+        //     && board.get_en_passant() != 0 {
+
+        //     self.attack_bb |= board.get_en_passant();
+        // }
+
         if self.attack_bb == 0 {
             self.attack_bb = u64::MAX;
         }
@@ -119,11 +121,6 @@ impl AttackData {
         //     );
         // }
 
-        // println!("\nOpponent pins");
-
-        // print_board(Color::White, u64::MAX, PieceType::Empty,
-        // self.opponent_pin_bb_pos);
-
         // self.friendly_pins_moves_bbs.iter().enumerate().for_each(|(i, bb)| {
         //     if *bb != u64::MAX {
         //         println!("\nFriendly pin at {}", Squares::to_string(i));
@@ -131,6 +128,11 @@ impl AttackData {
         //         print_board(Color::White, i as u64, board.get_piece_type(i), *bb);
         //     }
         // });
+
+        // println!("\nOpponent pins");
+
+        // print_board(Color::White, u64::MAX, PieceType::Empty,
+        // self.opponent_pin_bb_pos);
 
         // (defenders_bb, in_check, double_check)
     }
@@ -195,9 +197,9 @@ impl AttackData {
     fn check_sliding_attacks(
         &mut self, board: &mut Board, piece_type: PieceType, move_generator: &MoveGenerator,
     ) {
-        if self.in_double_check {
-            return;
-        }
+        // if self.in_double_check {
+        //     return;
+        // }
 
         let opponent = self.side_to_move.opponent();
 
@@ -205,9 +207,9 @@ impl AttackData {
         let opponent_pieces_bb = board.get_player_pieces_positions(opponent);
 
         while opponent_pieces != 0 {
-            if self.in_double_check {
-                break;
-            }
+            // if self.in_double_check {
+            //     break;
+            // }
 
             let square = pop_lsb(&mut opponent_pieces) as usize;
 

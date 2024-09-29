@@ -42,7 +42,7 @@ fn get_piece_attacks(from: usize, moves: &Vec<Move>) -> Vec<usize> {
 
 fn main() {
     rayon::ThreadPoolBuilder::new()
-        .num_threads(12)
+        .num_threads(6)
         .build_global()
         .unwrap();
 
@@ -50,7 +50,7 @@ fn main() {
     // r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -
     let mut board =
         Board::from_fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
-    let mut move_generator = MoveGenerator::new();
+    let move_generator = MoveGenerator::new();
 
     loop {
         let moves = move_generator.get_moves(&mut board);
@@ -69,7 +69,7 @@ fn main() {
 
         match depth {
             Ok(depth) => {
-                count_moves(&mut board, depth, true, &mut move_generator);
+                count_moves(&mut board, depth, true, &move_generator);
             }
             Err(_) => {
                 println!("Invalid option")
