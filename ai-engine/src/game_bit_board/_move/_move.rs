@@ -36,6 +36,15 @@ pub struct Move {
     en_passant_bb_piece_square: u64,
     color: Color,
     piece_type: PieceType,
+
+    // Board state before making this move
+    pub castling_rights: u8,
+    pub bitboards: [u64; 8],
+    pub board_en_passant_bb_position: u64,
+    pub board_en_passant_bb_piece_square: u64,
+    pub black_king_moved: bool,
+    pub white_king_moved: bool,
+    pub zobrist_hash: u64,
 }
 
 impl PartialEq for Move {
@@ -110,6 +119,14 @@ impl Move {
             en_passant_bb_piece_square: 0,
             color,
             piece_type,
+
+            castling_rights: 0,
+            bitboards: [0; 8],
+            board_en_passant_bb_position: 0,
+            board_en_passant_bb_piece_square: 0,
+            black_king_moved: false,
+            white_king_moved: false,
+            zobrist_hash: 0,
         }
     }
 

@@ -587,15 +587,15 @@ mod tests {
     fn test_castle() {
         let (
             mut board,
-            white_king_side_castle,
-            white_queen_side_castle,
-            black_king_side_castle,
-            black_queen_side_castle,
+            mut white_king_side_castle,
+            mut white_queen_side_castle,
+            mut black_king_side_castle,
+            mut black_queen_side_castle,
         ) = set_up_castle_position();
 
         // White: Make sure castle rights are lost after castle is performed
 
-        board.move_piece(&white_king_side_castle);
+        board.move_piece(&mut white_king_side_castle);
 
         assert_eq!(false, board.has_king_side_castle_right(Color::White));
         assert_eq!(false, board.has_queen_side_castle_right(Color::White));
@@ -608,7 +608,7 @@ mod tests {
         assert_eq!(true, board.has_king_side_castle_right(Color::White));
         assert_eq!(true, board.has_queen_side_castle_right(Color::White));
 
-        board.move_piece(&white_queen_side_castle);
+        board.move_piece(&mut white_queen_side_castle);
 
         assert_eq!(false, board.has_king_side_castle_right(Color::White));
         assert_eq!(false, board.has_queen_side_castle_right(Color::White));
@@ -621,7 +621,7 @@ mod tests {
         assert_eq!(true, board.has_king_side_castle_right(Color::White));
         assert_eq!(true, board.has_queen_side_castle_right(Color::White));
 
-        board.move_piece(&Move::dummy_from_to(Squares::E1, Squares::E2));
+        board.move_piece(&mut Move::dummy_from_to(Squares::E1, Squares::E2));
 
         assert_eq!(false, board.has_king_side_castle_right(Color::White));
         assert_eq!(false, board.has_queen_side_castle_right(Color::White));
@@ -631,21 +631,21 @@ mod tests {
         assert_eq!(true, board.has_king_side_castle_right(Color::White));
         assert_eq!(true, board.has_queen_side_castle_right(Color::White));
 
-        board.move_piece(&Move::dummy_from_to(Squares::A1, Squares::B1));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A1, Squares::B1));
 
         assert_eq!(true, board.has_king_side_castle_right(Color::White));
         assert_eq!(false, board.has_queen_side_castle_right(Color::White));
 
         board.unmake_last_move();
 
-        board.move_piece(&Move::dummy_from_to(Squares::H1, Squares::G1));
+        board.move_piece(&mut Move::dummy_from_to(Squares::H1, Squares::G1));
 
         assert_eq!(false, board.has_king_side_castle_right(Color::White));
         assert_eq!(true, board.has_queen_side_castle_right(Color::White));
 
         // Black: Make sure castle rights are lost after castle is performed
 
-        board.move_piece(&black_king_side_castle);
+        board.move_piece(&mut black_king_side_castle);
 
         assert_eq!(false, board.has_king_side_castle_right(Color::Black));
         assert_eq!(false, board.has_queen_side_castle_right(Color::Black));
@@ -658,7 +658,7 @@ mod tests {
         assert_eq!(true, board.has_king_side_castle_right(Color::Black));
         assert_eq!(true, board.has_queen_side_castle_right(Color::Black));
 
-        board.move_piece(&black_queen_side_castle);
+        board.move_piece(&mut black_queen_side_castle);
 
         assert_eq!(PieceType::King, board.get_piece_type(Squares::C8));
         assert_eq!(PieceType::Rook, board.get_piece_type(Squares::D8));
@@ -671,7 +671,7 @@ mod tests {
         assert_eq!(true, board.has_king_side_castle_right(Color::Black));
         assert_eq!(true, board.has_queen_side_castle_right(Color::Black));
 
-        board.move_piece(&Move::dummy_from_to(Squares::E8, Squares::E7));
+        board.move_piece(&mut Move::dummy_from_to(Squares::E8, Squares::E7));
 
         assert_eq!(false, board.has_king_side_castle_right(Color::Black));
         assert_eq!(false, board.has_queen_side_castle_right(Color::Black));
@@ -681,14 +681,14 @@ mod tests {
         assert_eq!(true, board.has_king_side_castle_right(Color::Black));
         assert_eq!(true, board.has_queen_side_castle_right(Color::Black));
 
-        board.move_piece(&Move::dummy_from_to(Squares::A8, Squares::B8));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A8, Squares::B8));
 
         assert_eq!(true, board.has_king_side_castle_right(Color::Black));
         assert_eq!(false, board.has_queen_side_castle_right(Color::Black));
 
         board.unmake_last_move();
 
-        board.move_piece(&Move::dummy_from_to(Squares::H8, Squares::G8));
+        board.move_piece(&mut Move::dummy_from_to(Squares::H8, Squares::G8));
 
         assert_eq!(false, board.has_king_side_castle_right(Color::Black));
         assert_eq!(true, board.has_queen_side_castle_right(Color::Black));
@@ -721,20 +721,20 @@ mod tests {
               a b c d e f g h
         */
 
-        board.move_piece(&Move::dummy_from_to(Squares::D2, Squares::D4));
-        board.move_piece(&Move::dummy_from_to(Squares::D7, Squares::D5));
-        board.move_piece(&Move::dummy_from_to(Squares::E2, Squares::E4));
-        board.move_piece(&Move::dummy_from_to(Squares::E7, Squares::E5));
-        board.move_piece(&Move::dummy_from_to(Squares::C1, Squares::H6));
-        board.move_piece(&Move::dummy_from_to(Squares::C8, Squares::H3));
-        board.move_piece(&Move::dummy_from_to(Squares::F1, Squares::A6));
-        board.move_piece(&Move::dummy_from_to(Squares::F8, Squares::A3));
-        board.move_piece(&Move::dummy_from_to(Squares::D1, Squares::D2));
-        board.move_piece(&Move::dummy_from_to(Squares::D8, Squares::D7));
-        board.move_piece(&Move::dummy_from_to(Squares::B1, Squares::C3));
-        board.move_piece(&Move::dummy_from_to(Squares::B8, Squares::C6));
-        board.move_piece(&Move::dummy_from_to(Squares::G1, Squares::F3));
-        board.move_piece(&Move::dummy_from_to(Squares::G8, Squares::F6));
+        board.move_piece(&mut Move::dummy_from_to(Squares::D2, Squares::D4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::D7, Squares::D5));
+        board.move_piece(&mut Move::dummy_from_to(Squares::E2, Squares::E4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::E7, Squares::E5));
+        board.move_piece(&mut Move::dummy_from_to(Squares::C1, Squares::H6));
+        board.move_piece(&mut Move::dummy_from_to(Squares::C8, Squares::H3));
+        board.move_piece(&mut Move::dummy_from_to(Squares::F1, Squares::A6));
+        board.move_piece(&mut Move::dummy_from_to(Squares::F8, Squares::A3));
+        board.move_piece(&mut Move::dummy_from_to(Squares::D1, Squares::D2));
+        board.move_piece(&mut Move::dummy_from_to(Squares::D8, Squares::D7));
+        board.move_piece(&mut Move::dummy_from_to(Squares::B1, Squares::C3));
+        board.move_piece(&mut Move::dummy_from_to(Squares::B8, Squares::C6));
+        board.move_piece(&mut Move::dummy_from_to(Squares::G1, Squares::F3));
+        board.move_piece(&mut Move::dummy_from_to(Squares::G8, Squares::F6));
 
         board.display();
 
@@ -780,10 +780,10 @@ mod tests {
     fn test_pins() {
         let mut board = Board::new();
 
-        board.move_piece(&Move::dummy_from_to(Squares::A2, Squares::A3));
-        board.move_piece(&Move::dummy_from_to(Squares::E7, Squares::E6));
-        board.move_piece(&Move::dummy_from_to(Squares::A3, Squares::A4));
-        board.move_piece(&Move::dummy_from_to(Squares::D8, Squares::H4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A2, Squares::A3));
+        board.move_piece(&mut Move::dummy_from_to(Squares::E7, Squares::E6));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A3, Squares::A4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::D8, Squares::H4));
 
         board.display();
 
@@ -826,7 +826,7 @@ mod tests {
         assert_available_moves(&mut board, white_king_castle_moves.clone(), Vec::new());
 
         // Make a move to give turn to Black
-        board.move_piece(&Move::dummy_from_to(Squares::B2, Squares::B4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::B2, Squares::B4));
 
         // Assert black have both castle moves available
 
@@ -837,12 +837,12 @@ mod tests {
 
         assert_available_moves(&mut board, black_king_castle_moves.clone(), Vec::new());
 
-        board.move_piece(&Move::dummy_from_to(Squares::B7, Squares::B5));
-        board.move_piece(&Move::dummy_from_to(Squares::G2, Squares::G4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::B7, Squares::B5));
+        board.move_piece(&mut Move::dummy_from_to(Squares::G2, Squares::G4));
 
         assert_available_moves(&mut board, Vec::new(), white_king_castle_moves);
 
-        board.move_piece(&Move::dummy_from_to(Squares::G7, Squares::G5));
+        board.move_piece(&mut Move::dummy_from_to(Squares::G7, Squares::G5));
 
         board.display();
 
@@ -1105,7 +1105,7 @@ mod tests {
 
         let mut expected_moves = Vec::new();
 
-        let white_knight_to_c3 =
+        let mut white_knight_to_c3 =
             Move::from_to(Squares::B1, Squares::C3, Color::White, PieceType::Knight);
 
         expected_moves.push(white_knight_to_c3.clone());
@@ -1118,8 +1118,8 @@ mod tests {
 
         assert_available_moves(&mut board, expected_moves, Vec::new());
 
-        board.move_piece(&white_knight_to_c3);
-        board.move_piece(&Move::dummy_from_to(Squares::D7, Squares::D5));
+        board.move_piece(&mut white_knight_to_c3);
+        board.move_piece(&mut Move::dummy_from_to(Squares::D7, Squares::D5));
 
         let white_knight_to_d5 = Move::with_flags(
             CAPTURE,
@@ -1157,7 +1157,7 @@ mod tests {
 
         assert_available_moves(&mut board, expected_moves, Vec::new());
 
-        board.move_piece(&white_pawn_to_d4);
+        board.move_piece(&mut white_pawn_to_d4);
 
         expected_moves = Vec::new();
 
@@ -1174,7 +1174,7 @@ mod tests {
 
         expected_moves.push(black_pawn_to_e5.clone());
 
-        board.move_piece(&black_pawn_to_e5);
+        board.move_piece(&mut black_pawn_to_e5);
 
         expected_moves = Vec::new();
 
@@ -1193,21 +1193,21 @@ mod tests {
     fn test_get_en_passant() {
         let mut board = Board::new();
 
-        board.move_piece(&Move::dummy_with_flags(
+        board.move_piece(&mut Move::dummy_with_flags(
             DOUBLE_PAWN_PUSH,
             Squares::D2,
             Squares::D4,
         ));
-        board.move_piece(&Move::dummy_from_to(Squares::A7, Squares::A6));
-        board.move_piece(&Move::dummy_from_to(Squares::D4, Squares::D5));
-        board.move_piece(&Move::dummy_from_to(Squares::A6, Squares::A5));
-        board.move_piece(&Move::dummy_with_flags(
+        board.move_piece(&mut Move::dummy_from_to(Squares::A7, Squares::A6));
+        board.move_piece(&mut Move::dummy_from_to(Squares::D4, Squares::D5));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A6, Squares::A5));
+        board.move_piece(&mut Move::dummy_with_flags(
             DOUBLE_PAWN_PUSH,
             Squares::F2,
             Squares::F4,
         ));
-        board.move_piece(&Move::dummy_from_to(Squares::A5, Squares::A4));
-        board.move_piece(&Move::dummy_from_to(Squares::F4, Squares::F5));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A5, Squares::A4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::F4, Squares::F5));
 
         /*
             8 ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜
@@ -1239,7 +1239,7 @@ mod tests {
 
         assert_available_moves(&mut board, expected_moves, Vec::new());
 
-        board.move_piece(&black_double_push);
+        board.move_piece(&mut black_double_push);
 
         expected_moves = Vec::new();
 

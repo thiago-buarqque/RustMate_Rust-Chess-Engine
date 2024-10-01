@@ -30,13 +30,13 @@ fn _count_moves(
         return 1;
     }
 
-    let moves = move_generator.get_moves(board);
+    let mut moves = move_generator.get_moves(board);
 
     let mut num_positions = 0;
 
     let new_depth = depth - 1;
 
-    moves.iter().for_each(|_move| {
+    moves.iter_mut().for_each(|_move| {
         board.move_piece(_move);
 
         let table_key = (board.get_zobrist_hash(), new_depth);
