@@ -1,8 +1,3 @@
-// use crate::common::{
-//     enums::PieceType,
-//     piece_utils::{get_piece_type, is_white_piece},
-// };
-
 use crate::game_bit_board::enums::{Color, PieceType};
 
 pub const WHITE_BISHOP_INDEX: usize = 0;
@@ -19,6 +14,11 @@ pub const BLACK_PAWN_INDEX: usize = 9;
 pub const BLACK_QUEEN_INDEX: usize = 10;
 pub const BLACK_ROOK_INDEX: usize = 11;
 
+pub const BLACK_QUEEN_SIDE_CASTLE_INDEX: usize = 0;
+pub const BLACK_KING_SIDE_CASTLE_INDEX: usize = 1;
+pub const WHITE_QUEEN_SIDE_CASTLE_INDEX: usize = 2;
+pub const WHITE_KING_SIDE_CASTLE_INDEX: usize = 3;
+
 pub fn get_piece_index(color: Color, piece_type: PieceType) -> usize {
     if color.is_white() {
         match piece_type {
@@ -28,7 +28,7 @@ pub fn get_piece_index(color: Color, piece_type: PieceType) -> usize {
             PieceType::Pawn => WHITE_PAWN_INDEX,
             PieceType::Queen => WHITE_QUEEN_INDEX,
             PieceType::Rook => WHITE_ROOK_INDEX,
-            _ => 100,
+            _ => panic!("Invalid piece type encountered."),
         }
     } else {
         match piece_type {
@@ -38,7 +38,7 @@ pub fn get_piece_index(color: Color, piece_type: PieceType) -> usize {
             PieceType::Pawn => BLACK_PAWN_INDEX,
             PieceType::Queen => BLACK_QUEEN_INDEX,
             PieceType::Rook => BLACK_ROOK_INDEX,
-            _ => 100,
+            _ => panic!("Invalid piece type encountered."),
         }
     }
 }
