@@ -39,14 +39,14 @@ pub struct Board {
     half_move_clock: u32,
 
     // Stacks used to unmake moves
-    castling_rights_history: Vec<u8>,
-    bitboards_history: Vec<[u64; 8]>,
-    en_passant_bb_position_history: Vec<u64>,
-    en_passant_bb_piece_square_history: Vec<u64>,
-    black_king_moved_history: Vec<bool>,
-    white_king_moved_history: Vec<bool>,
+    // castling_rights_history: Vec<u8>,
+    // bitboards_history: Vec<[u64; 8]>,
+    // en_passant_bb_position_history: Vec<u64>,
+    // en_passant_bb_piece_square_history: Vec<u64>,
+    // black_king_moved_history: Vec<bool>,
+    // white_king_moved_history: Vec<bool>,
     moves_history: Vec<Move>,
-    zobrist_history: Vec<Zobrist>,
+    // zobrist_history: Vec<Zobrist>,
     zobrist: Zobrist,
 }
 
@@ -93,14 +93,14 @@ impl Board {
             full_move_clock: 1,
             half_move_clock: 0,
 
-            castling_rights_history: Vec::new(),
-            bitboards_history: Vec::new(),
-            en_passant_bb_position_history: Vec::new(),
-            en_passant_bb_piece_square_history: Vec::new(),
-            black_king_moved_history: Vec::new(),
-            white_king_moved_history: Vec::new(),
+            // castling_rights_history: Vec::new(),
+            // bitboards_history: Vec::new(),
+            // en_passant_bb_position_history: Vec::new(),
+            // en_passant_bb_piece_square_history: Vec::new(),
+            // black_king_moved_history: Vec::new(),
+            // white_king_moved_history: Vec::new(),
             moves_history: Vec::new(),
-            zobrist_history: Vec::new(),
+            // zobrist_history: Vec::new(),
 
             zobrist: Zobrist::new(),
         }
@@ -267,43 +267,37 @@ impl Board {
         self.bitboards[get_piece_type_index(piece_type)] ^= bb_position;
     }
 
-    fn save_current_state(&mut self, _move: Move) {
-        self.castling_rights_history.push(self.castling_rights);
-        self.bitboards_history.push(self.bitboards);
-        self.en_passant_bb_position_history
-            .push(self.en_passant_bb_position);
-        self.en_passant_bb_piece_square_history
-            .push(self.en_passant_piece_square_bb);
-        self.black_king_moved_history.push(self.black_king_moved);
-        self.white_king_moved_history.push(self.white_king_moved);
-        // self.moves_history.push(_move);
-        self.zobrist_history.push(self.zobrist.clone());
+    fn save_current_state(&mut self, _move: &mut Move) {
+        _move.castling_rights = self.castling_rights;
+        _move.bitboards = self.bitboards;
+        _move.board_en_passant_bb_position = self.en_passant_bb_position;
+        _move.board_en_passant_bb_piece_square = self.en_passant_piece_square_bb;
+        _move.black_king_moved = self.black_king_moved;
+        _move.white_king_moved = self.white_king_moved;
+        _move.zobrist_hash = self.zobrist.get_hash();
+        self.moves_history.push(_move.clone());
     }
 
     pub fn unmake_last_move(&mut self) {
-        if self.castling_rights_history.len() == 0 {
-            return;
+        if self.moves_history.len() == 0 {
+            panic!("Can't make unmove");
         }
 
-        self.castling_rights = self
-            .castling_rights_history
-            .remove(self.castling_rights_history.len() - 1);
-        self.bitboards = self
-            .bitboards_history
-            .remove(self.bitboards_history.len() - 1);
-        self.en_passant_bb_position = self
-            .en_passant_bb_position_history
-            .remove(self.en_passant_bb_position_history.len() - 1);
-        self.en_passant_piece_square_bb = self
-            .en_passant_bb_piece_square_history
-            .remove(self.en_passant_bb_piece_square_history.len() - 1);
-        self.black_king_moved = self
-            .black_king_moved_history
-            .remove(self.black_king_moved_history.len() - 1);
-        self.white_king_moved = self
-            .white_king_moved_history
-            .remove(self.white_king_moved_history.len() - 1);
-        self.zobrist = self.zobrist_history.remove(self.zobrist_history.len() - 1);
+        let mut _move = self.moves_history.last().unwrap().clone();
+
+        self.unmake_move(
+            &mut _move
+        );
+    }
+
+    pub fn unmake_move(&mut self, _move: &mut Move) {
+        self.castling_rights = _move.castling_rights;
+        self.bitboards = _move.bitboards;
+        self.en_passant_bb_position = _move.board_en_passant_bb_position;
+        self.en_passant_piece_square_bb = _move.board_en_passant_bb_piece_square;
+        self.black_king_moved = _move.black_king_moved;
+        self.white_king_moved = _move.white_king_moved;
+        self.zobrist.set_hash(_move.zobrist_hash);
 
         if self.side_to_move.is_white() {
             self.full_move_clock -= 1;
@@ -316,16 +310,42 @@ impl Board {
         if self.winner.is_some() {
             self.winner = None;
         }
+
+        let mut _move = self.moves_history.remove(self.moves_history.len() - 1);
+
+        // if self.castling_rights_history.len() == 0 {
+        //     return;
+        // }
+
+        // self.castling_rights = self
+        //     .castling_rights_history
+        //     .remove(self.castling_rights_history.len() - 1);
+        // self.bitboards = self
+        //     .bitboards_history
+        //     .remove(self.bitboards_history.len() - 1);
+        // self.en_passant_bb_position = self
+        //     .en_passant_bb_position_history
+        //     .remove(self.en_passant_bb_position_history.len() - 1);
+        // self.en_passant_piece_square_bb = self
+        //     .en_passant_bb_piece_square_history
+        //     .remove(self.en_passant_bb_piece_square_history.len() - 1);
+        // self.black_king_moved = self
+        //     .black_king_moved_history
+        //     .remove(self.black_king_moved_history.len() - 1);
+        // self.white_king_moved = self
+        //     .white_king_moved_history
+        //     .remove(self.white_king_moved_history.len() - 1);
+        // self.zobrist = self.zobrist_history.remove(self.zobrist_history.len() - 1);
     }
 
-    pub fn move_piece(&mut self, _move: &Move) {
+    pub fn move_piece(&mut self, _move: &mut Move) {
         let color = self.get_piece_color(_move.get_from());
 
         if color != self.side_to_move {
             panic!("Invalid player move, it's not your turn. {_move}")
         }
 
-        self.save_current_state(_move.clone());
+        self.save_current_state(_move);
 
         let mut piece_type = self.get_piece_type(_move.get_from());
 
@@ -661,9 +681,9 @@ mod tests {
 
         assert_eq!(0xF, board.castling_rights);
 
-        board.move_piece(&Move::dummy_from_to(Squares::D2, Squares::D4));
-        board.move_piece(&Move::dummy_from_to(Squares::D7, Squares::D5));
-        board.move_piece(&Move::dummy_from_to(Squares::E1, Squares::D2));
+        board.move_piece(&mut Move::dummy_from_to(Squares::D2, Squares::D4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::D7, Squares::D5));
+        board.move_piece(&mut Move::dummy_from_to(Squares::E1, Squares::D2));
 
         board.display();
 
@@ -685,7 +705,7 @@ mod tests {
             "Default castling rights should be available"
         );
 
-        board.move_piece(&Move::dummy_from_to(Squares::A1, Squares::B1));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A1, Squares::B1));
 
         board.display();
 
@@ -694,8 +714,8 @@ mod tests {
             board.castling_rights & Board::WHITE_QUEEN_SIDE_CASTLING_RIGHT
         );
 
-        board.move_piece(&Move::dummy_from_to(Squares::H7, Squares::H6));
-        board.move_piece(&Move::dummy_from_to(Squares::H1, Squares::G1));
+        board.move_piece(&mut Move::dummy_from_to(Squares::H7, Squares::H6));
+        board.move_piece(&mut Move::dummy_from_to(Squares::H1, Squares::G1));
 
         board.display();
 
@@ -712,8 +732,8 @@ mod tests {
 
         assert_eq!(0xF, board.castling_rights);
 
-        board.move_piece(&Move::dummy_from_to(Squares::E2, Squares::E3));
-        board.move_piece(&Move::dummy_from_to(Squares::E8, Squares::D7));
+        board.move_piece(&mut Move::dummy_from_to(Squares::E2, Squares::E3));
+        board.move_piece(&mut Move::dummy_from_to(Squares::E8, Squares::D7));
 
         board.display();
 
@@ -735,8 +755,8 @@ mod tests {
             "Default castling rights should be available"
         );
 
-        board.move_piece(&Move::dummy_from_to(Squares::A2, Squares::A3));
-        board.move_piece(&Move::dummy_from_to(Squares::A8, Squares::B8));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A2, Squares::A3));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A8, Squares::B8));
 
         board.display();
 
@@ -745,8 +765,8 @@ mod tests {
             board.castling_rights & Board::BLACK_QUEEN_SIDE_CASTLING_RIGHT
         );
 
-        board.move_piece(&Move::dummy_from_to(Squares::A3, Squares::A4));
-        board.move_piece(&Move::dummy_from_to(Squares::H8, Squares::G8));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A3, Squares::A4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::H8, Squares::G8));
 
         board.display();
 
@@ -762,22 +782,22 @@ mod tests {
     fn test_en_passant_move() {
         let mut board = Board::new();
 
-        board.move_piece(&Move::dummy_from_to(Squares::D2, Squares::D4));
-        board.move_piece(&Move::dummy_from_to(Squares::E7, Squares::E5));
-        board.move_piece(&Move::dummy_from_to(Squares::D4, Squares::D5));
+        board.move_piece(&mut Move::dummy_from_to(Squares::D2, Squares::D4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::E7, Squares::E5));
+        board.move_piece(&mut Move::dummy_from_to(Squares::D4, Squares::D5));
 
         let mut _move = Move::dummy_with_flags(DOUBLE_PAWN_PUSH, Squares::C7, Squares::C5);
 
         _move.set_en_passant_bb_position(BBPositions::C6);
         _move.set_en_passant_bb_piece_square(BBPositions::C5);
 
-        board.move_piece(&_move);
+        board.move_piece(&mut _move);
 
         assert_eq!(PieceType::Pawn, board.get_piece_type(Squares::C5));
 
         board.display();
 
-        board.move_piece(&Move::dummy_with_flags(
+        board.move_piece(&mut Move::dummy_with_flags(
             EN_PASSANT,
             Squares::D5,
             Squares::C6,
@@ -830,7 +850,7 @@ mod tests {
         let from = BBPositions::A2;
         let to = BBPositions::A4;
 
-        board.move_piece(&Move::dummy_from_to(Squares::A2, Squares::A4));
+        board.move_piece(&mut Move::dummy_from_to(Squares::A2, Squares::A4));
 
         assert_eq!(
             board.bitboards[PAWNS_IDX] & to,
@@ -852,7 +872,7 @@ mod tests {
 
         board.place_piece(Color::White, PieceType::Pawn, from);
 
-        board.move_piece(&Move::dummy_with_flags(QUEEN_PROMOTION, 55, 63));
+        board.move_piece(&mut Move::dummy_with_flags(QUEEN_PROMOTION, 55, 63));
 
         assert_eq!(
             board.bitboards[PAWNS_IDX] & to,
@@ -872,7 +892,7 @@ mod tests {
 
         board.display();
 
-        board.move_piece(&Move::dummy_from_to(8, 16));
+        board.move_piece(&mut Move::dummy_from_to(8, 16));
 
         println!("After moving white pawn from a2 to a3:");
 

@@ -85,7 +85,7 @@ fn main() {
 
         let input: String = get_input("\nSquare you want to move to (e.g. a1): ");
 
-        let _move;
+        let mut _move;
 
         if input.len() == 3 {
             // It's a promotion move
@@ -114,7 +114,9 @@ fn main() {
         if _move.is_none() {
             println!("Invalid move!");
         } else {
-            board.move_piece(_move.unwrap());
+            let mut _move = _move.unwrap().clone();
+
+            board.move_piece(&mut _move);
         }
     }
 }
