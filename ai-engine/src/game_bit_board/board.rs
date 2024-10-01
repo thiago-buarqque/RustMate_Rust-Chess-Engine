@@ -71,11 +71,17 @@ impl Board {
 
         board.reset();
 
+        let mut zobrist = board.zobrist.clone();
+
+        zobrist.compute_hash(&board);
+
+        board.zobrist = zobrist;
+
         board
     }
 
     pub fn empty() -> Self {
-        let mut board = Board {
+        Board {
             bitboards: [0; 8],
             en_passant_bb_position: 0,
             en_passant_piece_square_bb: 0,
@@ -97,15 +103,7 @@ impl Board {
             zobrist_history: Vec::new(),
 
             zobrist: Zobrist::new(),
-        };
-
-        let mut zobrist = board.zobrist.clone();
-
-        zobrist.compute_hash(&board);
-
-        board.zobrist = zobrist;
-
-        board
+        }
     }
 
     pub fn from_fen(fen: &str) -> Self {
@@ -344,12 +342,15 @@ impl Board {
                 piece_type,
                 self.en_passant_piece_square_bb,
             );
-            self.en_passant_bb_position = 0;
-            self.en_passant_piece_square_bb = 0;
+            // self.en_passant_bb_position = 0;
+            // self.en_passant_piece_square_bb = 0;
         }
 
+        // When a move is made and en passant is available, remove it
         if self.en_passant_bb_position != 0 {
-            // When a move is made and en passant is available, remove it
+            self.zobrist
+                .update_en_passant_hash(self.en_passant_piece_square_bb);
+
             self.en_passant_bb_position = 0;
             self.en_passant_piece_square_bb = 0;
         }
@@ -360,6 +361,9 @@ impl Board {
             if _move.is_double_pawn_push() {
                 self.en_passant_bb_position = _move.get_en_passant_bb_position();
                 self.en_passant_piece_square_bb = _move.get_en_passant_bb_piece_square();
+
+                self.zobrist
+                    .update_en_passant_hash(self.en_passant_piece_square_bb);
             } else if _move.is_promotion() {
                 piece_type = get_piece_type_from_promotion_flag(_move.get_flags());
             }
@@ -387,8 +391,25 @@ impl Board {
 
         self.update_castling_rights(color, from, to);
 
-        self.zobrist
-            .update_hash_on_move(opponent_piece, color, from_square, piece_type, to_square);
+        if _move.is_promotion() {
+            self.zobrist.update_hash_on_move(
+                opponent_piece,
+                color,
+                from_square,
+                PieceType::Pawn,
+                to_square,
+                Some(piece_type),
+            );
+        } else {
+            self.zobrist.update_hash_on_move(
+                opponent_piece,
+                color,
+                from_square,
+                piece_type,
+                to_square,
+                None,
+            );
+        }
     }
 
     fn update_castling_rights(&mut self, color: Color, from: u64, to: u64) {
