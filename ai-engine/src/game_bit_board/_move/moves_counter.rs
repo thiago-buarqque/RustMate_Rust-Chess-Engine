@@ -105,6 +105,7 @@ mod moves_counter_test {
         results.push((3, 8_902));
         results.push((4, 197_281));
         results.push((5, 4_865_609));
+        results.push((6, 119_060_324));
 
         assert_fen_moves(
             String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
@@ -123,6 +124,7 @@ mod moves_counter_test {
         results.push((2, 2_039));
         results.push((3, 97_862));
         results.push((4, 4_085_603));
+        results.push((5, 193_690_690));
 
         assert_fen_moves(
             String::from("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"),
@@ -142,6 +144,8 @@ mod moves_counter_test {
         results.push((3, 2_812));
         results.push((4, 43_238));
         results.push((5, 674_624));
+        results.push((6, 11_030_083));
+        results.push((7, 178_633_661));
 
         assert_fen_moves(
             String::from("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -"),
@@ -160,6 +164,7 @@ mod moves_counter_test {
         results.push((2, 264));
         results.push((3, 9_467));
         results.push((4, 422_333));
+        results.push((5, 15_833_292));
 
         assert_fen_moves(
             String::from("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"),
@@ -178,6 +183,7 @@ mod moves_counter_test {
         results.push((2, 1486));
         results.push((3, 62_379));
         results.push((4, 2_103_487));
+        results.push((5, 89_941_194));
 
         assert_fen_moves(
             String::from("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8"),
@@ -196,6 +202,7 @@ mod moves_counter_test {
         results.push((2, 2_079));
         results.push((3, 89_890));
         results.push((4, 3_894_594));
+        results.push((5, 164_075_551));
 
         assert_fen_moves(
             String::from(
