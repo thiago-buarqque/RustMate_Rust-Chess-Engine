@@ -49,8 +49,7 @@ fn _count_moves(
         //     _count_moves(board, new_depth, false, move_generator, lookup_table)
         // };
 
-        let moves_count = _count_moves(board, new_depth, false, move_generator,
-        lookup_table);
+        let moves_count = _count_moves(board, new_depth, false, move_generator, lookup_table);
 
         num_positions += moves_count;
 

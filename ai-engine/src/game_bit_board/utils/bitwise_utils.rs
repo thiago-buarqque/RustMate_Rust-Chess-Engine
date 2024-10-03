@@ -89,7 +89,7 @@ pub fn get_direction_name(f: fn(u64) -> u64) -> &'static str {
     }
 }
 
-// Boworred from someone on StackOverflow, I missed the link
+// Boworred from someone on StackOverflow, I lost the link
 static DEBRUIJ_T: &'static [u8] = &[
     0, 47, 1, 56, 48, 27, 2, 60, 57, 49, 41, 37, 28, 16, 3, 61, 54, 58, 35, 52, 50, 42, 21, 44, 38,
     32, 29, 23, 17, 11, 4, 62, 46, 55, 26, 59, 40, 36, 15, 53, 34, 51, 20, 43, 31, 22, 10, 45, 25,
