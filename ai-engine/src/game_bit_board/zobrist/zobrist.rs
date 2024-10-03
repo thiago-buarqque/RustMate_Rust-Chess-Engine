@@ -72,9 +72,7 @@ impl Zobrist {
 
     pub fn get_hash(&self) -> u64 { self.hash }
 
-    pub fn set_hash(&mut self, hash: u64) {
-        self.hash = hash
-    }
+    pub fn set_hash(&mut self, hash: u64) { self.hash = hash }
 
     pub fn update_hash_on_move(
         &mut self, captured_piece: PieceType, color: Color, from_index: usize,

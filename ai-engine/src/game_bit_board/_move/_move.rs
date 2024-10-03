@@ -72,7 +72,7 @@ impl fmt::Display for Move {
 }
 
 impl Move {
-    // For test purposes
+    /// For test purposes
     pub fn dummy_from_to(from: usize, to: usize) -> Self {
         if cfg!(test) {
             Move::with_flags(0, from, to, Color::Black, PieceType::Empty)
@@ -81,7 +81,7 @@ impl Move {
         }
     }
 
-    // For test purposes
+    /// For test purposes
     pub fn dummy_with_flags(flags: u16, from: usize, to: usize) -> Self {
         if cfg!(test) {
             Move::with_flags(flags, from, to, Color::Black, PieceType::Empty)

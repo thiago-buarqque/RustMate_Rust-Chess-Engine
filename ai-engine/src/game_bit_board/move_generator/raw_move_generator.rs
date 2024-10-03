@@ -12,10 +12,11 @@ use super::contants::{BISHOP_RELEVANT_SQUARES, ROOK_RELEVANT_SQUARES};
 
 pub struct RawMoveGenerator {}
 
+/// Most methods in this struct were used once to generate pre-computed moves.
 impl RawMoveGenerator {
     pub fn new() -> Self { RawMoveGenerator {} }
 
-    /// Borrowed from Sebastian Lague https://youtu.be/_vqlIPDR2TU?feature=shared&t=1902
+    // Borrowed from Sebastian Lague https://youtu.be/_vqlIPDR2TU?feature=shared&t=1902
     fn get_blockers_bitboards(bb_moves: u64) -> Vec<u64> {
         let mut square_indices = Vec::new();
 
@@ -262,8 +263,6 @@ impl RawMoveGenerator {
         RawMoveGenerator::pre_compute_slider_moves(&RawMoveGenerator::generate_rook_moves)
     }
 
-    /// This function was used once to generate king pseudo-legal moves
-    /// It will be kept here for the sake of history.
     fn generate_king_moves(friendly_positions: u64, initial_position: u64) -> u64 {
         (north_one(initial_position)
             | no_ea_one(initial_position)
@@ -276,8 +275,6 @@ impl RawMoveGenerator {
             & !friendly_positions
     }
 
-    /// This function was used once to generate king pseudo-legal moves
-    /// It will be kept here for the sake of history.
     fn pre_compute_king_moves(moves_vec: &mut [u64; 64]) {
         let start = 0;
         let end = 63;
@@ -289,8 +286,6 @@ impl RawMoveGenerator {
         }
     }
 
-    /// This function was used once to generate knight moves
-    /// It will be kept here for the sake of history.
     fn pre_compute_knight_moves(moves_vec: &mut [u64; 64]) {
         let start = 0;
         let end = 63;
@@ -312,8 +307,6 @@ impl RawMoveGenerator {
         }
     }
 
-    /// This function was used once to generate knight moves
-    /// It will be kept here for the sake of history.
     fn get_knight_moves(
         initial_position: u64, moves: &mut u64, north_or_south_one: &dyn Fn(u64) -> u64,
     ) {
@@ -334,8 +327,6 @@ impl RawMoveGenerator {
         *moves |= east_one(north_16);
     }
 
-    /// This function was used once to generate the pawn attacks
-    /// It will be kept here for the sake of history.
     fn pre_compute_pawn_attacks(
         moves_vec: &mut [u64; 64], ea_one_fn: &dyn Fn(u64) -> u64, we_one_fn: &dyn Fn(u64) -> u64,
     ) {
@@ -346,8 +337,6 @@ impl RawMoveGenerator {
         }
     }
 
-    /// This function was used once to generate the pawn moves
-    /// It will be kept here for the sake of history.
     fn pre_compute_pawn_moves(moves_vec: &mut [u64; 64], white: bool) {
         let offset_fn = if white { north_one } else { south_one };
 

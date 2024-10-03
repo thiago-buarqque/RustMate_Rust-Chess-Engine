@@ -38,15 +38,7 @@ pub struct Board {
     full_move_clock: u32,
     half_move_clock: u32,
 
-    // Stacks used to unmake moves
-    // castling_rights_history: Vec<u8>,
-    // bitboards_history: Vec<[u64; 8]>,
-    // en_passant_bb_position_history: Vec<u64>,
-    // en_passant_bb_piece_square_history: Vec<u64>,
-    // black_king_moved_history: Vec<bool>,
-    // white_king_moved_history: Vec<bool>,
     moves_history: Vec<Move>,
-    // zobrist_history: Vec<Zobrist>,
     zobrist: Zobrist,
 }
 
@@ -92,16 +84,7 @@ impl Board {
             winner: None,
             full_move_clock: 1,
             half_move_clock: 0,
-
-            // castling_rights_history: Vec::new(),
-            // bitboards_history: Vec::new(),
-            // en_passant_bb_position_history: Vec::new(),
-            // en_passant_bb_piece_square_history: Vec::new(),
-            // black_king_moved_history: Vec::new(),
-            // white_king_moved_history: Vec::new(),
             moves_history: Vec::new(),
-            // zobrist_history: Vec::new(),
-
             zobrist: Zobrist::new(),
         }
     }
@@ -285,12 +268,10 @@ impl Board {
 
         let mut _move = self.moves_history.last().unwrap().clone();
 
-        self.unmake_move(
-            &mut _move
-        );
+        self.unmake_move(&mut _move);
     }
 
-    pub fn unmake_move(&mut self, _move: &mut Move) {
+    fn unmake_move(&mut self, _move: &mut Move) {
         self.castling_rights = _move.castling_rights;
         self.bitboards = _move.bitboards;
         self.en_passant_bb_position = _move.board_en_passant_bb_position;
@@ -311,31 +292,7 @@ impl Board {
             self.winner = None;
         }
 
-        let mut _move = self.moves_history.remove(self.moves_history.len() - 1);
-
-        // if self.castling_rights_history.len() == 0 {
-        //     return;
-        // }
-
-        // self.castling_rights = self
-        //     .castling_rights_history
-        //     .remove(self.castling_rights_history.len() - 1);
-        // self.bitboards = self
-        //     .bitboards_history
-        //     .remove(self.bitboards_history.len() - 1);
-        // self.en_passant_bb_position = self
-        //     .en_passant_bb_position_history
-        //     .remove(self.en_passant_bb_position_history.len() - 1);
-        // self.en_passant_piece_square_bb = self
-        //     .en_passant_bb_piece_square_history
-        //     .remove(self.en_passant_bb_piece_square_history.len() - 1);
-        // self.black_king_moved = self
-        //     .black_king_moved_history
-        //     .remove(self.black_king_moved_history.len() - 1);
-        // self.white_king_moved = self
-        //     .white_king_moved_history
-        //     .remove(self.white_king_moved_history.len() - 1);
-        // self.zobrist = self.zobrist_history.remove(self.zobrist_history.len() - 1);
+        self.moves_history.remove(self.moves_history.len() - 1);
     }
 
     pub fn move_piece(&mut self, _move: &mut Move) {
@@ -362,8 +319,6 @@ impl Board {
                 piece_type,
                 self.en_passant_piece_square_bb,
             );
-            // self.en_passant_bb_position = 0;
-            // self.en_passant_piece_square_bb = 0;
         }
 
         // When a move is made and en passant is available, remove it
@@ -623,7 +578,7 @@ impl Board {
             fen.push('-');
         } else {
             let mut pos = self.en_passant_bb_position.clone();
-            fen.push_str(&square_to_algebraic(pop_lsb(&mut pos) as usize)); // Assuming a helper for conversion
+            fen.push_str(&square_to_algebraic(pop_lsb(&mut pos) as usize));
         }
 
         // Add halfmove clock
