@@ -17,14 +17,14 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           override: true
 
       - name: Build the Rust project
         run: cd ai-engine && cargo build --verbose --all
 
       - name: Run tests
-        run: cd ai-engine && cargo test --verbose --all
+        run: cd ai-engine && cargo +nightly test -r -- --test-threads=1 -Z unstable-options --report-time
   rustfmt:
     name: Source formatter
     runs-on: ubuntu-latest
