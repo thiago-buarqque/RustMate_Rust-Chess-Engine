@@ -17,6 +17,8 @@ pub fn count_moves(
         println!("\nTime spent: {:#?}", start.elapsed());
     }
 
+    // println!("There are {} elements in the hashmap", lookup_table.len());
+
     result
 }
 
@@ -25,7 +27,7 @@ fn _count_moves(
     lookup_table: &mut HashMap<(u64, usize), u64>,
 ) -> u64 {
     if depth == 0 || board.is_game_finished() {
-        lookup_table.insert((board.get_zobrist_hash(), depth), 1);
+        // lookup_table.insert((board.get_zobrist_hash(), depth), 1);
 
         return 1;
     }
@@ -39,16 +41,16 @@ fn _count_moves(
     moves.iter_mut().for_each(|_move| {
         board.move_piece(_move);
 
-        let table_key = (board.get_zobrist_hash(), new_depth);
+        // let table_key = (board.get_zobrist_hash(), new_depth);
 
-        let moves_count = if lookup_table.contains_key(&table_key) {
-            *lookup_table.get(&table_key).unwrap()
-        } else {
-            _count_moves(board, new_depth, false, move_generator, lookup_table)
-        };
+        // let moves_count = if lookup_table.contains_key(&table_key) {
+        //     *lookup_table.get(&table_key).unwrap()
+        // } else {
+        //     _count_moves(board, new_depth, false, move_generator, lookup_table)
+        // };
 
-        // let moves_count = _count_moves(board, new_depth, false, move_generator,
-        // lookup_table);
+        let moves_count = _count_moves(board, new_depth, false, move_generator,
+        lookup_table);
 
         num_positions += moves_count;
 
@@ -59,7 +61,7 @@ fn _count_moves(
         board.unmake_last_move();
     });
 
-    lookup_table.insert((board.get_zobrist_hash(), depth), num_positions);
+    // lookup_table.insert((board.get_zobrist_hash(), depth), num_positions);
 
     num_positions
 }
