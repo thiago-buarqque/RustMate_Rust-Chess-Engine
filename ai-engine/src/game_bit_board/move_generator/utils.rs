@@ -5,7 +5,7 @@ use crate::game_bit_board::{
     positions::{same_rank, BBPositions, Squares},
     utils::{
         bitwise_utils::{
-            east_one, no_ea_one, no_we_one, north_one, pop_lsb, so_ea_one, so_we_one, south_one,
+            east_one, north_one, pop_lsb, south_one,
             to_bitboard_position, west_one,
         },
         utils::get_piece_symbol,
@@ -14,7 +14,7 @@ use crate::game_bit_board::{
 
 use super::{
     attack_data::AttackData,
-    contants::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS},
+    contants::{BLACK_KING_RELEVANT_SQUARES_RELATED_TO_ENEMY_PAWNS, BLACK_PAWN_ATTACKS, WHITE_KING_RELEVANT_SQUARES_RELATED_TO_ENEMY_PAWNS, WHITE_PAWN_ATTACKS},
 };
 
 pub fn print_board(color: Color, piece_square: u64, piece_type: PieceType, bb_position: u64) {
@@ -162,151 +162,96 @@ pub fn is_promotion_square(color: Color, square: usize) -> bool {
     square >= Squares::A1 && square <= Squares::H1 && color.is_black()
 }
 
-// TODO: pre-calculate this for every square, as I did for sliding pieces
-pub fn get_king_relevant_squares_related_to_enemy_pawns(inital_pos: u64) -> u64 {
-    let mut positions = 0;
 
-    let _west_one = west_one(inital_pos);
+pub fn get_king_relevant_squares_related_to_enemy_pawns(color: Color, square: usize) -> u64 {
+    if color.is_black() {
+        BLACK_KING_RELEVANT_SQUARES_RELATED_TO_ENEMY_PAWNS[square]
+    } else {
+        WHITE_KING_RELEVANT_SQUARES_RELATED_TO_ENEMY_PAWNS[square]
+    }
+}
 
-    positions |= _west_one;
+pub fn generate_king_relevant_squares_related_to_enemy_pawns(color: Color, inital_pos: u64) -> u64 {
+    let mut result = 0;
 
-    let west_two = west_one(_west_one);
+    let mut side_squares_bb = 0;
 
-    positions |= west_two;
+    // West
+
+    let mut current_pos = west_one(inital_pos);
+
+    side_squares_bb |= current_pos | west_one(current_pos);
 
     // East
 
-    let _east_one = east_one(inital_pos);
+    current_pos = east_one(inital_pos);
 
-    positions |= _east_one;
+    side_squares_bb |= current_pos | east_one(current_pos);
 
-    let east_two = east_one(_east_one);
+    // Temporally append initial position
+    side_squares_bb |= inital_pos;
 
-    positions |= east_two;
+    result |= side_squares_bb;
 
-    // North one
+    let step_fn = if color.is_black() {
+        south_one
+    } else {
+        north_one
+    };
 
-    let _north_one = north_one(inital_pos);
+    // Get the next two rows in front of the king.
 
-    positions |= _north_one;
+    current_pos = step_fn(side_squares_bb);
 
-    // North west
+    result |= current_pos | step_fn(current_pos);
 
-    let _no_we_one = no_we_one(inital_pos);
+    // Remove initial square since it's where the king is
+    // and there can't be a pawn there.
+    result &= !inital_pos;
 
-    positions |= _no_we_one;
+    // The final position is a matrix with 3 rows and 5 columns,
+    // excluding the king position.
 
-    let _no_we_we = west_one(_no_we_one);
-
-    positions |= _no_we_we;
-
-    // North east
-
-    let _no_ea_one = no_ea_one(inital_pos);
-
-    positions |= _no_ea_one;
-
-    let _no_ea_ea = east_one(_no_ea_one);
-
-    positions |= _no_ea_ea;
-
-    // North two
-
-    let _north_two = north_one(_north_one);
-
-    positions |= _north_two;
-
-    // North north west
-
-    let _no_no_we = west_one(_north_two);
-
-    positions |= _no_no_we;
-
-    let _no_no_we_we = west_one(_no_no_we);
-
-    positions |= _no_no_we_we;
-
-    // North north east
-
-    let _no_no_ea = east_one(_north_two);
-
-    positions |= _no_no_ea;
-
-    let _no_no_ea_ea = east_one(_no_no_ea);
-
-    positions |= _no_no_ea_ea;
-
-    // South one
-
-    let _south_one = south_one(inital_pos);
-
-    positions |= _south_one;
-
-    // South west
-
-    let _so_we_one = so_we_one(inital_pos);
-
-    positions |= _so_we_one;
-
-    let _so_we_we = west_one(_so_we_one);
-
-    positions |= _so_we_we;
-
-    // South east
-
-    let _so_ea_one = so_ea_one(inital_pos);
-
-    positions |= _so_ea_one;
-
-    let _so_ea_ea = east_one(_so_ea_one);
-
-    positions |= _so_ea_ea;
-
-    // South two
-
-    let _south_two = south_one(_south_one);
-
-    positions |= _south_two;
-
-    // South south west
-
-    let _so_so_we = west_one(_south_two);
-
-    positions |= _so_so_we;
-
-    let _so_so_we_we = west_one(_so_so_we);
-
-    positions |= _so_so_we_we;
-
-    // South south east
-
-    let _so_so_ea = east_one(_south_two);
-
-    positions |= _so_so_ea;
-
-    let _so_so_ea_ea = east_one(_so_so_ea);
-
-    positions |= _so_so_ea_ea;
-
-    positions
+    result
 }
 
 #[cfg(test)]
 mod tests {
     use crate::game_bit_board::{
         enums::{Color, PieceType},
-        positions::{BBPositions, Squares},
+        positions::Squares,
     };
 
     use super::{get_king_relevant_squares_related_to_enemy_pawns, print_board};
 
     #[test]
     fn test_get_king_relevant_squares_related_to_enemy_pawns() {
+        let mut king_square = Squares::G7;
+
+        let mut bb_position = get_king_relevant_squares_related_to_enemy_pawns(
+            Color::White, king_square);
+
         print_board(
             Color::White,
-            Squares::E1 as u64,
+            king_square as u64,
             PieceType::King,
-            get_king_relevant_squares_related_to_enemy_pawns(BBPositions::E1),
+            bb_position,
         );
+
+        assert_eq!(0xF0B0000000000000, bb_position);
+
+        king_square = Squares::B7;
+
+        bb_position = get_king_relevant_squares_related_to_enemy_pawns(
+            Color::Black, king_square);
+
+        print_board(
+            Color::Black,
+            king_square as u64,
+            PieceType::King,
+            bb_position,
+        );
+
+        assert_eq!(0x000D0F0F00000000, bb_position);
     }
 }
