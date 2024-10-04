@@ -163,7 +163,7 @@ impl AttackData {
         };
 
         let relevant_squares =
-            get_king_relevant_squares_related_to_enemy_pawns(self.king_bb_position);
+            get_king_relevant_squares_related_to_enemy_pawns(self.side_to_move, self.king_square);
 
         let opponent_pawns =
             board.get_piece_positions(self.side_to_move.opponent(), PieceType::Pawn);

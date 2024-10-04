@@ -1,18 +1,14 @@
 use crate::game_bit_board::utils::utils::get_piece_symbol;
 
 use super::{
-    _move::{_move::Move, move_utils::get_piece_type_from_promotion_flag},
-    enums::{Color, PieceType},
-    positions::BBPositions,
-    utils::{
+    _move::{_move::Move, move_utils::get_piece_type_from_promotion_flag}, enums::{Color, PieceType}, positions::BBPositions, utils::{
         bitwise_utils::{north_one, pop_lsb, south_one, to_bitboard_position},
         board_utils::*,
         utils::{
             algebraic_to_square, get_piece_color_and_type_from_symbol, get_piece_letter,
             square_to_algebraic,
         },
-    },
-    zobrist::zobrist::Zobrist,
+    }, zobrist::zobrist::Zobrist
 };
 
 #[derive(Clone)]
