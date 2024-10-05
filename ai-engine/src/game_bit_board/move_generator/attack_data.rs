@@ -1,8 +1,5 @@
 use crate::game_bit_board::{
-    board::Board,
-    enums::{Color, PieceType},
-    positions::{same_anti_diagonal, same_diagonal, same_file, same_rank},
-    utils::bitwise_utils::{get_direction_fn_to_square, pop_lsb, to_bitboard_position},
+    board::Board, enums::{Color, PieceType}, move_generator::utils::print_board, positions::{same_anti_diagonal, same_diagonal, same_file, same_rank, Squares}, utils::bitwise_utils::{get_direction_fn_to_square, pop_lsb, to_bitboard_position}
 };
 
 use super::{
@@ -60,7 +57,7 @@ impl AttackData {
 
         self.check_sliding_attacks(board, PieceType::Queen, move_generator);
 
-        self.check_knight_checks(board);
+        self.check_knight_attacks(board);
 
         self.check_pawn_attacks(board);
 
@@ -73,15 +70,11 @@ impl AttackData {
             self.defenders_bb = u64::MAX;
         }
 
-        // if self.in_check && self.defenders_bb == 0
-        //     && board.get_en_passant() != 0 {
-
-        //     self.attack_bb |= board.get_en_passant();
-        // }
-
         if self.attack_bb == 0 {
             self.attack_bb = u64::MAX;
         }
+
+        self.king_allowed_squares &= !board.get_player_pieces_positions(self.side_to_move);
 
         // if self.in_check {
         //     println!("In Check: {}", self.in_check);
@@ -113,16 +106,14 @@ impl AttackData {
         //     );
         // }
 
-        // if self.king_allowed_squares != u64::MAX {
-        //     println!("\nKing allowed squares");
+        // println!("\nKing allowed squares");
 
-        //     print_board(
-        //         Color::White,
-        //         self.king_square as u64,
-        //         PieceType::King,
-        //         self.king_allowed_squares,
-        //     );
-        // }
+        // print_board(
+        //     Color::White,
+        //     self.king_square as u64,
+        //     PieceType::King,
+        //     self.king_allowed_squares,
+        // );
 
         // self.friendly_pins_moves_bbs.iter().enumerate().for_each(|(i, bb)| {
         //     if *bb != u64::MAX {
@@ -133,25 +124,31 @@ impl AttackData {
         // });
     }
 
-    fn check_knight_checks(&mut self, board: &mut Board) {
-        let possible_attackers = KNIGHT_MOVES[self.king_square];
+    fn check_knight_attacks(&mut self, board: &mut Board) {
+        let possible_checkers = KNIGHT_MOVES[self.king_square];
 
-        let opponent_knights =
+        let mut opponent_knights =
             board.get_piece_positions(self.side_to_move.opponent(), PieceType::Knight);
 
-        let mut attackers = opponent_knights & possible_attackers;
+        let mut attackers = opponent_knights & possible_checkers;
 
-        if attackers == 0 {
-            return;
+        if attackers != 0 {
+            self.in_double_check = self.in_check;
+            self.in_check = true;
+    
+            while attackers != 0 {
+                let attacker_square = pop_lsb(&mut attackers);
+    
+                self.attack_bb |= to_bitboard_position(attacker_square as u64);
+            }
         }
 
-        self.in_double_check = self.in_check;
-        self.in_check = true;
+        while opponent_knights != 0 {
+            let square = pop_lsb(&mut opponent_knights) as usize;
 
-        while attackers != 0 {
-            let attacker_square = pop_lsb(&mut attackers);
+            let moves = KNIGHT_MOVES[square];
 
-            self.attack_bb |= to_bitboard_position(attacker_square as u64);
+            self.king_allowed_squares &= !moves;
         }
     }
 
@@ -162,13 +159,13 @@ impl AttackData {
             WHITE_PAWN_ATTACKS
         };
 
-        let relevant_squares =
-            get_king_relevant_squares_related_to_enemy_pawns(self.side_to_move, self.king_square);
+        // let relevant_squares =
+        //     get_king_relevant_squares_related_to_enemy_pawns(self.side_to_move, self.king_square);
 
         let opponent_pawns =
             board.get_piece_positions(self.side_to_move.opponent(), PieceType::Pawn);
 
-        let mut possible_attackers = opponent_pawns & relevant_squares;
+        let mut possible_attackers = opponent_pawns;
 
         if possible_attackers == 0 {
             return;
