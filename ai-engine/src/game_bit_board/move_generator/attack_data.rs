@@ -195,11 +195,11 @@ impl AttackData {
     ) {
         let opponent = self.side_to_move.opponent();
 
-        let mut opponent_pieces = board.get_piece_positions(opponent, piece_type);
-        let opponent_pieces_bb = board.get_player_pieces_positions(opponent);
+        let mut opponent_sliding_pieces = board.get_piece_positions(opponent, piece_type);
+        let opponent_pieces = board.get_player_pieces_positions(opponent);
 
-        while opponent_pieces != 0 {
-            let square = pop_lsb(&mut opponent_pieces) as usize;
+        while opponent_sliding_pieces != 0 {
+            let square = pop_lsb(&mut opponent_sliding_pieces) as usize;
 
             let mut attacks = 0;
 
@@ -214,14 +214,11 @@ impl AttackData {
                     board,
                     opponent,
                     square,
-                    &opponent_pieces_bb,
+                    &opponent_pieces,
                 );
-                attacks |= move_generator.get_diagonal_attacks(
-                    board,
-                    opponent,
-                    square,
-                    &opponent_pieces_bb,
-                );
+                attacks |=
+                    move_generator.get_diagonal_attacks(board, opponent, square, &opponent_pieces);
+
                 self.king_allowed_squares &= !attacks;
 
                 if !same_orthogonal_ray && !same_diagonal_ray {
@@ -232,20 +229,18 @@ impl AttackData {
                     board,
                     opponent,
                     square,
-                    &opponent_pieces_bb,
+                    &opponent_pieces,
                 );
+
                 self.king_allowed_squares &= !attacks;
 
                 if !same_orthogonal_ray {
                     continue;
                 }
             } else if piece_type == PieceType::Bishop {
-                attacks |= move_generator.get_diagonal_attacks(
-                    board,
-                    opponent,
-                    square,
-                    &opponent_pieces_bb,
-                );
+                attacks |=
+                    move_generator.get_diagonal_attacks(board, opponent, square, &opponent_pieces);
+
                 self.king_allowed_squares &= !attacks;
 
                 if !same_diagonal_ray {
@@ -254,19 +249,20 @@ impl AttackData {
             }
 
             if attacks & self.king_bb_position != 0 {
-                self.check_sliding_check(square);
+                self.handle_slinding_piece_check(square);
             } else {
                 self.check_for_pins(board, square);
             }
         }
     }
 
-    fn check_sliding_check(&mut self, square: usize) {
+    fn handle_slinding_piece_check(&mut self, square: usize) {
         self.attack_bb |= 1 << square;
         self.in_double_check = self.in_check;
         self.in_check = true;
 
         let direction_fn = get_direction_fn_to_square(square, self.king_square);
+
         let mut path_to_king = direction_fn(1 << square);
         let mut current_pos = path_to_king;
 
@@ -287,15 +283,17 @@ impl AttackData {
     }
 
     fn check_for_pins(&mut self, board: &mut Board, square: usize) {
-        let direction_fn = get_direction_fn_to_square(square, self.king_square);
+        let mut friendly_pin_bb_pos = 0;
+        let mut opponent_pin_bb_pos = 0;
 
         let attacker_bb_pos = 1 << square;
 
         let mut path_to_king = attacker_bb_pos;
+
+        let direction_fn = get_direction_fn_to_square(square, self.king_square);
+
         let mut current_pos = direction_fn(path_to_king);
 
-        let mut friendly_pin_bb_pos = 0;
-        let mut opponent_pin_bb_pos = 0;
         while current_pos != 0 {
             if self.king_bb_position == current_pos {
                 break;
@@ -318,6 +316,7 @@ impl AttackData {
             }
 
             path_to_king |= current_pos;
+
             current_pos = direction_fn(current_pos);
         }
 
@@ -350,6 +349,15 @@ mod attack_data_tests {
 
         let mut board = Board::from_fen("8/8/2p3p1/3pp3/4Kpp1/8/8/8 w - - 0 1");
 
+        // 8 . . . . . . . .
+        // 7 . . . . . . . .
+        // 6 . . ♟ . . . ♟ .
+        // 5 . . . ♟ ♟ . . .
+        // 4 . . . . ♔ ♟ ♟ .
+        // 3 . . . . . . . .
+        // 2 . . . . . . . .
+        // 1 . . . . . . . .
+        //   a b c d e f g h
         board.display();
 
         attack_data.calculate_attack_data(&mut board, &move_generator);
@@ -370,6 +378,15 @@ mod attack_data_tests {
         let mut board =
             Board::from_fen("rnbqkbnr/pp3ppp/2pN4/3p4/8/5p2/PPPPQPPP/R1B1KB1R b KQkq - 1 1");
 
+        // 8 ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜
+        // 7 ♟ ♟ . . . ♟ ♟ ♟
+        // 6 . . ♟ ♘ . . . .
+        // 5 . . . ♟ . . . .
+        // 4 . . . . . . . .
+        // 3 . . . . . ♟ . .
+        // 2 ♙ ♙ ♙ ♙ ♕ ♙ ♙ ♙
+        // 1 ♖ . ♗ . ♔ ♗ . ♖
+        //   a b c d e f g h
         board.display();
 
         attack_data.calculate_attack_data(&mut board, &move_generator);
@@ -382,6 +399,15 @@ mod attack_data_tests {
 
         board = Board::from_fen("rnbqkbnr/pp3ppp/3N4/2p5/B7/3Ppp2/PPP1QPPP/R1B1K2R b KQkq - 0 1");
 
+        // 8 ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜
+        // 7 ♟ ♟ . . . ♟ ♟ ♟
+        // 6 . . . ♘ . . . .
+        // 5 . . ♟ . . . . .
+        // 4 ♗ . . . . . . .
+        // 3 . . . ♙ ♟ ♟ . .
+        // 2 ♙ ♙ ♙ . ♕ ♙ ♙ ♙
+        // 1 ♖ . ♗ . ♔ . . ♖
+        //   a b c d e f g h
         board.display();
 
         attack_data.calculate_attack_data(&mut board, &move_generator);
@@ -394,6 +420,15 @@ mod attack_data_tests {
 
         board = Board::from_fen("rnbqkbnr/pp3ppp/2B5/2p2N2/3p4/3PRp2/PPPQ1PPP/R1B1K3 b Qkq - 0 1");
 
+        // 8 ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜
+        // 7 ♟ ♟ . . . ♟ ♟ ♟
+        // 6 . . ♗ . . . . .
+        // 5 . . ♟ . . ♘ . .
+        // 4 . . . ♟ . . . .
+        // 3 . . . ♙ ♖ ♟ . .
+        // 2 ♙ ♙ ♙ ♕ . ♙ ♙ ♙
+        // 1 ♖ . ♗ . ♔ . . .
+        //   a b c d e f g h
         board.display();
 
         attack_data.calculate_attack_data(&mut board, &move_generator);

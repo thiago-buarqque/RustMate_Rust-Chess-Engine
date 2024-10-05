@@ -4,17 +4,17 @@ use crate::game_bit_board::{
     enums::{Color, PieceType},
     positions::{same_rank, BBPositions, Squares},
     utils::{
-        bitwise_utils::{
-            east_one, north_one, pop_lsb, south_one,
-            to_bitboard_position, west_one,
-        },
+        bitwise_utils::{east_one, north_one, pop_lsb, south_one, to_bitboard_position, west_one},
         utils::get_piece_symbol,
     },
 };
 
 use super::{
     attack_data::AttackData,
-    contants::{BLACK_KING_RELEVANT_SQUARES_RELATED_TO_ENEMY_PAWNS, BLACK_PAWN_ATTACKS, WHITE_KING_RELEVANT_SQUARES_RELATED_TO_ENEMY_PAWNS, WHITE_PAWN_ATTACKS},
+    contants::{
+        BLACK_KING_RELEVANT_SQUARES_RELATED_TO_ENEMY_PAWNS, BLACK_PAWN_ATTACKS,
+        WHITE_KING_RELEVANT_SQUARES_RELATED_TO_ENEMY_PAWNS, WHITE_PAWN_ATTACKS,
+    },
 };
 
 pub fn print_board(color: Color, piece_square: u64, piece_type: PieceType, bb_position: u64) {
@@ -162,7 +162,6 @@ pub fn is_promotion_square(color: Color, square: usize) -> bool {
     square >= Squares::A1 && square <= Squares::H1 && color.is_black()
 }
 
-
 pub fn get_king_relevant_squares_related_to_enemy_pawns(color: Color, square: usize) -> u64 {
     if color.is_black() {
         BLACK_KING_RELEVANT_SQUARES_RELATED_TO_ENEMY_PAWNS[square]
@@ -211,6 +210,20 @@ pub fn generate_king_relevant_squares_related_to_enemy_pawns(color: Color, inita
 
     // The final position is a matrix with 3 rows and 5 columns,
     // excluding the king position.
+    //
+    // Example
+    //
+    //   a b c d e f g h
+    // 8 . . . . 1 1 1 1 8
+    // 7 . . . . 1 1 ♔ 1 7
+    // 6 . . . . . . . . 6
+    // 5 . . . . . . . . 5
+    // 4 . . . . . . . . 4
+    // 3 . . . . . . . . 3
+    // 2 . . . . . . . . 2
+    // 1 . . . . . . . . 1
+    //   a b c d e f g h
+    // 0xF0B0000000000000
 
     result
 }
@@ -228,8 +241,8 @@ mod tests {
     fn test_get_king_relevant_squares_related_to_enemy_pawns() {
         let mut king_square = Squares::G7;
 
-        let mut bb_position = get_king_relevant_squares_related_to_enemy_pawns(
-            Color::White, king_square);
+        let mut bb_position =
+            get_king_relevant_squares_related_to_enemy_pawns(Color::White, king_square);
 
         print_board(
             Color::White,
@@ -242,8 +255,7 @@ mod tests {
 
         king_square = Squares::B7;
 
-        bb_position = get_king_relevant_squares_related_to_enemy_pawns(
-            Color::Black, king_square);
+        bb_position = get_king_relevant_squares_related_to_enemy_pawns(Color::Black, king_square);
 
         print_board(
             Color::Black,
