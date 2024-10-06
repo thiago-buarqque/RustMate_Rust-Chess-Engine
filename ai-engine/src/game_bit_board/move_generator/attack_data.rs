@@ -1,5 +1,8 @@
 use crate::game_bit_board::{
-    board::Board, enums::{Color, PieceType}, move_generator::utils::print_board, positions::{same_anti_diagonal, same_diagonal, same_file, same_rank, Squares}, utils::bitwise_utils::{get_direction_fn_to_square, pop_lsb, to_bitboard_position}
+    board::Board,
+    enums::{Color, PieceType},
+    positions::{same_anti_diagonal, same_diagonal, same_file, same_rank},
+    utils::bitwise_utils::{get_direction_fn_to_square, pop_lsb, to_bitboard_position},
 };
 
 use super::{
@@ -35,7 +38,7 @@ impl AttackData {
         }
     }
 
-    fn init(&mut self, board: &mut Board) {
+    fn init(&mut self, board: &Board) {
         self.attack_bb = 0;
         self.defenders_bb = 0;
         self.friendly_pins_moves_bbs = [u64::MAX; 64];
@@ -48,7 +51,7 @@ impl AttackData {
         self.king_square = pop_lsb(&mut self.king_bb_position.clone()) as usize;
     }
 
-    pub fn calculate_attack_data(&mut self, board: &mut Board, move_generator: &MoveGenerator) {
+    pub fn calculate_attack_data(&mut self, board: &Board, move_generator: &MoveGenerator) {
         self.init(board);
 
         self.check_sliding_attacks(board, PieceType::Rook, move_generator);
@@ -124,7 +127,7 @@ impl AttackData {
         // });
     }
 
-    fn check_knight_attacks(&mut self, board: &mut Board) {
+    fn check_knight_attacks(&mut self, board: &Board) {
         let possible_checkers = KNIGHT_MOVES[self.king_square];
 
         let mut opponent_knights =
@@ -135,10 +138,10 @@ impl AttackData {
         if attackers != 0 {
             self.in_double_check = self.in_check;
             self.in_check = true;
-    
+
             while attackers != 0 {
                 let attacker_square = pop_lsb(&mut attackers);
-    
+
                 self.attack_bb |= to_bitboard_position(attacker_square as u64);
             }
         }
@@ -152,20 +155,20 @@ impl AttackData {
         }
     }
 
-    fn check_pawn_attacks(&mut self, board: &mut Board) {
+    fn check_pawn_attacks(&mut self, board: &Board) {
         let pawn_attacks = if self.side_to_move.is_white() {
             BLACK_PAWN_ATTACKS
         } else {
             WHITE_PAWN_ATTACKS
         };
 
-        // let relevant_squares =
-        //     get_king_relevant_squares_related_to_enemy_pawns(self.side_to_move, self.king_square);
+        let relevant_squares =
+            get_king_relevant_squares_related_to_enemy_pawns(self.side_to_move, self.king_square);
 
         let opponent_pawns =
             board.get_piece_positions(self.side_to_move.opponent(), PieceType::Pawn);
 
-        let mut possible_attackers = opponent_pawns;
+        let mut possible_attackers = opponent_pawns & relevant_squares;
 
         if possible_attackers == 0 {
             return;
@@ -188,7 +191,7 @@ impl AttackData {
     }
 
     fn check_sliding_attacks(
-        &mut self, board: &mut Board, piece_type: PieceType, move_generator: &MoveGenerator,
+        &mut self, board: &Board, piece_type: PieceType, move_generator: &MoveGenerator,
     ) {
         let opponent = self.side_to_move.opponent();
 
@@ -246,14 +249,14 @@ impl AttackData {
             }
 
             if attacks & self.king_bb_position != 0 {
-                self.handle_slinding_piece_check(square);
+                self.handle_sliding_piece_check(square);
             } else {
                 self.check_for_pins(board, square);
             }
         }
     }
 
-    fn handle_slinding_piece_check(&mut self, square: usize) {
+    fn handle_sliding_piece_check(&mut self, square: usize) {
         self.attack_bb |= 1 << square;
         self.in_double_check = self.in_check;
         self.in_check = true;
@@ -279,7 +282,7 @@ impl AttackData {
         self.defenders_bb |= path_to_king;
     }
 
-    fn check_for_pins(&mut self, board: &mut Board, square: usize) {
+    fn check_for_pins(&mut self, board: &Board, square: usize) {
         let mut friendly_pin_bb_pos = 0;
         let mut opponent_pin_bb_pos = 0;
 

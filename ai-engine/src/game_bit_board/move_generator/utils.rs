@@ -179,12 +179,21 @@ pub fn generate_king_relevant_squares_related_to_enemy_pawns(color: Color, inita
 
     let mut current_pos = west_one(inital_pos);
 
+    side_squares_bb |= current_pos;
+
+    current_pos = west_one(current_pos);
+
     side_squares_bb |= current_pos | west_one(current_pos);
 
     // East
 
     current_pos = east_one(inital_pos);
 
+    side_squares_bb |= current_pos;
+
+    current_pos = east_one(current_pos);
+
+    // One more to make sure to handle pawns blocking en passant
     side_squares_bb |= current_pos | east_one(current_pos);
 
     // Temporally append initial position
@@ -214,16 +223,27 @@ pub fn generate_king_relevant_squares_related_to_enemy_pawns(color: Color, inita
     // Example
     //
     //   a b c d e f g h
-    // 8 . . . . 1 1 1 1 8
-    // 7 . . . . 1 1 ♔ 1 7
+    // 8 . . . . . . . . 8
+    // 7 . . . . . . . . 7
     // 6 . . . . . . . . 6
+    // 5 . . . . . . . . 5
+    // 4 . . . . . . . . 4
+    // 3 . 1 1 1 1 1 1 1 3
+    // 2 . 1 1 1 1 1 1 1 2
+    // 1 . 1 1 1 ♔ 1 1 1 1
+    //   a b c d e f g h
+    // 0x0000000000FEFEEE
+    //   a b c d e f g h
+    // 8 . 1 1 1 ♚ 1 1 1 8
+    // 7 . 1 1 1 1 1 1 1 7
+    // 6 . 1 1 1 1 1 1 1 6
     // 5 . . . . . . . . 5
     // 4 . . . . . . . . 4
     // 3 . . . . . . . . 3
     // 2 . . . . . . . . 2
     // 1 . . . . . . . . 1
     //   a b c d e f g h
-    // 0xF0B0000000000000
+    // 0xEEFEFE0000000000
 
     result
 }
@@ -239,7 +259,7 @@ mod tests {
 
     #[test]
     fn test_get_king_relevant_squares_related_to_enemy_pawns() {
-        let mut king_square = Squares::G7;
+        let mut king_square = Squares::E1;
 
         let mut bb_position =
             get_king_relevant_squares_related_to_enemy_pawns(Color::White, king_square);
@@ -251,9 +271,9 @@ mod tests {
             bb_position,
         );
 
-        assert_eq!(0xF0B0000000000000, bb_position);
+        assert_eq!(0x0000000000FEFEEE, bb_position);
 
-        king_square = Squares::B7;
+        king_square = Squares::E8;
 
         bb_position = get_king_relevant_squares_related_to_enemy_pawns(Color::Black, king_square);
 
@@ -264,6 +284,6 @@ mod tests {
             bb_position,
         );
 
-        assert_eq!(0x000D0F0F00000000, bb_position);
+        assert_eq!(0xEEFEFE0000000000, bb_position);
     }
 }

@@ -7,7 +7,7 @@ use super::{
     },
     raw_move_generator::RawMoveGenerator,
     utils::{
-        create_moves, is_en_passant_discovered_check, is_promotion_square, look_up_pawn_attacks, print_board,
+        create_moves, is_en_passant_discovered_check, is_promotion_square, look_up_pawn_attacks,
     },
 };
 use crate::game_bit_board::{
@@ -20,6 +20,7 @@ use crate::game_bit_board::{
     },
 };
 use std::{collections::HashMap, u64, usize};
+
 #[derive(Clone)]
 pub struct MoveGenerator {
     bishop_lookup_table: HashMap<(u8, u64), u64>,
@@ -52,7 +53,7 @@ impl MoveGenerator {
         let mut moves = Vec::with_capacity(32);
 
         let mut friendly_king_square = usize::MAX;
-        
+
         let side_to_move = board.get_side_to_move();
 
         let mut friendly_attacks = 0;
@@ -65,9 +66,23 @@ impl MoveGenerator {
             let piece_type: PieceType = board.get_piece_type(square);
 
             if piece_type == PieceType::Pawn {
-                self.generate_pawn_moves(board, &mut moves, square, side_to_move, &mut friendly_attacks, &attack_data);
+                self.generate_pawn_moves(
+                    board,
+                    &mut moves,
+                    square,
+                    side_to_move,
+                    &mut friendly_attacks,
+                    &attack_data,
+                );
             } else if piece_type == PieceType::Knight {
-                self.generate_knight_moves(board, &mut moves, square, side_to_move, &mut friendly_attacks, &attack_data);
+                self.generate_knight_moves(
+                    board,
+                    &mut moves,
+                    square,
+                    side_to_move,
+                    &mut friendly_attacks,
+                    &attack_data,
+                );
             } else if piece_type == PieceType::Rook {
                 self.generate_orthogonal_moves(
                     board,
@@ -113,7 +128,7 @@ impl MoveGenerator {
         }
 
         let mut opponent_king = board.get_piece_positions(side_to_move.opponent(), PieceType::King);
-        
+
         let opponent_king_square = pop_lsb(&mut opponent_king) as usize;
 
         if opponent_king_square < 64 {
@@ -264,8 +279,7 @@ impl MoveGenerator {
 
         // I guess I can just use & self.friendly_pins_moves_bbs[square] instead of
         // having a king allowed squares var
-        let attacks = ((raw_attacks & !friendly_pieces_bb))
-            & attack_data.king_allowed_squares;
+        let attacks = (raw_attacks & !friendly_pieces_bb) & attack_data.king_allowed_squares;
 
         create_moves(
             attacks,
@@ -287,7 +301,9 @@ impl MoveGenerator {
                 let _west_one = west_one(1 << square);
                 let mut west_two = west_one(_west_one);
 
-                if _west_one & attack_data.king_allowed_squares != 0 && west_two & attack_data.king_allowed_squares != 0 {
+                if _west_one & attack_data.king_allowed_squares != 0
+                    && west_two & attack_data.king_allowed_squares != 0
+                {
                     let _move = Move::with_flags(
                         QUEEN_CASTLE,
                         square,
@@ -308,7 +324,9 @@ impl MoveGenerator {
                 let _east_one = east_one(1 << square);
                 let mut east_two = east_one(_east_one);
 
-                if _east_one & attack_data.king_allowed_squares != 0 && east_two & attack_data.king_allowed_squares != 0 {
+                if _east_one & attack_data.king_allowed_squares != 0
+                    && east_two & attack_data.king_allowed_squares != 0
+                {
                     let _move = Move::with_flags(
                         KING_CASTLE,
                         square,
