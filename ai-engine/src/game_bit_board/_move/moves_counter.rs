@@ -3,7 +3,7 @@ use std::{collections::HashMap, time::Instant};
 use crate::game_bit_board::{board::Board, move_generator::move_generator::MoveGenerator};
 
 pub fn count_moves(
-    board: &mut Board, depth: usize, track_moves: bool, move_generator: &MoveGenerator,
+    board: &mut Board, depth: usize, track_moves: bool, move_generator: &mut MoveGenerator,
 ) -> u64 {
     let mut lookup_table = HashMap::new();
 
@@ -23,7 +23,7 @@ pub fn count_moves(
 }
 
 fn _count_moves(
-    board: &mut Board, depth: usize, track_moves: bool, move_generator: &MoveGenerator,
+    board: &mut Board, depth: usize, track_moves: bool, move_generator: &mut MoveGenerator,
     lookup_table: &mut HashMap<(u64, usize), u64>,
 ) -> u64 {
     if depth == 0 || board.is_game_finished() {
@@ -79,7 +79,9 @@ mod moves_counter_test {
     static MOVE_GENERATOR: Lazy<Mutex<MoveGenerator>> =
         Lazy::new(|| Mutex::new(MoveGenerator::new()));
 
-    fn assert_fen_moves(fen: String, move_generator: &MoveGenerator, resuls: Vec<(usize, u64)>) {
+    fn assert_fen_moves(
+        fen: String, move_generator: &mut MoveGenerator, resuls: Vec<(usize, u64)>,
+    ) {
         println!("\nPerft position {fen}");
         let mut board = Board::from_fen(fen.as_str());
 
@@ -95,7 +97,7 @@ mod moves_counter_test {
 
     #[test]
     fn test_perft_pos_1() {
-        let move_generator = MOVE_GENERATOR.lock().unwrap();
+        let mut move_generator = MOVE_GENERATOR.lock().unwrap();
 
         let mut results = Vec::new();
 
@@ -108,14 +110,14 @@ mod moves_counter_test {
 
         assert_fen_moves(
             String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
-            &move_generator,
+            &mut move_generator,
             results,
         );
     }
 
     #[test]
     fn test_perft_pos_2() {
-        let move_generator = MOVE_GENERATOR.lock().unwrap();
+        let mut move_generator = MOVE_GENERATOR.lock().unwrap();
 
         let mut results = Vec::new();
 
@@ -127,14 +129,14 @@ mod moves_counter_test {
 
         assert_fen_moves(
             String::from("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"),
-            &move_generator,
+            &mut move_generator,
             results,
         );
     }
 
     #[test]
     fn test_perft_pos_3() {
-        let move_generator = MOVE_GENERATOR.lock().unwrap();
+        let mut move_generator = MOVE_GENERATOR.lock().unwrap();
 
         let mut results = Vec::new();
 
@@ -148,14 +150,14 @@ mod moves_counter_test {
 
         assert_fen_moves(
             String::from("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -"),
-            &move_generator,
+            &mut move_generator,
             results,
         );
     }
 
     #[test]
     fn test_perft_pos_4() {
-        let move_generator = MOVE_GENERATOR.lock().unwrap();
+        let mut move_generator = MOVE_GENERATOR.lock().unwrap();
 
         let mut results = Vec::new();
 
@@ -167,14 +169,14 @@ mod moves_counter_test {
 
         assert_fen_moves(
             String::from("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"),
-            &move_generator,
+            &mut move_generator,
             results,
         );
     }
 
     #[test]
     fn test_perft_pos_5() {
-        let move_generator = MOVE_GENERATOR.lock().unwrap();
+        let mut move_generator = MOVE_GENERATOR.lock().unwrap();
 
         let mut results = Vec::new();
 
@@ -186,14 +188,14 @@ mod moves_counter_test {
 
         assert_fen_moves(
             String::from("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8"),
-            &move_generator,
+            &mut move_generator,
             results,
         );
     }
 
     #[test]
     fn test_perft_pos_6() {
-        let move_generator = MOVE_GENERATOR.lock().unwrap();
+        let mut move_generator = MOVE_GENERATOR.lock().unwrap();
 
         let mut results = Vec::new();
 
@@ -207,7 +209,7 @@ mod moves_counter_test {
             String::from(
                 "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
             ),
-            &move_generator,
+            &mut move_generator,
             results,
         );
     }

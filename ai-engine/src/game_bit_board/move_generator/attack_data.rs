@@ -11,6 +11,7 @@ use super::{
     utils::get_king_relevant_squares_related_to_enemy_pawns,
 };
 
+#[derive(Clone)]
 pub struct AttackData {
     pub attack_bb: u64,
     pub defenders_bb: u64,

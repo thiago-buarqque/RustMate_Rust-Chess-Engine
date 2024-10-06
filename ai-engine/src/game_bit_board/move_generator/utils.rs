@@ -1,5 +1,4 @@
 use crate::game_bit_board::{
-    _move::{_move::Move, move_contants::CAPTURE},
     board::Board,
     enums::{Color, PieceType},
     positions::{same_rank, BBPositions, Squares},
@@ -42,28 +41,6 @@ pub fn print_board(color: Color, piece_square: u64, piece_type: PieceType, bb_po
 
     println!("  a b c d e f g h");
     println!("{:#018X}", bb_position)
-}
-
-pub fn create_moves(
-    mut attacks: u64, opponent_pieces_bb: u64, moves: &mut Vec<Move>, square: usize, color: Color,
-    piece_type: PieceType,
-) {
-    while attacks != 0 {
-        let target_square = pop_lsb(&mut attacks);
-
-        let mut flags: u16 = 0;
-        if to_bitboard_position(target_square as u64) & opponent_pieces_bb != 0 {
-            flags = CAPTURE;
-        }
-
-        moves.push(Move::with_flags(
-            flags,
-            square,
-            target_square as usize,
-            color,
-            piece_type,
-        ));
-    }
 }
 
 pub fn is_en_passant_discovered_check(
