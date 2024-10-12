@@ -51,12 +51,10 @@ fn main() {
     let mut board = Board::new();
     let mut move_generator = MoveGenerator::new();
 
+    // move_generator.find_magics();
+
     loop {
         let moves = move_generator.get_moves(&mut board);
-
-        // for (i, _move) in moves.iter().enumerate() {
-        //     println!("{}: {}", i+1, _move.to_algebraic_notation());
-        // }
 
         println!();
 
