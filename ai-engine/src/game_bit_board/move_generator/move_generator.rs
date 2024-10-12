@@ -1,28 +1,26 @@
+use rand::Rng;
+
 use super::{
-    attack_data::AttackData,
-    contants::{
+    attack_data::AttackData, contants::{
         BISHOP_RELEVANT_SQUARES, BLACK_KING_SIDE_PATH_TO_ROOK, BLACK_QUEEN_SIDE_PATH_TO_ROOK,
         KING_MOVES, KNIGHT_MOVES, ROOK_RELEVANT_SQUARES, WHITE_KING_SIDE_PATH_TO_ROOK,
         WHITE_QUEEN_SIDE_PATH_TO_ROOK,
-    },
-    raw_move_generator::RawMoveGenerator,
-    utils::{is_en_passant_discovered_check, is_promotion_square, look_up_pawn_attacks},
+    }, magics::{BISHOP_MAGICS, BISHOP_SHIFTS, ROOK_MAGICS, ROOK_SHIFTS}, raw_move_generator::RawMoveGenerator, utils::{is_en_passant_discovered_check, is_promotion_square, look_up_pawn_attacks}
 };
 use crate::game_bit_board::{
-    _move::{_move::Move, move_contants::*},
-    board::Board,
-    enums::{Color, PieceType},
-    utils::{
+    _move::{_move::Move, move_contants::*}, board::Board, enums::{Color, PieceType}, move_generator::random::Random, utils::{
         bitwise_utils::{east_one, north_one, pop_lsb, south_one, to_bitboard_position, west_one},
-        utils::is_pawn_in_initial_position,
-    },
+        utils::{estimate_memory_usage_in_bytes, is_pawn_in_initial_position},
+    }
 };
 use std::{collections::HashMap, u64, usize};
 
 #[derive(Clone)]
 pub struct MoveGenerator {
-    bishop_lookup_table: HashMap<(u8, u64), u64>,
-    rook_lookup_table: HashMap<(u8, u64), u64>,
+    bishop_lookup_hash_table: HashMap<(u8, u64), u64>,
+    rook_lookup_hash_table: HashMap<(u8, u64), u64>,
+    bishop_lookup_table: [Vec<u64>; 64],
+    rook_lookup_table: [Vec<u64>; 64],
     friendly_pieces_bb: u64,
     opponent_pieces_bb: u64,
     occupied_squares: u64,
@@ -30,14 +28,70 @@ pub struct MoveGenerator {
     attack_data: AttackData,
 }
 
+#[inline(always)]
+fn is_collision_detected(actual: &[u64], hash: usize, attacks: u64) -> bool {
+    actual[hash] != 0 && actual[hash] != attacks
+}
+
 impl MoveGenerator {
     pub fn new() -> Self {
-        let bishop_lookup_table: HashMap<(u8, u64), u64> =
+        let bishop_lookup_hash_table: HashMap<(u8, u64), u64> =
             RawMoveGenerator::create_bishop_lookup_table();
-        let rook_lookup_table: HashMap<(u8, u64), u64> =
+        let rook_lookup_hash_table: HashMap<(u8, u64), u64> =
             RawMoveGenerator::create_rook_lookup_table();
 
+        let mut bishop_lookup_table= [const { Vec::new() }; 64];
+        let mut rook_lookup_table= [const { Vec::new() }; 64];
+
+        for square in 0..64 {
+            let magic = ROOK_MAGICS[square];
+            let shift = ROOK_SHIFTS[square];
+
+            let mut keys = rook_lookup_hash_table.keys().filter(|key| key.0 == (square as u8)).collect::<Vec<&(u8, u64)>>();
+
+            keys.sort();
+
+            rook_lookup_table[square].reserve_exact(keys.len());
+
+            rook_lookup_table[square] = vec![0; keys.len()];
+
+            for key in keys {
+                let hash = (key.1.wrapping_mul(magic) >> shift) as usize;
+                
+                if rook_lookup_table[square][hash] != 0 {
+                    panic!("(Rook conflict) Hash: {} key: {:?} value: {} stored: {}", hash, key, *rook_lookup_hash_table.get(key).unwrap(), rook_lookup_table[square][hash]);
+                }
+
+                rook_lookup_table[square][hash] = *rook_lookup_hash_table.get(key).unwrap();
+            }
+        }
+
+        for square in 0..64 {
+            let magic = BISHOP_MAGICS[square];
+            let shift = BISHOP_SHIFTS[square];
+
+            let mut keys = bishop_lookup_hash_table.keys().filter(|key| key.0 == (square as u8)).collect::<Vec<&(u8, u64)>>();
+
+            keys.sort();
+
+            bishop_lookup_table[square].reserve_exact(keys.len());
+
+            bishop_lookup_table[square] = vec![0; keys.len()];
+
+            for key in keys {
+                let hash = (key.1.wrapping_mul(magic) >> shift) as usize;
+
+                if bishop_lookup_table[square][hash] != 0 {
+                    panic!("(Bishop conflict) Hash: {} key: {:?} value: {} stored: {}", hash, key, *bishop_lookup_hash_table.get(key).unwrap(), bishop_lookup_table[square][hash]);
+                }
+
+                bishop_lookup_table[square][hash] = *bishop_lookup_hash_table.get(key).unwrap();
+            }
+        }
+
         Self {
+            bishop_lookup_hash_table,
+            rook_lookup_hash_table,
             bishop_lookup_table,
             rook_lookup_table,
             friendly_pieces_bb: 0,
@@ -46,6 +100,84 @@ impl MoveGenerator {
             side_to_move: Color::White,
             attack_data: AttackData::new(),
         }
+    }
+
+    fn generate_candidate_magic(&self, rng: &mut rand::rngs::ThreadRng) -> u64 {
+        loop {
+            let magic = rng.gen::<u64>() & rng.gen::<u64>() & rng.gen::<u64>();
+            // Ensure certain bits are set
+            if (magic & 0xFF00000000000000) != 0 && (magic & 0x00000000000000FF) != 0 {
+                return magic;
+            }
+        }
+    }
+
+    pub fn find_magics(&self) {
+        let mut rng = rand::thread_rng();
+
+        let mut magics = [0; 64];
+        let mut shifts = [0; 64];
+        let mut sizes = [0;64];
+        let mut size = 0;
+
+        for square in 0..64 {
+            let mask = ROOK_RELEVANT_SQUARES[square];
+
+            let shift = 64 - mask.count_ones();
+            
+            let mut keys = self.rook_lookup_hash_table.keys().filter(|key| key.0 == square as u8).collect::<Vec<&(u8, u64)>>();
+
+            keys.sort();
+
+            let mut colisions_count = 0;
+
+            for _ in 0..1_000_000 {
+                let magic = self.generate_candidate_magic(&mut rng);
+                
+                if (mask.wrapping_mul(magic) & 0xFF00_0000_0000_0000).count_ones() < 6 {
+                    continue;
+                }
+                
+
+                let mut actual = vec![0; keys.len()];
+
+                let mut colision = false;
+
+                for key in &keys {
+                    let hash = (key.1.wrapping_mul(magic) >> shift) as usize;
+
+                    let attacks = self.rook_lookup_hash_table.get(*key).unwrap();
+
+                    if is_collision_detected(&actual, hash, *attacks) {
+                        colision = true;
+                        colisions_count += 1;
+
+                        break;
+                    }
+
+                    actual[hash] = *attacks;
+                }
+
+                if !colision {
+                    magics[square] = magic;
+                    shifts[square] = shift;
+
+                    let _size =estimate_memory_usage_in_bytes::<u64>(keys.len());
+
+                    sizes[square] = _size;
+
+                    size += _size;
+
+                    break;
+                }
+            }
+
+            println!("Colision count for square {square}: {colisions_count}");
+        }
+
+        println!("const MAGIC_NUMBERS = {:?};", magics);
+        println!("const SHIFTS = {:?};", shifts);
+        println!("Total lookup table size {:?}kb", size / 1024);
     }
 
     pub fn init(&mut self, board: &mut Board) {
@@ -191,10 +323,10 @@ impl MoveGenerator {
         let occupied_relevant_squares =
             (friendly_pieces_bb | opponent_pieces_bb) & BISHOP_RELEVANT_SQUARES[square];
 
-        let attacks = *self
-            .bishop_lookup_table
-            .get(&(square as u8, occupied_relevant_squares))
-            .unwrap();
+        let hash = (occupied_relevant_squares.wrapping_mul(BISHOP_MAGICS[square]) >> BISHOP_SHIFTS[square]) as usize;
+
+        let attacks = self
+            .bishop_lookup_table[square][hash];
 
         attacks
     }
@@ -224,10 +356,10 @@ impl MoveGenerator {
         let occupied_relevant_squares =
             (friendly_pieces_bb | opponent_pieces_bb) & ROOK_RELEVANT_SQUARES[square];
 
-        let attacks = *self
-            .rook_lookup_table
-            .get(&(square as u8, occupied_relevant_squares))
-            .unwrap();
+        let hash = (occupied_relevant_squares.wrapping_mul(ROOK_MAGICS[square]) >> ROOK_SHIFTS[square]) as usize;
+
+        let attacks = self
+            .rook_lookup_table[square][hash];
 
         attacks
     }
