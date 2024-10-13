@@ -8,13 +8,8 @@ use game_bit_board::{
     move_generator::move_generator::MoveGenerator,
     utils::utils::algebraic_to_square,
 };
-// mod ai;
-// mod common;
-// mod dto;
-// mod game;
+
 mod game_bit_board;
-// mod game_controller;
-// mod global_state;
 
 pub fn get_input(prompt: &str) -> String {
     println!("{}", prompt);
@@ -46,12 +41,8 @@ fn main() {
         .build_global()
         .unwrap();
 
-    // "8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - e3"
-    // r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -
     let mut board = Board::new();
     let mut move_generator = MoveGenerator::new();
-
-    // move_generator.find_magics();
 
     loop {
         let moves = move_generator.get_moves(&mut board);
