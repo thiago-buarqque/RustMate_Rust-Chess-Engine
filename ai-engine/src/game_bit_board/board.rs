@@ -90,12 +90,23 @@ impl Board {
     }
 
     pub fn from_fen(fen: &str) -> Self {
-        let parts: Vec<&str> = fen.split_whitespace().collect();
         // if parts.len() != 6 {
         //     panic!("Invalid FEN string.");
         // }
 
         let mut board = Board::empty();
+
+        Board::_load_position(&mut board, fen);
+
+        board
+    }
+
+    pub fn load_position(&mut self, fen: &str) {
+        Board::_load_position(self, fen);
+    }
+
+    fn _load_position(board: &mut Board, fen: &str) {
+        let parts: Vec<&str> = fen.split_whitespace().collect();
 
         for (i, row) in parts[0].split('/').rev().enumerate() {
             let mut col = 0;
@@ -167,8 +178,6 @@ impl Board {
         zobrist.compute_hash(&board);
 
         board.zobrist = zobrist;
-
-        board
     }
 
     pub fn reset(&mut self) {

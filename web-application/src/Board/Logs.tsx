@@ -14,7 +14,7 @@ const Logs: React.FC<IProps> = ({aiResponse, board, isWaitingForAI}) => {
     <div id='logs'>
         <div id="board-info">
                 <h1>Board:</h1>
-                <span className='log'><strong>Evaluation:</strong> {board.boardEvaluation.toFixed(1)} ({getBoardEvaluationMessage(board.boardEvaluation, board.winner)})</span>
+                {/* <span className='log'><strong>Evaluation:</strong> {board.evaluation.toFixed(1)} ({getBoardEvaluationMessage(board.evaluation, board.winner)})</span> */}
                 <span className='log'><strong>Position hash:</strong> {getZobritBinary(board.zobrit)}</span>
                 <span className='log'><strong>Black in check:</strong> {board.blackKingInCheck.toString()}</span>
                 <span className='log'><strong>White in check:</strong> {board.whiteKingInCheck.toString()}</span>
@@ -27,7 +27,7 @@ const Logs: React.FC<IProps> = ({aiResponse, board, isWaitingForAI}) => {
                 <span className='log'><strong>Depth:</strong> {aiResponse.depth}</span>
                 <span className='log'><strong>Duration:</strong> {aiResponse.duration}ms</span>
                 <span className='log'><strong>Evaluation:</strong> {aiResponse.evaluation.toFixed(1)}</span>
-                <span className='log'><strong>Best move:</strong> {aiResponse.aiMove.notation}</span>
+                {/* <span className='log'><strong>Best move:</strong> {aiResponse.aiMove.notation}</span> */}
             </div>
         }
 

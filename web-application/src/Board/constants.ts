@@ -1,10 +1,10 @@
-import { TPiece } from "./types";
+import { TColor, TMove, TPieceType } from "./types";
 
 export const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-export const EMPTY_FEN = "-"
+export const EMPTY_FEN = "."
 
-export const LINES = [0, 1, 2, 3, 4, 5, 6, 7];
+export const LINES = [7, 6, 5, 4, 3, 2, 1, 0];
 export const COLUMNS: { [key: number]: string } = {
   0: "A",
   1: "B",
@@ -16,10 +16,17 @@ export const COLUMNS: { [key: number]: string } = {
   7: "H",
 };
 
-export const EMPTY_PIECE: TPiece = {
-  moves: [],
-  position: -1,
-  value: 0,
-  fen: null,
-  white: false,
+export const EMPTY_MOVE: TMove = {
+  _move: 0,
+  bitboards: [],
+  black_king_moved: false,
+  board_en_passant_bb_piece_square: 0,
+  board_en_passant_bb_position: 0,
+  castling_rights: 0,
+  color: TColor.Black,
+  en_passant_bb_piece_square: 0,
+  en_passant_bb_position: 0,
+  piece_type: TPieceType.Empty,
+  white_king_moved: false,
+  zobrist_hash: 0
 };
