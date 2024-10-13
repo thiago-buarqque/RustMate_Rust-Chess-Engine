@@ -4,9 +4,7 @@
 pub struct Random(u64);
 
 impl Random {
-    pub fn new() -> Self {
-        Self(0xFFAAB58C5833FE89)
-    }
+    pub fn new() -> Self { Self(0xFFAAB58C5833FE89) }
 
     /// Returns a random unsigned 64-bit integer.
     pub fn next_u64(&mut self) -> u64 {

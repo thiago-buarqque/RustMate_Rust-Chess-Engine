@@ -1,5 +1,4 @@
-use std::{collections::HashMap, mem::size_of};
-use std::mem;
+use std::{collections::HashMap, mem, mem::size_of};
 
 use crate::game_bit_board::{
     enums::{Color, PieceType},
@@ -105,12 +104,12 @@ pub fn memory_usage_in_kb(map: &HashMap<(u8, u64), u64>) -> usize {
 pub fn estimate_memory_usage_in_bytes<T>(vec_capacity: usize) -> u64 {
     // Metadata size (24 bytes on a 64-bit system)
     let metadata_size = mem::size_of::<Vec<T>>();
-    
+
     // Size of elements in the vector
     let data_size = vec_capacity * mem::size_of::<T>();
-    
+
     // Total size in bytes
     let total_size_bytes = metadata_size + data_size;
-    
+
     total_size_bytes as u64
 }
