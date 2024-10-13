@@ -1,15 +1,22 @@
 use super::{
-    attack_data::AttackData, contants::{
+    attack_data::AttackData,
+    contants::{
         BISHOP_RELEVANT_SQUARES, BLACK_KING_SIDE_PATH_TO_ROOK, BLACK_QUEEN_SIDE_PATH_TO_ROOK,
         KING_MOVES, KNIGHT_MOVES, ROOK_RELEVANT_SQUARES, WHITE_KING_SIDE_PATH_TO_ROOK,
         WHITE_QUEEN_SIDE_PATH_TO_ROOK,
-    }, magics::{fill_magics_lookup_table, BISHOP_MAGICS, BISHOP_SHIFTS, ROOK_MAGICS, ROOK_SHIFTS}, raw_move_generator::RawMoveGenerator, utils::{is_en_passant_discovered_check, is_promotion_square, look_up_pawn_attacks}
+    },
+    magics::{fill_magics_lookup_table, BISHOP_MAGICS, BISHOP_SHIFTS, ROOK_MAGICS, ROOK_SHIFTS},
+    raw_move_generator::RawMoveGenerator,
+    utils::{is_en_passant_discovered_check, is_promotion_square, look_up_pawn_attacks},
 };
 use crate::game_bit_board::{
-    _move::{_move::Move, move_contants::*}, board::Board, enums::{Color, PieceType}, utils::{
+    _move::{_move::Move, move_contants::*},
+    board::Board,
+    enums::{Color, PieceType},
+    utils::{
         bitwise_utils::{east_one, north_one, pop_lsb, south_one, to_bitboard_position, west_one},
         utils::is_pawn_in_initial_position,
-    }
+    },
 };
 use std::{collections::HashMap, u64, usize};
 
@@ -33,17 +40,23 @@ impl MoveGenerator {
         let rook_lookup_hash_table: HashMap<(u8, u64), u64> =
             RawMoveGenerator::create_rook_lookup_table();
 
-        let mut bishop_lookup_table: [Vec<u64>; 64]= [const { Vec::new() }; 64];
-        let mut rook_lookup_table: [Vec<u64>; 64]= [const { Vec::new() }; 64];
+        let mut bishop_lookup_table: [Vec<u64>; 64] = [const { Vec::new() }; 64];
+        let mut rook_lookup_table: [Vec<u64>; 64] = [const { Vec::new() }; 64];
 
         fill_magics_lookup_table(
-            &bishop_lookup_hash_table, &mut bishop_lookup_table,
-            BISHOP_MAGICS, BISHOP_SHIFTS, PieceType::Bishop
+            &bishop_lookup_hash_table,
+            &mut bishop_lookup_table,
+            BISHOP_MAGICS,
+            BISHOP_SHIFTS,
+            PieceType::Bishop,
         );
 
         fill_magics_lookup_table(
-            &rook_lookup_hash_table, &mut rook_lookup_table,
-            ROOK_MAGICS, ROOK_SHIFTS, PieceType::Rook
+            &rook_lookup_hash_table,
+            &mut rook_lookup_table,
+            ROOK_MAGICS,
+            ROOK_SHIFTS,
+            PieceType::Rook,
         );
 
         Self {
@@ -201,10 +214,10 @@ impl MoveGenerator {
         let occupied_relevant_squares =
             (friendly_pieces_bb | opponent_pieces_bb) & BISHOP_RELEVANT_SQUARES[square];
 
-        let hash = (occupied_relevant_squares.wrapping_mul(BISHOP_MAGICS[square]) >> BISHOP_SHIFTS[square]) as usize;
+        let hash = (occupied_relevant_squares.wrapping_mul(BISHOP_MAGICS[square])
+            >> BISHOP_SHIFTS[square]) as usize;
 
-        let attacks = self
-            .bishop_lookup_table[square][hash];
+        let attacks = self.bishop_lookup_table[square][hash];
 
         attacks
     }
@@ -234,10 +247,10 @@ impl MoveGenerator {
         let occupied_relevant_squares =
             (friendly_pieces_bb | opponent_pieces_bb) & ROOK_RELEVANT_SQUARES[square];
 
-        let hash = (occupied_relevant_squares.wrapping_mul(ROOK_MAGICS[square]) >> ROOK_SHIFTS[square]) as usize;
+        let hash = (occupied_relevant_squares.wrapping_mul(ROOK_MAGICS[square])
+            >> ROOK_SHIFTS[square]) as usize;
 
-        let attacks = self
-            .rook_lookup_table[square][hash];
+        let attacks = self.rook_lookup_table[square][hash];
 
         attacks
     }
