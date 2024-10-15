@@ -11,7 +11,6 @@ export type TBoard = {
   enPassant: number;
   evaluation: number;
   fen: string;
-  moves: TMove[];
   pieces: TPiece[];
   whiteCaptures: string[];
   whiteKingInCheck: boolean;
@@ -23,23 +22,15 @@ export type TBoard = {
 export type TPiece = {
   color: TColor;
   fen: string;
+  moves: TMove[];
   position: number;
   type: TPieceType;
 }
 
 export type TMove = {
-  _move: number,
-  bitboards: number[],
-  black_king_moved: false,
-  board_en_passant_bb_piece_square: number,
-  board_en_passant_bb_position: number,
-  castling_rights: number,
-  color: TColor,
-  en_passant_bb_piece_square: number,
-  en_passant_bb_position: number,
-  piece_type: TPieceType,
-  white_king_moved: false,
-  zobrist_hash: number
+    flags: number,
+    from: number,
+    to: number
 }
 
 export enum TColor {

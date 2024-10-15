@@ -4,7 +4,7 @@ export const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -
 
 export const EMPTY_FEN = "."
 
-export const LINES = [7, 6, 5, 4, 3, 2, 1, 0];
+export const LINES = [0, 1, 2, 3, 4, 5, 6, 7];
 export const COLUMNS: { [key: number]: string } = {
   0: "A",
   1: "B",
@@ -17,16 +17,7 @@ export const COLUMNS: { [key: number]: string } = {
 };
 
 export const EMPTY_MOVE: TMove = {
-  _move: 0,
-  bitboards: [],
-  black_king_moved: false,
-  board_en_passant_bb_piece_square: 0,
-  board_en_passant_bb_position: 0,
-  castling_rights: 0,
-  color: TColor.Black,
-  en_passant_bb_piece_square: 0,
-  en_passant_bb_position: 0,
-  piece_type: TPieceType.Empty,
-  white_king_moved: false,
-  zobrist_hash: 0
+    flags: -1,
+    from: -1,
+    to: -1
 };

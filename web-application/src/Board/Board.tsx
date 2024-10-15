@@ -22,14 +22,6 @@ const get_empty_move = (position: number) => {
 	return piece;
 };
 
-const get_from = (move: TMove) => {
-	return (move._move >> 6) & 0x0f;
-}
-
-const get_to = (move: TMove) => {
-	return move._move & 0x0f;
-}
-
 const playMoveAudio = (capture: boolean) => {
 	let audio;
 
@@ -44,7 +36,7 @@ const playMoveAudio = (capture: boolean) => {
 const INVALID_POSITION = -1;
 
 const getPieceMove = (moves: TMove[], position: number) => {
-	return moves.find((move) => get_to(move) === position);
+	return moves.find((move) => move.to === position);
 };
 
 const Board = () => {
@@ -52,7 +44,6 @@ const Board = () => {
 	const [lastMovePos, setLastMovePos] = useState<number>(INVALID_POSITION);
 	const [isWaitingForAI, setIsWaitingForAI] = useState(false);
 	const [lastAIResponse, setLastAIResponse] = useState<AIResponse>();
-	const [pieceMoves, setPieceMoves] = useState<TMove[][]>([]);
 	const [board, setBoard] = useState<TBoard>({
 		blackCaptures: [],
 		blackKingInCheck: false,
@@ -60,31 +51,12 @@ const Board = () => {
 		evaluation: 0,
 		fen: INITIAL_FEN,
 		whiteCaptures: [],
-		moves: [],
 		pieces: [],
 		whiteKingInCheck: false,
 		siteToMove: TColor.White,
 		winner: "-",
 		zobrit: 0,
 	});
-
-	const loadBoard = (board: TBoard) => {
-		setBoard(board);
-
-		let piece_moves: TMove[][] = [];
-
-		board.moves.forEach(move => {
-			const from = get_from(move);
-
-			if (!piece_moves[from]) {
-				piece_moves[from] = [];
-			}
-
-			piece_moves[from].push(move);
-		});
-
-		setPieceMoves(pieceMoves);
-	}
 
 	const onPieceSelect = (piece: TPiece) => {
 		if (isWaitingForAI) {
@@ -98,7 +70,7 @@ const Board = () => {
 		if (selectedPiecePos === piece.position) {
 			setSelectedPiecePos(INVALID_POSITION);
 		} else {
-			if (selectedPiecePos != INVALID_POSITION) {
+			if (selectedPiecePos !== INVALID_POSITION) {
 				togglePieceAvailableMoves(selectedPiecePos);
 			}
 
@@ -112,8 +84,8 @@ const Board = () => {
 			return;
 		}
 
-		pieceMoves[position].forEach((move) => {
-			const to_position = get_to(move);
+		board.pieces[position].moves.forEach((move) => {
+			const to_position = move.to
 
 			const capturedPiece = board.pieces[position];
 
@@ -137,10 +109,11 @@ const Board = () => {
 			return;
 		}
 
-		if (selectedPiecePos != INVALID_POSITION) {
-			let move = getPieceMove(pieceMoves[selectedPiecePos], cellPosition);
+		if (selectedPiecePos !== INVALID_POSITION) {
+			let move = getPieceMove(board.pieces[selectedPiecePos].moves, cellPosition);
 
 			if (move === undefined) {
+                console.log("Could not find move");
 				return;
 			}
 
@@ -157,7 +130,7 @@ const Board = () => {
 
 			// copy_board.moves[cellPosition] = selectedPiecePos;
 
-			// loadBoard(copy_board);
+			// setBoard(copy_board);
 			setSelectedPiecePos(INVALID_POSITION);
 
 			const cellPiece = document.querySelector(
@@ -171,7 +144,7 @@ const Board = () => {
 			togglePieceAvailableMoves(selectedPiecePos);
 
 			movePiece(move);
-			setLastMovePos(get_from(move));
+			setLastMovePos(move.from);
 		}
 	};
 
@@ -180,7 +153,7 @@ const Board = () => {
 			.get<TBoard>("/board")
 			.then((response) => response.data)
 			.then((data) => {
-				loadBoard(data);
+				setBoard(data);
 			});
 	};
 
@@ -208,7 +181,7 @@ const Board = () => {
 		http.post<TBoard>("/board/move/piece", move)
 			.then((response) => response.data)
 			.then((data) => {
-				loadBoard(data);
+				setBoard(data);
 
 				// getAiMove();
 			})
@@ -226,6 +199,7 @@ const Board = () => {
 		if (!inputFen) return;
 
 		let fen = INITIAL_FEN;
+
 		if (inputFen.value.trim() !== "") {
 			fen = inputFen.value.trim();
 		}
@@ -235,7 +209,7 @@ const Board = () => {
 		})
 			.then((response) => response.data)
 			.then((data) => {
-				loadBoard(data);
+				setBoard(data);
 
 				// if (!data.siteToMove) {
 				// 	getAiMove();
@@ -245,20 +219,20 @@ const Board = () => {
 			});
 	};
 
-	const setAITime = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		let aiTimeInput = document.getElementById("ai_time");
+	// const setAITime = (e: React.FormEvent<HTMLFormElement>) => {
+	// 	e.preventDefault();
+	// 	let aiTimeInput = document.getElementById("ai_time");
 
-		if (!aiTimeInput) {
-			return;
-		}
+	// 	if (!aiTimeInput) {
+	// 		return;
+	// 	}
 
-		let time = Number((aiTimeInput as HTMLInputElement).value);
+	// 	let time = Number((aiTimeInput as HTMLInputElement).value);
 
-		http.post<{ moves: number; elapsedTime: number }>("/ai/time_to_think", {
-			time_to_think: time,
-		});
-	};
+	// 	http.post<{ moves: number; elapsedTime: number }>("/ai/time_to_think", {
+	// 		time_to_think: time,
+	// 	});
+	// };
 
 	useEffect(() => {
 		fetchBoard();
@@ -279,12 +253,12 @@ const Board = () => {
             Count
           </button>
         </form>*/}
-				<form method="post" onSubmit={setAITime}>
+				{/* <form method="post" onSubmit={}>
 					<input type="number" name="aiTime" id="ai_time" defaultValue={2} />
 					<button type="submit" id="set_ai_time_btn">
 						Set
 					</button>
-				</form>
+				</form> */}
 			</div>
 
 			<div id="board">
@@ -298,10 +272,11 @@ const Board = () => {
 						<img key={i} className="captured_piece" src={PIECE_ICONS[piece_fen]} alt={piece_fen} />
 					))}
 				</div>
-				{LINES.map((i) => (
+				{[7, 6, 5, 4, 3, 2, 1, 0].map((i) => (
 					<div key={i} className="row">
-						{LINES.map((j) => {
-              				const position = i * 8 + (7 - j);
+						{[0, 1, 2, 3, 4, 5, 6, 7].map((j) => {
+              				const position = (i * 8) + j;
+                            console.log(i, j, "(i * 8) + j=", (i * 8) + j)
 
 							const piece = board.pieces[position];
 
@@ -309,12 +284,12 @@ const Board = () => {
 								<Cell
                   					key={position}
 									board={board}
-									column={7 - j}
+									column={j}
                   					// lastMove={lastMovePos}
 									onClickPiece={onPieceSelect}
 									onMovePiece={onMovePiece}
 									piece={piece}
-									row={7 - i}
+									row={i}
 									selectedPiecePosition={selectedPiecePos}
 								/>
 							);

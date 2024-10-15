@@ -4,13 +4,11 @@ use std::{io, num::ParseIntError, sync::Mutex};
 
 use actix_cors::Cors;
 use game_bit_board::{
-    _move::{_move::Move, move_utils::get_promotion_flag_from_symbol, moves_counter::count_moves},
+    _move::_move::Move,
     board::Board,
     move_generator::move_generator::MoveGenerator,
-    utils::utils::algebraic_to_square,
 };
 use actix_web::{http::header, middleware::Logger, web::Data, App, HttpServer};
-use global_state::GlobalState;
 
 mod constants;
 mod dto;
@@ -125,7 +123,10 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
     println!("Server started successfully 🚀!");
 
-    let state = Data::new(Mutex::new(GlobalState::new()));
+    // let state = Data::new(Mutex::new(GlobalState::new()));
+    let board = Data::new(Mutex::new(Board::new()));
+    let move_generator = Data::new(Mutex::new(MoveGenerator::new()));
+
     HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
@@ -139,12 +140,13 @@ async fn main() -> std::io::Result<()> {
             .supports_credentials();
 
         App::new()
-            .app_data(Data::clone(&state))
+            .app_data(Data::clone(&board))
+            .app_data(Data::clone(&move_generator))
             .service(game_controller::get_board)
             .service(game_controller::get_move_generation_count)
             .service(game_controller::load_fen)
             .service(game_controller::move_piece)
-            .service(game_controller::set_ai_depth)
+            // .service(game_controller::set_ai_depth)
             // .service(game_controller::ai_move)
             // .configure(config)
             .wrap(cors)
