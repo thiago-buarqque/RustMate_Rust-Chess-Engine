@@ -1,4 +1,5 @@
 use core::fmt;
+use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 

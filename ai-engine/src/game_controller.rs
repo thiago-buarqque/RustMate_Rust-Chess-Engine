@@ -127,7 +127,7 @@ pub fn get_board_response(board: &mut MutexGuard<'_, Board>, move_generator: &mu
         "fen": fen,
         "whiteCaptures": Vec::<String>::new(),
         "siteToMove": side_to_move,
-        "winner": "-",
+        "winner": board.get_winner(),
         "zobrit": zobrist,
         "pieces": pieces,
         "whiteKingInCheck": false

@@ -64,6 +64,7 @@ const Board = () => {
 		}
 
 		if (board.siteToMove !== piece.color) {
+            console.log("LOG: It's not your turn");
 			// Play invalid move sound
 			return;
 		}
@@ -105,9 +106,9 @@ const Board = () => {
 	};
 
 	const onMovePiece = (cell: HTMLDivElement, cellPosition: number) => {
-		if (isWaitingForAI) {
-			return;
-		}
+		// if (isWaitingForAI) {
+		// 	return;
+		// }
 
 		if (selectedPiecePos !== INVALID_POSITION) {
 			let move = getPieceMove(board.pieces[selectedPiecePos].moves, cellPosition);
@@ -176,7 +177,7 @@ const Board = () => {
 	// };
 
 	const movePiece = (move: TMove) => {
-		setIsWaitingForAI(true);
+		// setIsWaitingForAI(true);
 
 		http.post<TBoard>("/board/move/piece", move)
 			.then((response) => response.data)
@@ -187,7 +188,7 @@ const Board = () => {
 			})
 			.catch((err) => {
 				console.error(err);
-				setIsWaitingForAI(false);
+				// setIsWaitingForAI(false);
 			});
 	};
 
@@ -275,8 +276,7 @@ const Board = () => {
 				{[7, 6, 5, 4, 3, 2, 1, 0].map((i) => (
 					<div key={i} className="row">
 						{[0, 1, 2, 3, 4, 5, 6, 7].map((j) => {
-              				const position = (i * 8) + j;
-                            console.log(i, j, "(i * 8) + j=", (i * 8) + j)
+              				const position = (i * 8) + (7 - j);
 
 							const piece = board.pieces[position];
 
@@ -293,7 +293,7 @@ const Board = () => {
 									selectedPiecePosition={selectedPiecePos}
 								/>
 							);
-						})}
+						}).reverse()}
 					</div>
 				))}
 				{board.winner !== "-" && (

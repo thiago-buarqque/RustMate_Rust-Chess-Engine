@@ -1,4 +1,4 @@
-use crate::game_bit_board::utils::utils::get_piece_symbol;
+use crate::{constants::constants::WINNER_NONE, game_bit_board::utils::utils::get_piece_symbol};
 
 use super::{
     _move::{_move::Move, move_utils::get_piece_type_from_promotion_flag},
@@ -34,7 +34,7 @@ pub struct Board {
     // Bit 7: Black queenside castling.
     castling_rights: u8,
 
-    winner: Option<Color>,
+    winner: char,
     full_move_clock: u32,
     half_move_clock: u32,
 
@@ -81,7 +81,7 @@ impl Board {
             black_king_moved: false,
             white_king_moved: false,
             castling_rights: 0,
-            winner: None,
+            winner: WINNER_NONE,
             full_move_clock: 1,
             half_move_clock: 0,
             moves_history: Vec::new(),
@@ -102,6 +102,8 @@ impl Board {
     }
 
     pub fn load_position(&mut self, fen: &str) {
+        self.reset();
+
         Board::_load_position(self, fen);
     }
 
@@ -202,13 +204,24 @@ impl Board {
         self.bitboards[KINGS_IDX] = 0x1000000000000010;
 
         self.castling_rights = 0xF;
+
+        self.en_passant_bb_position = 0;
+        self.en_passant_piece_square_bb = 0;
+        self.side_to_move = Color::White;
+        self.black_king_moved = false;
+        self.white_king_moved = false;
+        self.winner = WINNER_NONE;
+        self.full_move_clock = 1;
+        self.half_move_clock = 0;
+        self.moves_history = Vec::new();
+        self.zobrist = Zobrist::new();
     }
 
-    pub fn set_winner(&mut self, winner: Option<Color>) { self.winner = winner; }
+    pub fn set_winner(&mut self, winner: char) { self.winner = winner; }
 
-    pub fn get_winner(&self) -> Option<Color> { self.winner }
+    pub fn get_winner(&self) -> char { self.winner }
 
-    pub fn is_game_finished(&self) -> bool { self.get_winner().is_some() }
+    pub fn is_game_finished(&self) -> bool { self.get_winner() != WINNER_NONE }
 
     pub fn get_side_to_move(&self) -> Color { self.side_to_move }
 
@@ -297,8 +310,8 @@ impl Board {
 
         self.side_to_move = self.side_to_move.opponent();
 
-        if self.winner.is_some() {
-            self.winner = None;
+        if self.is_game_finished() {
+            self.winner = WINNER_NONE;
         }
 
         self.moves_history.remove(self.moves_history.len() - 1);
