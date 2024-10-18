@@ -63,6 +63,8 @@ impl Board {
 
         board.reset();
 
+        board.set_initial_bbs();
+
         let mut zobrist = board.zobrist.clone();
 
         zobrist.compute_hash(&board);
@@ -95,6 +97,8 @@ impl Board {
         // }
 
         let mut board = Board::empty();
+
+        board.reset();
 
         Board::_load_position(&mut board, fen);
 
@@ -175,6 +179,8 @@ impl Board {
             board.full_move_clock = parts[5].parse::<u32>().unwrap();
         }
 
+        board.winner = WINNER_NONE;
+
         let mut zobrist = board.zobrist.clone();
 
         zobrist.compute_hash(&board);
@@ -182,26 +188,30 @@ impl Board {
         board.zobrist = zobrist;
     }
 
+    pub fn set_initial_bbs(&mut self) {
+      // Placement of pawns
+      self.bitboards[PAWNS_IDX] = 0x00FF00000000FF00;
+      self.bitboards[WHITE_IDX] = 0x000000000000FFFF;
+      self.bitboards[BLACK_IDX] = 0xFFFF000000000000;
+  
+      // Placement of rooks
+      self.bitboards[ROOKS_IDX] = 0x8100000000000081;
+  
+      // Placement of knights
+      self.bitboards[KNIGHTS_IDX] = 0x4200000000000042;
+  
+      // Placement of bishops
+      self.bitboards[BISHOPS_IDX] = 0x2400000000000024;
+  
+      // Placement of queens
+      self.bitboards[QUEENS_IDX] = 0x0800000000000008;
+  
+      // Placement of kings
+      self.bitboards[KINGS_IDX] = 0x1000000000000010;
+    }
+
     pub fn reset(&mut self) {
-        // Placement of pawns
-        self.bitboards[PAWNS_IDX] = 0x00FF00000000FF00;
-        self.bitboards[WHITE_IDX] = 0x000000000000FFFF;
-        self.bitboards[BLACK_IDX] = 0xFFFF000000000000;
-
-        // Placement of rooks
-        self.bitboards[ROOKS_IDX] = 0x8100000000000081;
-
-        // Placement of knights
-        self.bitboards[KNIGHTS_IDX] = 0x4200000000000042;
-
-        // Placement of bishops
-        self.bitboards[BISHOPS_IDX] = 0x2400000000000024;
-
-        // Placement of queens
-        self.bitboards[QUEENS_IDX] = 0x0800000000000008;
-
-        // Placement of kings
-        self.bitboards[KINGS_IDX] = 0x1000000000000010;
+        self.bitboards = [0; 8];
 
         self.castling_rights = 0xF;
 

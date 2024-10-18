@@ -88,9 +88,9 @@ const Board = () => {
 		board.pieces[position].moves.forEach((move) => {
 			const to_position = move.to
 
-			const capturedPiece = board.pieces[position];
+			const capturedPiece = board.pieces[to_position];
 
-			const className = capturedPiece.fen !== EMPTY_FEN ? "capture-receptor" : "empty-receptor";
+			const className = capturedPiece.type !== TPieceType.Empty ? "capture-receptor" : "empty-receptor";
 
 			const cell = document.querySelector(`.cell[data-pos='${to_position}']`) as HTMLDivElement;
 

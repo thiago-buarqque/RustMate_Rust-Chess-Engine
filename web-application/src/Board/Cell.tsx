@@ -55,7 +55,7 @@ const Cell: React.FC<IProps> = ({
 			data-pos={cellPosition}
 			onClick={(e) => onMovePiece(e.currentTarget, cellPosition)}
 		>
-			<span className="cell-index">{cellPosition}</span>
+			{/* <span className="cell-index">{cellPosition}</span> */}
 			{column === 7 && <span className={`row-index ${(row + 1) % 2 === 0 ? "white" : ""}`}>{8 - row}</span>}
 			{row === 0 && <span className={`column-index ${(column + 1) % 2 !== 0 ? "white" : ""}`}>{COLUMNS[column]}</span>}
 			{piece && piece.fen !== EMPTY_FEN ? (
