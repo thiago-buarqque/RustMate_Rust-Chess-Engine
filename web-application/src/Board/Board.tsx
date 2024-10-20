@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 import { PIECE_ICONS } from "./BoardPiece";
-import { AIResponse, TBoard, TMove, TPiece, TPieceColor, TPieceType } from "./types";
+import { AIResponse, TBoard, TMove, TColor, TPieceType, TPiece } from "./types";
 
 //@ts-ignore
 import captureAudio from "../assets/sound/capture.mp3";
@@ -11,13 +11,13 @@ import moveAudio from "../assets/sound/move-self.mp3";
 import http from "../http-common";
 
 import "./board.scss";
-import { EMPTY_FEN, EMPTY_PIECE, INITIAL_FEN, LINES } from "./constants";
+import { EMPTY_FEN, EMPTY_MOVE, INITIAL_FEN, LINES } from "./constants";
 import Logs, { getBoardEvaluationMessage } from "./Logs";
 import Cell from "./Cell";
 
-const get_empty_piece = (position: number) => {
-	const piece: TPiece = JSON.parse(JSON.stringify(EMPTY_PIECE));
-	piece.position = position;
+const get_empty_move = (position: number) => {
+	const piece: TMove = JSON.parse(JSON.stringify(EMPTY_MOVE));
+	// piece.position = position;
 
 	return piece;
 };
@@ -33,24 +33,27 @@ const playMoveAudio = (capture: boolean) => {
 	audio.play();
 };
 
-const getPieceMove = (availableMoves: TMove[], position: number) => {
-	return availableMoves.find((move) => move.toPosition === position);
+const INVALID_POSITION = -1;
+
+const getPieceMove = (moves: TMove[], position: number) => {
+	return moves.find((move) => move.to === position);
 };
 
 const Board = () => {
-	const [selectedPiece, setSelectedPiece] = useState<TPiece | null>(null);
-	const [lastMove, setLastMove] = useState<TMove | null>(null);
+	const [selectedPiecePos, setSelectedPiecePos] = useState<number>(INVALID_POSITION);
+	const [lastMovePos, setLastMovePos] = useState<number>(INVALID_POSITION);
 	const [isWaitingForAI, setIsWaitingForAI] = useState(false);
 	const [lastAIResponse, setLastAIResponse] = useState<AIResponse>();
 	const [board, setBoard] = useState<TBoard>({
 		blackCaptures: [],
 		blackKingInCheck: false,
-		boardEvaluation: 0,
-		boardFen: INITIAL_FEN,
+		enPassant: 0,
+		evaluation: 0,
+		fen: INITIAL_FEN,
 		whiteCaptures: [],
 		pieces: [],
 		whiteKingInCheck: false,
-		whiteMove: true,
+		siteToMove: TColor.White,
 		winner: "-",
 		zobrit: 0,
 	});
@@ -60,37 +63,42 @@ const Board = () => {
 			return;
 		}
 
-		if (board.whiteMove !== piece.white) {
+		if (board.siteToMove !== piece.color) {
+            console.log("LOG: It's not your turn");
 			// Play invalid move sound
 			return;
 		}
-		if (selectedPiece === piece) {
-			setSelectedPiece(null);
+		if (selectedPiecePos === piece.position) {
+			setSelectedPiecePos(INVALID_POSITION);
 		} else {
-			if (selectedPiece) {
-				togglePieceAvailableMoves(selectedPiece);
+			if (selectedPiecePos !== INVALID_POSITION) {
+				togglePieceAvailableMoves(selectedPiecePos);
 			}
 
-			setSelectedPiece(piece);
+			setSelectedPiecePos(piece.position);
 		}
-		togglePieceAvailableMoves(piece);
+		togglePieceAvailableMoves(piece.position);
 	};
 
-	const togglePieceAvailableMoves = (piece: TPiece) => {
+	const togglePieceAvailableMoves = (position: number) => {
 		if (isWaitingForAI) {
 			return;
 		}
 
-		piece.moves.forEach((move) => {
-			const className = board.pieces[move.toPosition].fen !== EMPTY_FEN ? "capture-receptor" : "empty-receptor";
+		board.pieces[position].moves.forEach((move) => {
+			const to_position = move.to
 
-			const cell = document.querySelector(`.cell[data-pos='${move.toPosition}']`) as HTMLDivElement;
+			const capturedPiece = board.pieces[to_position];
+
+			const className = capturedPiece.type !== TPieceType.Empty ? "capture-receptor" : "empty-receptor";
+
+			const cell = document.querySelector(`.cell[data-pos='${to_position}']`) as HTMLDivElement;
 
 			// cell.onclick = () => onCellClick(cell, move.row, move.column);
 			cell.classList.toggle(className);
 
 			const cellPiece = document.querySelector(
-				`.cell[data-pos='${move.toPosition}'] button.piece-button`
+				`.cell[data-pos='${to_position}'] button.piece-button`
 			) as HTMLDivElement;
 
 			cellPiece?.classList.toggle("disabled");
@@ -98,47 +106,46 @@ const Board = () => {
 	};
 
 	const onMovePiece = (cell: HTMLDivElement, cellPosition: number) => {
-		if (isWaitingForAI) {
-			return;
-		}
+		// if (isWaitingForAI) {
+		// 	return;
+		// }
 
-		if (selectedPiece) {
-			const { position, moves } = selectedPiece;
+		if (selectedPiecePos !== INVALID_POSITION) {
+			let move = getPieceMove(board.pieces[selectedPiecePos].moves, cellPosition);
 
-			let pieceMove = getPieceMove(moves, cellPosition);
-
-			if (pieceMove === undefined) {
+			if (move === undefined) {
+                console.log("Could not find move");
 				return;
 			}
 
 			// TODO: Add the option to choose the promotion
-			if (pieceMove.promotion) {
-				pieceMove.promotionType = TPieceColor.White | TPieceType.Queen;
-			}
+			// if (move.promotion) {
+			// 	move.promotionType = TColor.White | TPieceType.Queen;
+			// }
 
-			const copy_board: TBoard = JSON.parse(JSON.stringify(board));
+			// const copy_board: TBoard = JSON.parse(JSON.stringify(board));
 
-			copy_board.pieces[position] = get_empty_piece(position);
+			// copy_board.moves[position] = get_empty_move(position);
 
-			selectedPiece.position = cellPosition;
+			// selectedPiecePos.position = cellPosition;
 
-			copy_board.pieces[cellPosition] = selectedPiece;
+			// copy_board.moves[cellPosition] = selectedPiecePos;
 
-			setSelectedPiece(null);
-			setBoard(copy_board);
+			// setBoard(copy_board);
+			setSelectedPiecePos(INVALID_POSITION);
 
 			const cellPiece = document.querySelector(
-				`.cell[data-pos='${position}'] button.piece-button.disabled`
+				`.cell[data-pos='${selectedPiecePos}'] button.piece-button.disabled`
 			) as HTMLDivElement;
 
 			cellPiece?.classList.remove("disabled");
 
-			playMoveAudio(pieceMove.capture);
+			// playMoveAudio(move.capture);
 
-			togglePieceAvailableMoves(selectedPiece);
+			togglePieceAvailableMoves(selectedPiecePos);
 
-			movePiece(pieceMove);
-			setLastMove(pieceMove);
+			movePiece(move);
+			setLastMovePos(move.from);
 		}
 	};
 
@@ -151,37 +158,37 @@ const Board = () => {
 			});
 	};
 
-	const getAiMove = () => {
-		setIsWaitingForAI(true);
+	// const getAiMove = () => {
+	// 	setIsWaitingForAI(true);
 
-		http.post<AIResponse>("/ai/move")
-			.then((response) => response.data)
-			.then((aiResponse) => {
-				fetchBoard().then(() => {
-					playMoveAudio(aiResponse.aiMove.capture);
-          setLastMove(aiResponse.aiMove)
+	// 	http.post<AIResponse>("/ai/move")
+	// 		.then((response) => response.data)
+	// 		.then((aiResponse) => {
+	// 			fetchBoard().then(() => {
+	// 				playMoveAudio(aiResponse.aiMove.capture);
+    //       setLastMove(aiResponse.aiMove)
 
-					setLastAIResponse(aiResponse);
-				});
-			})
-			.finally(() => {
-				setIsWaitingForAI(false);
-			});
-	};
+	// 				setLastAIResponse(aiResponse);
+	// 			});
+	// 		})
+	// 		.finally(() => {
+	// 			setIsWaitingForAI(false);
+	// 		});
+	// };
 
-	const movePiece = (pieceMove: TMove) => {
-		setIsWaitingForAI(true);
+	const movePiece = (move: TMove) => {
+		// setIsWaitingForAI(true);
 
-		http.post<TBoard>("/board/move/piece", pieceMove)
+		http.post<TBoard>("/board/move/piece", move)
 			.then((response) => response.data)
 			.then((data) => {
 				setBoard(data);
 
-				getAiMove();
+				// getAiMove();
 			})
 			.catch((err) => {
 				console.error(err);
-				setIsWaitingForAI(false);
+				// setIsWaitingForAI(false);
 			});
 	};
 
@@ -193,6 +200,7 @@ const Board = () => {
 		if (!inputFen) return;
 
 		let fen = INITIAL_FEN;
+
 		if (inputFen.value.trim() !== "") {
 			fen = inputFen.value.trim();
 		}
@@ -204,28 +212,28 @@ const Board = () => {
 			.then((data) => {
 				setBoard(data);
 
-				if (!data.whiteMove) {
-					getAiMove();
-				}
+				// if (!data.siteToMove) {
+				// 	getAiMove();
+				// }
 
 				setLastAIResponse(undefined);
 			});
 	};
 
-	const setAITime = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		let aiTimeInput = document.getElementById("ai_time");
+	// const setAITime = (e: React.FormEvent<HTMLFormElement>) => {
+	// 	e.preventDefault();
+	// 	let aiTimeInput = document.getElementById("ai_time");
 
-		if (!aiTimeInput) {
-			return;
-		}
+	// 	if (!aiTimeInput) {
+	// 		return;
+	// 	}
 
-		let time = Number((aiTimeInput as HTMLInputElement).value);
+	// 	let time = Number((aiTimeInput as HTMLInputElement).value);
 
-		http.post<{ moves: number; elapsedTime: number }>("/ai/time_to_think", {
-			time_to_think: time,
-		});
-	};
+	// 	http.post<{ moves: number; elapsedTime: number }>("/ai/time_to_think", {
+	// 		time_to_think: time,
+	// 	});
+	// };
 
 	useEffect(() => {
 		fetchBoard();
@@ -246,12 +254,12 @@ const Board = () => {
             Count
           </button>
         </form>*/}
-				<form method="post" onSubmit={setAITime}>
+				{/* <form method="post" onSubmit={}>
 					<input type="number" name="aiTime" id="ai_time" defaultValue={2} />
 					<button type="submit" id="set_ai_time_btn">
 						Set
 					</button>
-				</form>
+				</form> */}
 			</div>
 
 			<div id="board">
@@ -265,32 +273,32 @@ const Board = () => {
 						<img key={i} className="captured_piece" src={PIECE_ICONS[piece_fen]} alt={piece_fen} />
 					))}
 				</div>
-				{LINES.map((i) => (
+				{[7, 6, 5, 4, 3, 2, 1, 0].map((i) => (
 					<div key={i} className="row">
-						{LINES.map((j) => {
-              const position = i * 8 + j;
+						{[0, 1, 2, 3, 4, 5, 6, 7].map((j) => {
+              				const position = (i * 8) + (7 - j);
 
 							const piece = board.pieces[position];
 
 							return (
 								<Cell
-                  key={position}
+                  					key={position}
 									board={board}
 									column={j}
-                  lastMove={lastMove}
+                  					// lastMove={lastMovePos}
 									onClickPiece={onPieceSelect}
 									onMovePiece={onMovePiece}
 									piece={piece}
 									row={i}
-									selectedPiecePosition={selectedPiece?.position}
+									selectedPiecePosition={selectedPiecePos}
 								/>
 							);
-						})}
+						}).reverse()}
 					</div>
 				))}
 				{board.winner !== "-" && (
 					<span id="winner-announcement">
-						{getBoardEvaluationMessage(board.boardEvaluation, board.winner)}
+						{getBoardEvaluationMessage(board.evaluation, board.winner)}
 					</span>
 				)}
 			</div>

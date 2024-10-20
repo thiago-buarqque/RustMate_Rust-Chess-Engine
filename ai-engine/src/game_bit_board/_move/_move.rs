@@ -1,5 +1,7 @@
 use core::fmt;
 
+use serde::{Deserialize, Serialize};
+
 use crate::game_bit_board::enums::{Color, PieceType};
 
 use super::move_contants::*;
@@ -29,7 +31,7 @@ use super::move_contants::*;
 /// | 1110 | Rook Promo Capture     |
 /// | 1111 | Queen Promo Capture    |
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Move {
     _move: u16,
     en_passant_bb_position: u64,

@@ -1,21 +1,20 @@
-use crate::{ai::ai_player::AIPlayer, common::contants::INITIAL_FEN, game::board::Board};
+use crate::{constants::constants::INITIAL_FEN, game_bit_board::{board::Board, move_generator::move_generator::MoveGenerator}};
 
 pub struct GlobalState {
-    pub ai: AIPlayer,
+    // pub ai: AIPlayer,
     pub board: Board,
-    pub time_to_think: u64,
+    pub move_generator: MoveGenerator,
+    pub seconds_to_think: u64,
 }
 
 impl GlobalState {
     pub fn new() -> GlobalState {
-        let mut board: Board = Board::new();
-
-        board.load_position(INITIAL_FEN);
+        let board: Board = Board::from_fen(INITIAL_FEN);
 
         GlobalState {
-            ai: AIPlayer::new(),
             board,
-            time_to_think: 2,
+            move_generator: MoveGenerator::new(),
+            seconds_to_think: 2,
         }
     }
 }

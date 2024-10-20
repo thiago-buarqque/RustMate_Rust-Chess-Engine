@@ -9,15 +9,12 @@ use super::{
     raw_move_generator::RawMoveGenerator,
     utils::{is_en_passant_discovered_check, is_promotion_square, look_up_pawn_attacks},
 };
-use crate::game_bit_board::{
-    _move::{_move::Move, move_contants::*},
-    board::Board,
-    enums::{Color, PieceType},
-    utils::{
+use crate::{constants::constants::{WINNER_BLACK, WINNER_DRAW, WINNER_WHITE}, game_bit_board::{
+    _move::{_move::Move, move_contants::*}, board::Board, enums::{Color, PieceType}, move_generator::utils::print_board, utils::{
         bitwise_utils::{east_one, north_one, pop_lsb, south_one, to_bitboard_position, west_one},
         utils::is_pawn_in_initial_position,
-    },
-};
+    }
+}};
 use std::{collections::HashMap, u64, usize};
 
 #[derive(Clone)]
@@ -159,9 +156,21 @@ impl MoveGenerator {
             moves.retain(|_move| _move.get_from() == friendly_king_square);
         }
 
+        // Game ended
         if moves.is_empty() {
-            // Game ended
-            board.set_winner(Some(self.side_to_move.opponent()));
+            // println!("The attack bb is {}", attack_data.attack_bb);
+            // print_board(Color::White, 0, PieceType::Empty, attack_data.attack_bb);
+            let winner = if attack_data.defenders_bb == u64::MAX && attack_data.attack_bb == u64::MAX {
+                WINNER_DRAW
+            }
+            else if self.side_to_move.is_white() {
+                WINNER_BLACK
+            } else {
+                WINNER_WHITE
+            };
+
+
+            board.set_winner(winner);
         }
 
         moves

@@ -8,48 +8,42 @@ export type AIResponse = {
 export type TBoard = {
   blackCaptures: string[];
   blackKingInCheck: boolean;
-  boardEvaluation: number;
-  boardFen: string;
+  enPassant: number;
+  evaluation: number;
+  fen: string;
   pieces: TPiece[];
   whiteCaptures: string[];
   whiteKingInCheck: boolean;
-  whiteMove: boolean;
+  siteToMove: TColor;
   winner: "-" | "b" | "w" | "d";
   zobrit: number;
 };
 
 export type TPiece = {
-  fen: string | null;
+  color: TColor;
+  fen: string;
   moves: TMove[];
   position: number;
-  value: number;
-  white: boolean;
-};
+  type: TPieceType;
+}
 
 export type TMove = {
-  capture: boolean;
-  castle: boolean;
-  fromPosition: number;
-  enPassant: boolean;
-  notation: string;
-  moveWorth: number;
-  piece_value: number;
-  promotion: boolean;
-  promotionType: number;
-  toPosition: number;
-};
+    flags: number,
+    from: number,
+    to: number
+}
 
-export enum TPieceColor {
-  Black = 8,
-  White = 16,
+export enum TColor {
+  Black = "Black",
+  White = "White",
 }
 
 export enum TPieceType {
-  Empty = 0,
-  Bishop = 1,
-  King = 2,
-  Knight = 3,
-  Pawn = 4,
-  Queen = 5,
-  Rook = 6,
+  Empty = "Empty",
+  Bishop = "Bishop",
+  King = "King",
+  Knight = "Knight",
+  Pawn = "Pawn",
+  Queen = "Queen",
+  Rook = "Rook",
 }

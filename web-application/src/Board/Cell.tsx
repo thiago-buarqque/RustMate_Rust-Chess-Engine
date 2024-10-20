@@ -1,12 +1,12 @@
 import React from "react";
-import { TBoard, TMove, TPiece, TPieceColor, TPieceType } from "./types";
+import { TBoard, TMove, TColor, TPieceType, TPiece } from "./types";
 import { COLUMNS, EMPTY_FEN } from "./constants";
 import BoardPiece from "./BoardPiece";
 
 interface IProps {
     board: TBoard;
     column: number;
-	lastMove: TMove | null;
+	// lastMove: TMove | null;
     onClickPiece: (piece: TPiece) => void;
 	onMovePiece: (cell: HTMLDivElement, cellPosition: number) => void;
     piece: TPiece | undefined
@@ -17,14 +17,14 @@ interface IProps {
 const Cell: React.FC<IProps> = ({
     board,
     column,
-	lastMove,
+	// lastMove,
     onClickPiece,
 	onMovePiece,
     piece,
     row,
     selectedPiecePosition
 }) => {
-	const cellPosition = row * 8 + column;
+	const cellPosition = row * 8 + (7 - column);
 
 	const getCellClasses = () => {
 		let classes = "cell";
@@ -33,17 +33,17 @@ const Cell: React.FC<IProps> = ({
 			classes += " selected"
 		} 
 		
-		classes += " " + getInCheckClass(
-			board.blackKingInCheck,
-			piece?.value || 0,
-			board.whiteKingInCheck
-		)
+		// classes += " " + getInCheckClass(
+		// 	board.blackKingInCheck,
+		// 	piece?.value || 0,
+		// 	board.whiteKingInCheck
+		// )
 
-		if (lastMove?.fromPosition === cellPosition) {
-			classes += " from-position"
-		} else if (lastMove?.toPosition === cellPosition) {
-			classes += " to-position"
-		}
+		// if (lastMove?.fromPosition === cellPosition) {
+		// 	classes += " from-position"
+		// } else if (lastMove?.toPosition === cellPosition) {
+		// 	classes += " to-position"
+		// }
 	
 		return classes;
 	}
@@ -55,9 +55,9 @@ const Cell: React.FC<IProps> = ({
 			data-pos={cellPosition}
 			onClick={(e) => onMovePiece(e.currentTarget, cellPosition)}
 		>
-			{/* <span className="cell-index">{i * 8 + column}</span> */}
-			{column === 0 && <span className={`row-index ${(row + 1) % 2 === 0 ? "white" : ""}`}>{8 - row}</span>}
-			{row === 7 && <span className={`column-index ${(column + 1) % 2 !== 0 ? "white" : ""}`}>{COLUMNS[column]}</span>}
+			{/* <span className="cell-index">{cellPosition}</span> */}
+			{column === 7 && <span className={`row-index ${(row + 1) % 2 === 0 ? "white" : ""}`}>{8 - row}</span>}
+			{row === 0 && <span className={`column-index ${(column + 1) % 2 !== 0 ? "white" : ""}`}>{COLUMNS[column]}</span>}
 			{piece && piece.fen !== EMPTY_FEN ? (
 				<BoardPiece
 					blackKingInCheck={board.blackKingInCheck}
@@ -72,16 +72,16 @@ const Cell: React.FC<IProps> = ({
 	);
 };
 
-const getInCheckClass = (blackKingInCheck: boolean, piece: number, whiteKingInCheck: boolean) => {
-    if(piece === (TPieceColor.Black | TPieceType.King) && blackKingInCheck) {
-      return 'in-check';
-    }
+// const getInCheckClass = (blackKingInCheck: boolean, piece: number, whiteKingInCheck: boolean) => {
+//     if(piece === (TColor.Black | TPieceType.King) && blackKingInCheck) {
+//       return 'in-check';
+//     }
   
-    if(piece === (TPieceColor.White | TPieceType.King) && whiteKingInCheck) {
-      return 'in-check';
-    }
+//     if(piece === (TColor.White | TPieceType.King) && whiteKingInCheck) {
+//       return 'in-check';
+//     }
   
-    return '';
-  }
+//     return '';
+//   }
 
 export default Cell;

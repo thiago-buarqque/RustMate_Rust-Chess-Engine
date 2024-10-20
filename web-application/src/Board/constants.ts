@@ -1,8 +1,8 @@
-import { TPiece } from "./types";
+import { TColor, TMove, TPieceType } from "./types";
 
 export const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-export const EMPTY_FEN = "-"
+export const EMPTY_FEN = "."
 
 export const LINES = [0, 1, 2, 3, 4, 5, 6, 7];
 export const COLUMNS: { [key: number]: string } = {
@@ -16,10 +16,8 @@ export const COLUMNS: { [key: number]: string } = {
   7: "H",
 };
 
-export const EMPTY_PIECE: TPiece = {
-  moves: [],
-  position: -1,
-  value: 0,
-  fen: null,
-  white: false,
+export const EMPTY_MOVE: TMove = {
+    flags: -1,
+    from: -1,
+    to: -1
 };

@@ -1,6 +1,9 @@
 use core::fmt;
+use std::fmt::Debug;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Copy, Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Color {
     Black,
     White,
@@ -28,7 +31,7 @@ impl Color {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum PieceType {
     Pawn,
     Knight,

@@ -1,4 +1,4 @@
-use crate::game_bit_board::utils::utils::get_piece_symbol;
+use crate::{constants::constants::WINNER_NONE, game_bit_board::utils::utils::get_piece_symbol};
 
 use super::{
     _move::{_move::Move, move_utils::get_piece_type_from_promotion_flag},
@@ -34,7 +34,7 @@ pub struct Board {
     // Bit 7: Black queenside castling.
     castling_rights: u8,
 
-    winner: Option<Color>,
+    winner: char,
     full_move_clock: u32,
     half_move_clock: u32,
 
@@ -63,6 +63,8 @@ impl Board {
 
         board.reset();
 
+        board.set_initial_bbs();
+
         let mut zobrist = board.zobrist.clone();
 
         zobrist.compute_hash(&board);
@@ -81,7 +83,7 @@ impl Board {
             black_king_moved: false,
             white_king_moved: false,
             castling_rights: 0,
-            winner: None,
+            winner: WINNER_NONE,
             full_move_clock: 1,
             half_move_clock: 0,
             moves_history: Vec::new(),
@@ -90,12 +92,27 @@ impl Board {
     }
 
     pub fn from_fen(fen: &str) -> Self {
-        let parts: Vec<&str> = fen.split_whitespace().collect();
         // if parts.len() != 6 {
         //     panic!("Invalid FEN string.");
         // }
 
         let mut board = Board::empty();
+
+        board.reset();
+
+        Board::_load_position(&mut board, fen);
+
+        board
+    }
+
+    pub fn load_position(&mut self, fen: &str) {
+        self.reset();
+
+        Board::_load_position(self, fen);
+    }
+
+    fn _load_position(board: &mut Board, fen: &str) {
+        let parts: Vec<&str> = fen.split_whitespace().collect();
 
         for (i, row) in parts[0].split('/').rev().enumerate() {
             let mut col = 0;
@@ -162,44 +179,59 @@ impl Board {
             board.full_move_clock = parts[5].parse::<u32>().unwrap();
         }
 
+        board.winner = WINNER_NONE;
+
         let mut zobrist = board.zobrist.clone();
 
         zobrist.compute_hash(&board);
 
         board.zobrist = zobrist;
+    }
 
-        board
+    pub fn set_initial_bbs(&mut self) {
+      // Placement of pawns
+      self.bitboards[PAWNS_IDX] = 0x00FF00000000FF00;
+      self.bitboards[WHITE_IDX] = 0x000000000000FFFF;
+      self.bitboards[BLACK_IDX] = 0xFFFF000000000000;
+  
+      // Placement of rooks
+      self.bitboards[ROOKS_IDX] = 0x8100000000000081;
+  
+      // Placement of knights
+      self.bitboards[KNIGHTS_IDX] = 0x4200000000000042;
+  
+      // Placement of bishops
+      self.bitboards[BISHOPS_IDX] = 0x2400000000000024;
+  
+      // Placement of queens
+      self.bitboards[QUEENS_IDX] = 0x0800000000000008;
+  
+      // Placement of kings
+      self.bitboards[KINGS_IDX] = 0x1000000000000010;
     }
 
     pub fn reset(&mut self) {
-        // Placement of pawns
-        self.bitboards[PAWNS_IDX] = 0x00FF00000000FF00;
-        self.bitboards[WHITE_IDX] = 0x000000000000FFFF;
-        self.bitboards[BLACK_IDX] = 0xFFFF000000000000;
-
-        // Placement of rooks
-        self.bitboards[ROOKS_IDX] = 0x8100000000000081;
-
-        // Placement of knights
-        self.bitboards[KNIGHTS_IDX] = 0x4200000000000042;
-
-        // Placement of bishops
-        self.bitboards[BISHOPS_IDX] = 0x2400000000000024;
-
-        // Placement of queens
-        self.bitboards[QUEENS_IDX] = 0x0800000000000008;
-
-        // Placement of kings
-        self.bitboards[KINGS_IDX] = 0x1000000000000010;
+        self.bitboards = [0; 8];
 
         self.castling_rights = 0xF;
+
+        self.en_passant_bb_position = 0;
+        self.en_passant_piece_square_bb = 0;
+        self.side_to_move = Color::White;
+        self.black_king_moved = false;
+        self.white_king_moved = false;
+        self.winner = WINNER_NONE;
+        self.full_move_clock = 1;
+        self.half_move_clock = 0;
+        self.moves_history = Vec::new();
+        self.zobrist = Zobrist::new();
     }
 
-    pub fn set_winner(&mut self, winner: Option<Color>) { self.winner = winner; }
+    pub fn set_winner(&mut self, winner: char) { self.winner = winner; }
 
-    pub fn get_winner(&self) -> Option<Color> { self.winner }
+    pub fn get_winner(&self) -> char { self.winner }
 
-    pub fn is_game_finished(&self) -> bool { self.get_winner().is_some() }
+    pub fn is_game_finished(&self) -> bool { self.get_winner() != WINNER_NONE }
 
     pub fn get_side_to_move(&self) -> Color { self.side_to_move }
 
@@ -288,8 +320,8 @@ impl Board {
 
         self.side_to_move = self.side_to_move.opponent();
 
-        if self.winner.is_some() {
-            self.winner = None;
+        if self.is_game_finished() {
+            self.winner = WINNER_NONE;
         }
 
         self.moves_history.remove(self.moves_history.len() - 1);
