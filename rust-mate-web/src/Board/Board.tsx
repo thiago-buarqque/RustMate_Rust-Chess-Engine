@@ -11,7 +11,7 @@ import moveAudio from "../assets/sound/move-self.mp3";
 import http from "../http-common";
 
 import "./board.scss";
-import { EMPTY_FEN, EMPTY_MOVE, INITIAL_FEN, LINES } from "./constants";
+import { CAPTURE, EMPTY_FEN, EMPTY_MOVE, INITIAL_FEN, LINES } from "./constants";
 import Logs, { getBoardEvaluationMessage } from "./Logs";
 import Cell from "./Cell";
 
@@ -140,7 +140,7 @@ const Board = () => {
 
 			cellPiece?.classList.remove("disabled");
 
-			// playMoveAudio(move.capture);
+			playMoveAudio((move.flags & CAPTURE) !== 0);
 
 			togglePieceAvailableMoves(selectedPiecePos);
 

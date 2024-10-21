@@ -43,7 +43,7 @@ div#board {
         background-color: #fff;
       }
       .cell:nth-child(odd) {
-        background-color: rgb(124, 148, 170);
+        background-color: var(--primary-light);
       }
     }
 
@@ -52,13 +52,15 @@ div#board {
         background-color: #fff;
       }
       .cell:nth-child(even) {
-        background-color: rgb(124, 148, 170);
+        background-color: var(--primary-light);
       }
     }
 
     .cell {
       height: 100%;
       aspect-ratio: 1;
+
+      box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px 0px inset, rgba(17, 17, 26, 0.1) 0px 8px 32px 0px;
 
       position: relative;
 
@@ -109,6 +111,22 @@ background: radial-gradient(circle, rgba(252,70,107,0) 0%, rgba(252,70,107,0) 48
         background-color: #eee394 !important;
       }
 
+      &[data-pos="56"] {
+        border-top-left-radius: 15px;
+      }
+
+      &[data-pos="63"] {
+        border-top-right-radius: 15px;
+      }
+
+      &[data-pos="0"] {
+        border-bottom-left-radius: 15px;
+      }
+
+      &[data-pos="7"] {
+        border-bottom-right-radius: 15px;
+      }
+
       .row-index,
       .column-index {
         position: absolute;
@@ -116,6 +134,7 @@ background: radial-gradient(circle, rgba(252,70,107,0) 0%, rgba(252,70,107,0) 48
 
         font-weight: bold;
         pointer-events: none;
+        color: var(--primary);
       }
       .row-index {
         top: 4px;

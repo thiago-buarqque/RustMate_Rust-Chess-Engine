@@ -13,6 +13,11 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --primary: #70587C;
+  --primary-light: #92849A;
+  --background: #bdb9cd;
+  --text-normal: #F1F1F1;
 }
 
 a {
@@ -40,8 +45,9 @@ body {
     // font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     // 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     // sans-serif;
-    color: #333;
-    background-color: #d0deed;
+    color: var(--text-normal);
+    // background-color: var(--background);
+    background-color: #cfc9d3;
 }
 
 #root {
