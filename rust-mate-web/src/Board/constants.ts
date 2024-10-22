@@ -1,5 +1,3 @@
-import { TColor, TMove, TPieceType } from "./types";
-
 export const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 export const EMPTY_FEN = "."
@@ -14,12 +12,6 @@ export const COLUMNS: { [key: number]: string } = {
   5: "F",
   6: "G",
   7: "H",
-};
-
-export const EMPTY_MOVE: TMove = {
-    flags: -1,
-    from: -1,
-    to: -1
 };
 
 export const NORMAL: number = 0x0;

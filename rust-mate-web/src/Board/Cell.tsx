@@ -1,15 +1,15 @@
 import React from "react";
-import { TBoard, TMove, TColor, TPieceType, TPiece } from "./types";
+import { TBoard, TPiece } from "./types";
 import { COLUMNS, EMPTY_FEN } from "./constants";
 import BoardPiece from "./BoardPiece";
 
 interface IProps {
     board: TBoard;
     column: number;
-	// lastMove: TMove | null;
     onClickPiece: (piece: TPiece) => void;
-	onMovePiece: (cell: HTMLDivElement, cellPosition: number) => void;
+	  onMovePiece: (cell: HTMLDivElement, position: number) => void;
     piece: TPiece | undefined
+    position: number;
     row: number;
     selectedPiecePosition: number | undefined;
 }
@@ -17,34 +17,20 @@ interface IProps {
 const Cell: React.FC<IProps> = ({
     board,
     column,
-	// lastMove,
     onClickPiece,
-	onMovePiece,
+	  onMovePiece,
     piece,
+    position,
     row,
     selectedPiecePosition
 }) => {
-	const cellPosition = row * 8 + (7 - column);
-
 	const getCellClasses = () => {
 		let classes = "cell";
 	
-		if (selectedPiecePosition === cellPosition) {
+		if (selectedPiecePosition === position) {
 			classes += " selected"
 		} 
-		
-		// classes += " " + getInCheckClass(
-		// 	board.blackKingInCheck,
-		// 	piece?.value || 0,
-		// 	board.whiteKingInCheck
-		// )
 
-		// if (lastMove?.fromPosition === cellPosition) {
-		// 	classes += " from-position"
-		// } else if (lastMove?.toPosition === cellPosition) {
-		// 	classes += " to-position"
-		// }
-	
 		return classes;
 	}
 
@@ -52,10 +38,10 @@ const Cell: React.FC<IProps> = ({
 		<div
 			key={column}
 			className={getCellClasses()}
-			data-pos={cellPosition}
-			onClick={(e) => onMovePiece(e.currentTarget, cellPosition)}
+			data-pos={position}
+			onClick={(e) => onMovePiece(e.currentTarget, position)}
 		>
-			{/* <span className="cell-index">{cellPosition}</span> */}
+			{/* <span className="cell-index">{position}</span> */}
 			{column === 7 && <span className={`row-index ${(row) % 2 === 0 ? "white" : ""}`}>{row + 1}</span>}
 			{row === 0 && <span className={`column-index ${(column ) % 2 !== 0 ? "white" : ""}`}>{COLUMNS[7 - column]}</span>}
 			{piece && piece.fen !== EMPTY_FEN ? (

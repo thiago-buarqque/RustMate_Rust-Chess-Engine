@@ -3,24 +3,15 @@ import React, { useEffect, useState } from "react";
 import { PIECE_ICONS } from "./BoardPiece";
 import { AIResponse, TBoard, TMove, TColor, TPieceType, TPiece } from "./types";
 
-//@ts-ignore
 import captureAudio from "../assets/sound/capture.mp3";
-//@ts-ignore
 import moveAudio from "../assets/sound/move-self.mp3";
 
 import http from "../http-common";
 
 import "./board.scss";
-import { CAPTURE, EMPTY_FEN, EMPTY_MOVE, INITIAL_FEN, LINES } from "./constants";
+import { CAPTURE, INITIAL_FEN } from "./constants";
 import Logs, { getBoardEvaluationMessage } from "./Logs";
 import Cell from "./Cell";
-
-const get_empty_move = (position: number) => {
-	const piece: TMove = JSON.parse(JSON.stringify(EMPTY_MOVE));
-	// piece.position = position;
-
-	return piece;
-};
 
 const playMoveAudio = (capture: boolean) => {
 	let audio;
@@ -64,7 +55,7 @@ const Board = () => {
 		}
 
 		if (board.siteToMove !== piece.color) {
-            console.log("LOG: It's not your turn");
+      alert("LOG: It's not your turn");
 			// Play invalid move sound
 			return;
 		}
@@ -94,7 +85,6 @@ const Board = () => {
 
 			const cell = document.querySelector(`.cell[data-pos='${to_position}']`) as HTMLDivElement;
 
-			// cell.onclick = () => onCellClick(cell, move.row, move.column);
 			cell.classList.toggle(className);
 
 			const cellPiece = document.querySelector(
@@ -106,47 +96,37 @@ const Board = () => {
 	};
 
 	const onMovePiece = (cell: HTMLDivElement, cellPosition: number) => {
-		// if (isWaitingForAI) {
-		// 	return;
-		// }
-
-		if (selectedPiecePos !== INVALID_POSITION) {
-			let move = getPieceMove(board.pieces[selectedPiecePos].moves, cellPosition);
-
-			if (move === undefined) {
-                console.log("Could not find move");
-				return;
-			}
-
-			// TODO: Add the option to choose the promotion
-			// if (move.promotion) {
-			// 	move.promotionType = TColor.White | TPieceType.Queen;
-			// }
-
-			// const copy_board: TBoard = JSON.parse(JSON.stringify(board));
-
-			// copy_board.moves[position] = get_empty_move(position);
-
-			// selectedPiecePos.position = cellPosition;
-
-			// copy_board.moves[cellPosition] = selectedPiecePos;
-
-			// setBoard(copy_board);
-			setSelectedPiecePos(INVALID_POSITION);
-
-			const cellPiece = document.querySelector(
-				`.cell[data-pos='${selectedPiecePos}'] button.piece-button.disabled`
-			) as HTMLDivElement;
-
-			cellPiece?.classList.remove("disabled");
-
-			playMoveAudio((move.flags & CAPTURE) !== 0);
-
-			togglePieceAvailableMoves(selectedPiecePos);
-
-			movePiece(move);
-			setLastMovePos(move.from);
+		if (selectedPiecePos === INVALID_POSITION) {
+      return;
 		}
+
+    const move = getPieceMove(board.pieces[selectedPiecePos].moves, cellPosition);
+
+    if (move === undefined) {
+      console.log("Could not find move");
+
+      return;
+    }
+
+    // TODO: Add the option to choose the promotion
+    // if (move.promotion) {
+    // 	move.promotionType = TColor.White | TPieceType.Queen;
+    // }
+
+    setSelectedPiecePos(INVALID_POSITION);
+
+    const cellPiece = document.querySelector(
+      `.cell[data-pos='${selectedPiecePos}'] button.piece-button.disabled`
+    ) as HTMLDivElement;
+
+    cellPiece?.classList.remove("disabled");
+
+    playMoveAudio((move.flags & CAPTURE) !== 0);
+
+    togglePieceAvailableMoves(selectedPiecePos);
+
+    movePiece(move);
+    setLastMovePos(move.from);
 	};
 
 	const fetchBoard = async () => {
@@ -158,37 +138,14 @@ const Board = () => {
 			});
 	};
 
-	// const getAiMove = () => {
-	// 	setIsWaitingForAI(true);
-
-	// 	http.post<AIResponse>("/ai/move")
-	// 		.then((response) => response.data)
-	// 		.then((aiResponse) => {
-	// 			fetchBoard().then(() => {
-	// 				playMoveAudio(aiResponse.aiMove.capture);
-    //       setLastMove(aiResponse.aiMove)
-
-	// 				setLastAIResponse(aiResponse);
-	// 			});
-	// 		})
-	// 		.finally(() => {
-	// 			setIsWaitingForAI(false);
-	// 		});
-	// };
-
 	const movePiece = (move: TMove) => {
-		// setIsWaitingForAI(true);
-
 		http.post<TBoard>("/board/move/piece", move)
 			.then((response) => response.data)
 			.then((data) => {
 				setBoard(data);
-
-				// getAiMove();
 			})
 			.catch((err) => {
 				console.error(err);
-				// setIsWaitingForAI(false);
 			});
 	};
 
@@ -220,21 +177,6 @@ const Board = () => {
 			});
 	};
 
-	// const setAITime = (e: React.FormEvent<HTMLFormElement>) => {
-	// 	e.preventDefault();
-	// 	let aiTimeInput = document.getElementById("ai_time");
-
-	// 	if (!aiTimeInput) {
-	// 		return;
-	// 	}
-
-	// 	let time = Number((aiTimeInput as HTMLInputElement).value);
-
-	// 	http.post<{ moves: number; elapsedTime: number }>("/ai/time_to_think", {
-	// 		time_to_think: time,
-	// 	});
-	// };
-
 	useEffect(() => {
 		fetchBoard();
 	}, []);
@@ -254,12 +196,6 @@ const Board = () => {
             Count
           </button>
         </form>*/}
-				{/* <form method="post" onSubmit={}>
-					<input type="number" name="aiTime" id="ai_time" defaultValue={2} />
-					<button type="submit" id="set_ai_time_btn">
-						Set
-					</button>
-				</form> */}
 			</div>
 
 			<div id="board">
@@ -273,23 +209,21 @@ const Board = () => {
 						<img key={i} className="captured_piece" src={PIECE_ICONS[piece_fen]} alt={piece_fen} />
 					))}
 				</div>
-				{[7, 6, 5, 4, 3, 2, 1, 0].map((i) => (
-					<div key={i} className="row">
-						{[0, 1, 2, 3, 4, 5, 6, 7].map((j) => {
-              				const position = (i * 8) + (7 - j);
-
-							const piece = board.pieces[position];
+				{[7, 6, 5, 4, 3, 2, 1, 0].map((row) => (
+					<div key={row} className="row">
+						{[0, 1, 2, 3, 4, 5, 6, 7].map((column) => {
+              const position = (row * 8) + (7 - column);
 
 							return (
 								<Cell
-                  					key={position}
+                  key={position}
 									board={board}
-									column={j}
-                  					// lastMove={lastMovePos}
+									column={column}
 									onClickPiece={onPieceSelect}
 									onMovePiece={onMovePiece}
-									piece={piece}
-									row={i}
+									piece={board.pieces[position]}
+                  position={position}
+									row={row}
 									selectedPiecePosition={selectedPiecePos}
 								/>
 							);
